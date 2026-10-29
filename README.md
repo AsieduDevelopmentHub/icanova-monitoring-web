@@ -2,7 +2,7 @@
 
 Separate repo from the ESP32 firmware (`dse-modbus-gateway`). Monitor uses `GET /api/status`. Configure uses `public/gencomm.json` and, when a gateway is connected, `GET /api/read`, `POST /api/write`, and `POST /api/control`.
 
-The firmware tool `tools/build_gencomm_catalog.py` writes `public/gencomm.json` into this repo when it sits next to `dse-modbus-gateway`.
+The firmware tool `tools/build_gencomm_catalog.py` in `dse-modbus-gateway` writes `public/gencomm.json` into this repo at `dev/iot/dse-gateway-web`.
 
 Package manager: **pnpm**.
 
