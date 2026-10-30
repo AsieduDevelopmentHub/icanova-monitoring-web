@@ -62,6 +62,9 @@ export const acceptBatch = internalMutation({
       .query("ingestCursors")
       .withIndex("by_device", (q) => q.eq("deviceId", device._id))
       .unique();
+    // Same-boot sequence is monotonic. A different boot id is not: the device
+    // draws it with esp_random(), and sample t is uptime rather than a clock.
+    // A delayed batch from an older boot can still replace current telemetry.
     if (cursor && cursor.boot === args.boot && args.seq < cursor.seq) {
       return { status: "stale" as const, accepted: 0 };
     }

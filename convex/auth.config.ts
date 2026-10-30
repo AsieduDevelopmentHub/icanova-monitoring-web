@@ -1,8 +1,16 @@
 import type { AuthConfig } from "convex/server";
 
-const issuer = process.env.AUTH_JWT_ISSUER;
-const jwks = process.env.AUTH_JWKS_URL;
-const applicationID = process.env.AUTH_JWT_AUDIENCE ?? "dse-gateway";
+function configured(value: string | undefined) {
+  const text = value?.trim() ?? "";
+  if (!text || text === "disabled") {
+    return undefined;
+  }
+  return text;
+}
+
+const issuer = configured(process.env.AUTH_JWT_ISSUER);
+const jwks = configured(process.env.AUTH_JWKS_URL);
+const applicationID = configured(process.env.AUTH_JWT_AUDIENCE) ?? "dse-gateway";
 
 const providers: AuthConfig["providers"] = [];
 
