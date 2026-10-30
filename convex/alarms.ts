@@ -7,6 +7,7 @@ import { writeAudit } from "./audits";
 import { requireAnyPermission, requirePermission } from "./auth";
 import { requireDevice } from "./devices";
 import { MAX_PAGE, boundedPage } from "./limits";
+import { emitForAlarm } from "./notifyEmit";
 import { requireSite } from "./sites";
 
 /** Stable id for the only automatic alarm. It is a link transition, not a DSE name. */
@@ -433,6 +434,7 @@ export const raise = mutation({
       throw new Error("Not found");
     }
     await writeEvent(ctx, alarm, "raise", null, "active");
+    await emitForAlarm(ctx, alarm, "alarm.raised", `alarm:${alarmId}:alarm.raised`);
     return alarmId;
   },
 });
@@ -454,6 +456,10 @@ export const acknowledge = mutation({
       acknowledgedBy: user._id,
     });
     await writeEvent(ctx, alarm, "acknowledge", null, "acknowledged");
+    const updated = await ctx.db.get(alarm._id);
+    if (updated) {
+      await emitForAlarm(ctx, updated, "alarm.acknowledged", `alarm:${alarm._id}:alarm.acknowledged`);
+    }
     return alarm._id;
   },
 });
@@ -521,6 +527,10 @@ export const clear = mutation({
     }
     await ctx.db.patch(alarm._id, { state: "cleared", clearedAt: Date.now() });
     await writeEvent(ctx, alarm, "clear", null, "cleared");
+    const updated = await ctx.db.get(alarm._id);
+    if (updated) {
+      await emitForAlarm(ctx, updated, "alarm.cleared", `alarm:${alarm._id}:alarm.cleared`);
+    }
     return alarm._id;
   },
 });
@@ -562,7 +572,8 @@ async function openCommunication(ctx: MutationCtx, generatorId: Id<"generators">
  * A repeated fail updates the open alarm. It does not create another row
  * and it does not increment the occurrence count. Recovery is fail then ok
  * on the boot that opened the alarm. unknown, degraded, and missing values
- * do not raise or clear. alarmCount is ignored. No notification is sent.
+ * do not raise or clear. alarmCount is ignored.
+ * A new open or clear may emit one notification through notifyEmit.
  */
 export async function observeCommunicationLink(
   ctx: MutationCtx,
@@ -624,6 +635,7 @@ export async function observeCommunicationLink(
       throw new Error("Not found");
     }
     await writeEvent(ctx, alarm, "raise", null, "active", "ingest");
+    await emitForAlarm(ctx, alarm, "alarm.raised", `alarm:${alarmId}:alarm.raised`);
     return "raised" as const;
   }
   if (args.previousLink === "fail" && args.link === "fail" && open && sameEvidence) {
@@ -637,6 +649,10 @@ export async function observeCommunicationLink(
       lastOccurredAt: args.at,
     });
     await writeEvent(ctx, open, "clear", null, "cleared", "ingest");
+    const cleared = await ctx.db.get(open._id);
+    if (cleared) {
+      await emitForAlarm(ctx, cleared, "alarm.cleared", `alarm:${open._id}:alarm.cleared`);
+    }
     return "cleared" as const;
   }
   return "ignored" as const;

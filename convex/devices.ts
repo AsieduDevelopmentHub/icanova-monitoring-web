@@ -6,6 +6,7 @@ import { mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
 import { assertSameOrg, requireName, requirePermission } from "./auth";
 import { MAX_PAGE, boundedPage } from "./limits";
+import { emitDeviceRegistered } from "./notifyEmit";
 import { requireSite } from "./sites";
 
 export const list = query({
@@ -54,6 +55,12 @@ export const create = mutation({
       identity,
     });
     await writeAudit(ctx, args.organizationId, "device.create", deviceId);
+    await emitDeviceRegistered(ctx, {
+      organizationId: args.organizationId,
+      siteId: args.siteId,
+      deviceId,
+      deviceName: name,
+    });
     return deviceId;
   },
 });

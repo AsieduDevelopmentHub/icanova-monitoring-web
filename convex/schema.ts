@@ -277,14 +277,52 @@ export default defineSchema({
     error: v.optional(v.string()),
     event: v.optional(v.string()),
     createdAt: v.number(),
+    userId: v.optional(v.id("users")),
+    alarmId: v.optional(v.id("alarms")),
+    siteId: v.optional(v.id("sites")),
+    generatorId: v.optional(v.id("generators")),
+    deviceId: v.optional(v.id("devices")),
+    idempotencyKey: v.optional(v.string()),
+    lastAttemptAt: v.optional(v.number()),
+    nextAttemptAt: v.optional(v.number()),
   })
     .index("by_org_created", ["organizationId", "createdAt"])
-    .index("by_channel", ["channel"]),
+    .index("by_channel", ["channel"])
+    .index("by_org_idempotency", ["organizationId", "idempotencyKey"]),
+
+  /** One row per org event key so raise/ack/clear emit once. */
+  notificationDispatches: defineTable({
+    organizationId: v.id("organizations"),
+    idempotencyKey: v.string(),
+    event: v.string(),
+    createdAt: v.number(),
+  }).index("by_org_key", ["organizationId", "idempotencyKey"]),
+
+  notificationSettings: defineTable({
+    organizationId: v.id("organizations"),
+    minSeverity: v.union(
+      v.literal("critical"),
+      v.literal("warning"),
+      v.literal("informational"),
+    ),
+    escalateAfterMinutes: v.union(v.number(), v.null()),
+  }).index("by_org", ["organizationId"]),
 
   notificationPolicies: defineTable({
     organizationId: v.id("organizations"),
-    channel: v.union(v.literal("email"), v.literal("sms"), v.literal("push")),
-    event: v.union(v.literal("alarm.raised"), v.literal("maintenance.recorded")),
+    channel: v.union(
+      v.literal("email"),
+      v.literal("sms"),
+      v.literal("push"),
+      v.literal("inapp"),
+    ),
+    event: v.union(
+      v.literal("alarm.raised"),
+      v.literal("alarm.acknowledged"),
+      v.literal("alarm.cleared"),
+      v.literal("device.registered"),
+      v.literal("maintenance.recorded"),
+    ),
     enabled: v.boolean(),
   }).index("by_org_event", ["organizationId", "event"]),
 
@@ -296,7 +334,35 @@ export default defineSchema({
     emailEnabled: v.boolean(),
     smsEnabled: v.boolean(),
     pushEnabled: v.boolean(),
+    inAppEnabled: v.optional(v.boolean()),
+    minSeverity: v.optional(
+      v.union(v.literal("critical"), v.literal("warning"), v.literal("informational")),
+    ),
+    subscribedSiteIds: v.optional(v.array(v.id("sites"))),
   }).index("by_org_user", ["organizationId", "userId"]),
+
+  userNotifications: defineTable({
+    organizationId: v.id("organizations"),
+    userId: v.id("users"),
+    event: v.string(),
+    severity: v.union(
+      v.literal("critical"),
+      v.literal("warning"),
+      v.literal("informational"),
+    ),
+    title: v.string(),
+    body: v.string(),
+    alarmId: v.optional(v.id("alarms")),
+    generatorId: v.optional(v.id("generators")),
+    siteId: v.optional(v.id("sites")),
+    deviceId: v.optional(v.id("devices")),
+    readAt: v.optional(v.union(v.number(), v.null())),
+    createdAt: v.number(),
+    idempotencyKey: v.string(),
+  })
+    .index("by_org_user_created", ["organizationId", "userId", "createdAt"])
+    .index("by_org_idempotency", ["organizationId", "idempotencyKey"])
+    .index("by_user_created", ["userId", "createdAt"]),
 
   maintenanceRecords: defineTable({
     organizationId: v.id("organizations"),

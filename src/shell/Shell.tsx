@@ -1,10 +1,25 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "convex/react";
 import { NavLink, Outlet, useLocation } from "react-router";
+import { api } from "../../convex/_generated/api";
 import { Drawer } from "../ui/Overlay";
 import { Icon } from "../ui/icons";
 import { setBearerToken } from "../platform/bearer";
 import { useBearerToken } from "../fleet/useBearer";
 import { NAV, NAV_GROUPS, crumbsFor } from "./nav";
+
+function UnreadBadge() {
+  const orgs = useQuery(api.organizations.mine, {});
+  const organizationId = orgs?.[0]?.organizationId;
+  const unread = useQuery(
+    api.notifications.unreadCount,
+    organizationId ? { organizationId } : "skip",
+  );
+  if (!unread) {
+    return null;
+  }
+  return <span className="nav-badge" aria-label={`${unread} unread notifications`}>{unread}</span>;
+}
 
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
   return (
@@ -22,6 +37,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
             >
               <Icon name={item.icon} />
               <span>{item.label}</span>
+              {item.to === "/notifications" ? <UnreadBadge /> : null}
             </NavLink>
           ))}
         </div>
