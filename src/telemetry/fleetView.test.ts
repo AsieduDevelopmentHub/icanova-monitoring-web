@@ -1,0 +1,83 @@
+import { describe, expect, test } from "vitest";
+import { formatReading } from "./readings";
+import { storedReading } from "../fleet/access";
+import { DEMO_GENERATOR_ID } from "./logModel";
+import { NAV } from "../shell/nav";
+import {
+  auditActor,
+  engineView,
+  linkView,
+  registrationLabel,
+  snapshotScope,
+} from "./fleetView";
+
+describe("fleet snapshot", () => {
+  test("a registered generator with no telemetry is unknown and unreported", () => {
+    const row = {
+      updatedAt: null,
+      link: null,
+      rpm: null,
+      rpmQuality: "unavailable",
+      alarmCount: null,
+    };
+    expect(linkView(row.link).label).toBe("Unknown");
+    expect(engineView(row.rpm, row.rpmQuality).label).toBe("Unreported");
+    expect(snapshotScope([row], false)).toMatchObject({
+      generators: 1,
+      reporting: 0,
+      online: 0,
+      unknown: 1,
+      capped: false,
+    });
+  });
+
+  test("a measured reading stays distinct from a failed link", () => {
+    expect(linkView("ok")).toMatchObject({ label: "Online", tone: "ok" });
+    expect(linkView("degraded").label).toBe("Degraded");
+    expect(linkView("fail").label).toBe("Offline");
+    expect(linkView("unknown").label).toBe("Unknown");
+    expect(engineView(1500, "measured").label).toBe("Running");
+    expect(engineView(0, "measured").label).toBe("Stopped");
+    expect(engineView(null, "unavailable").label).toBe("Unreported");
+    expect(engineView(0, "unavailable").label).toBe("Unreported");
+  });
+
+  test("an offline link and a stopped engine are separate", () => {
+    expect(linkView("fail").label).toBe("Offline");
+    expect(engineView(0, "measured").label).toBe("Stopped");
+    expect(engineView(null, "unavailable").label).not.toBe("Stopped");
+  });
+
+  test("unavailable power is not zero and a negative measurement is kept", () => {
+    expect(formatReading(storedReading(null, "unavailable", "kW"))).toBe("unavailable");
+    expect(formatReading(storedReading(-0.45, "measured", "kW"))).toBe("-0.45 kW");
+  });
+
+  test("a capped site snapshot is not described as an organization total", () => {
+    const scope = snapshotScope([], true);
+    expect(scope.note).toContain("Not an organization total");
+    expect(scope.generators).toBe(0);
+  });
+
+  test("registration text refuses a partial page as a complete count", () => {
+    expect(registrationLabel(2, true)).toBe("2 registered on this site.");
+    expect(registrationLabel(50, false)).toContain("not a complete count");
+  });
+});
+
+describe("audit display", () => {
+  test("the actor subject is shown and the token identifier is not", () => {
+    expect(auditActor("unknown")).toBe("Not recorded");
+    expect(auditActor("https://issuer.test|owner")).toBe("owner");
+    expect(auditActor("https://issuer.test|owner")).not.toContain("https://");
+    expect(auditActor("raw-token")).toBe("Recorded");
+  });
+});
+
+describe("routes", () => {
+  test("sites and events are no longer placeholders and the demo id remains", () => {
+    expect(NAV.find((item) => item.to === "/sites")?.unavailable).toBeUndefined();
+    expect(NAV.find((item) => item.to === "/events")?.unavailable).toBeUndefined();
+    expect(DEMO_GENERATOR_ID).toBe("log-7320");
+  });
+});

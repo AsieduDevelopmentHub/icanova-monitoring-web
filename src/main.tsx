@@ -17,6 +17,8 @@ import { Notifications } from "./pages/Notifications";
 import { Reports } from "./pages/Reports";
 import { RolesAdmin } from "./pages/RolesAdmin";
 import { Settings } from "./pages/Settings";
+import { Sites } from "./pages/Sites";
+import { Events } from "./pages/Events";
 import { Unavailable } from "./pages/Unavailable";
 import { UsersAdmin } from "./pages/UsersAdmin";
 import { Platform } from "./platform/Platform";
@@ -48,13 +50,13 @@ createRoot(document.getElementById("root")!).render(
             <Route path="local/configure" element={<ConfigurePage />} />
             <Route path="alarms" element={<Alarms />} />
             <Route path="alarms/:id" element={<AlarmDetail />} />
-            <Route path="sites" element={<Unavailable />} />
+            <Route path="sites" element={<Sites />} />
             <Route path="generators" element={<Generators />} />
             <Route path="generators/:id" element={<GeneratorDetail />} />
             <Route path="generators/:id/:section" element={<GeneratorDetail />} />
             <Route path="gateways" element={<Gateways />} />
             <Route path="gateways/:id" element={<GatewayDetail />} />
-            <Route path="events" element={<Unavailable />} />
+            <Route path="events" element={<Events />} />
             <Route path="reports" element={<Reports />} />
             <Route path="maintenance" element={<Maintenance />} />
             <Route path="notifications" element={<Notifications />} />
