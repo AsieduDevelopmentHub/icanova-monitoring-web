@@ -14,6 +14,8 @@ import type * as auth from "../auth.js";
 import type * as authz from "../authz.js";
 import type * as crons from "../crons.js";
 import type * as delivery from "../delivery.js";
+import type * as deviceHealth from "../deviceHealth.js";
+import type * as deviceHealthLogic from "../deviceHealthLogic.js";
 import type * as devices from "../devices.js";
 import type * as diagnostics from "../diagnostics.js";
 import type * as formats from "../formats.js";
@@ -55,6 +57,8 @@ declare const fullApi: ApiFromModules<{
   authz: typeof authz;
   crons: typeof crons;
   delivery: typeof delivery;
+  deviceHealth: typeof deviceHealth;
+  deviceHealthLogic: typeof deviceHealthLogic;
   devices: typeof devices;
   diagnostics: typeof diagnostics;
   formats: typeof formats;

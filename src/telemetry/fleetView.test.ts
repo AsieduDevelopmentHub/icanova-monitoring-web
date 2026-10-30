@@ -33,10 +33,10 @@ describe("fleet snapshot", () => {
     });
   });
 
-  test("a measured reading stays distinct from a failed link", () => {
-    expect(linkView("ok")).toMatchObject({ label: "Online", tone: "ok" });
-    expect(linkView("degraded").label).toBe("Degraded");
-    expect(linkView("fail").label).toBe("Offline");
+  test("a measured reading stays distinct from a failed Modbus link", () => {
+    expect(linkView("ok")).toMatchObject({ label: "Modbus ok", tone: "ok" });
+    expect(linkView("degraded").label).toBe("Modbus degraded");
+    expect(linkView("fail").label).toBe("Modbus fail");
     expect(linkView("unknown").label).toBe("Unknown");
     expect(engineView(1500, "measured").label).toBe("Running");
     expect(engineView(0, "measured").label).toBe("Stopped");
@@ -44,8 +44,8 @@ describe("fleet snapshot", () => {
     expect(engineView(0, "unavailable").label).toBe("Unreported");
   });
 
-  test("an offline link and a stopped engine are separate", () => {
-    expect(linkView("fail").label).toBe("Offline");
+  test("a Modbus fail and a stopped engine are separate", () => {
+    expect(linkView("fail").label).toBe("Modbus fail");
     expect(engineView(0, "measured").label).toBe("Stopped");
     expect(engineView(null, "unavailable").label).not.toBe("Stopped");
   });

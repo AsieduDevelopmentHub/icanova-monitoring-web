@@ -7,8 +7,15 @@ import { FleetBoundary } from "../fleet/boundary";
 import { useBearerToken } from "../fleet/useBearer";
 import { demoFrames } from "../telemetry/demoLog";
 import { DEMO_GENERATOR_ID, DEMO_SOURCE } from "../telemetry/logModel";
+import {
+  freshnessView,
+  gatewayView,
+  modbusView,
+  overallView,
+} from "../telemetry/deviceHealthView";
 import { DataTable } from "../ui/DataTable";
 import { FilterBar, FilterSearch, FilterSelect } from "../ui/FilterBar";
+import { StatusMark } from "../ui/StatusMark";
 
 export function Gateways() {
   return (
@@ -81,7 +88,8 @@ function OrgInventory() {
     <div className="stack">
       <div className="notice" role="note">
         <strong>Stored devices.</strong> Search covers the first 200 devices in this organization when
-        a search term is set. The demo log below is not this list.
+        a search term is set. The demo log below is not this list. Gateway Online is cloud contact, not
+        Modbus.
       </div>
       <FilterBar label="Device search">
         <FilterSelect
@@ -105,10 +113,39 @@ function OrgInventory() {
           placeholder="Name or identity"
         />
       </FilterBar>
+      <FleetBoundary key={`health:${orgId}`}>
+        <OrgHealth organizationId={orgId} />
+      </FleetBoundary>
       <FleetBoundary key={`${orgId}:${search}`}>
         <DeviceTable organizationId={orgId} search={search} />
       </FleetBoundary>
     </div>
+  );
+}
+
+function OrgHealth({ organizationId }: { organizationId: string }) {
+  const summary = useQuery(api.deviceHealth.orgSummary, {
+    organizationId: id<"organizations">(organizationId),
+  });
+  if (summary === undefined) {
+    return <p className="empty">Loading fleet health.</p>;
+  }
+  if (!summary.ready) {
+    return (
+      <p className="meta">
+        Fleet health tallies appear after the first heartbeat or accepted ingest for a device.
+      </p>
+    );
+  }
+  return (
+    <p className="meta">
+      Fleet: {summary.devicesTracked} tracked · gateways {summary.gatewayOnline} online /{" "}
+      {summary.gatewayOffline} offline / {summary.gatewayUnknown} unknown · Modbus {summary.modbusOk}{" "}
+      ok / {summary.modbusFail} fail · telemetry {summary.telemetryFresh} fresh /{" "}
+      {summary.telemetryStale} stale / {summary.telemetryMissing} missing · overall{" "}
+      {summary.overallUnhealthy} unhealthy · {summary.activeCommProblems} active communication
+      problems. Incremental tallies, not a live scan.
+    </p>
   );
 }
 
@@ -133,6 +170,38 @@ function DeviceTable({ organizationId, search }: { organizationId: string; searc
           { key: "name", header: "Name", render: (row) => row.name },
           { key: "identity", header: "Identity", render: (row) => row.identity },
           { key: "site", header: "Site", render: (row) => row.siteName ?? "—" },
+          {
+            key: "gateway",
+            header: "Gateway",
+            render: (row) => {
+              const view = gatewayView(row.gatewayStatus);
+              return <StatusMark tone={view.tone}>{view.label}</StatusMark>;
+            },
+          },
+          {
+            key: "modbus",
+            header: "Modbus",
+            render: (row) => {
+              const view = modbusView(row.modbusStatus);
+              return <StatusMark tone={view.tone}>{view.label}</StatusMark>;
+            },
+          },
+          {
+            key: "fresh",
+            header: "Telemetry",
+            render: (row) => {
+              const view = freshnessView(row.telemetryFreshness);
+              return <StatusMark tone={view.tone}>{view.label}</StatusMark>;
+            },
+          },
+          {
+            key: "overall",
+            header: "Overall",
+            render: (row) => {
+              const view = overallView(row.overallStatus);
+              return <StatusMark tone={view.tone}>{view.label}</StatusMark>;
+            },
+          },
           {
             key: "open",
             header: "",

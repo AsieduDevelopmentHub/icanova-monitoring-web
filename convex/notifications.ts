@@ -25,6 +25,10 @@ const eventName = v.union(
   v.literal("alarm.cleared"),
   v.literal("device.registered"),
   v.literal("maintenance.recorded"),
+  v.literal("health.gateway.offline"),
+  v.literal("health.gateway.recovered"),
+  v.literal("health.telemetry.stale"),
+  v.literal("health.telemetry.recovered"),
 );
 const severity = v.union(
   v.literal("critical"),

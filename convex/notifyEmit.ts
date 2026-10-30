@@ -18,9 +18,20 @@ export const NOTIFY_EVENTS = [
   "alarm.acknowledged",
   "alarm.cleared",
   "device.registered",
+  "health.gateway.offline",
+  "health.gateway.recovered",
+  "health.telemetry.stale",
+  "health.telemetry.recovered",
 ] as const;
 
 export type NotifyEvent = (typeof NOTIFY_EVENTS)[number];
+
+const HEALTH_EVENTS = new Set<NotifyEvent>([
+  "health.gateway.offline",
+  "health.gateway.recovered",
+  "health.telemetry.stale",
+  "health.telemetry.recovered",
+]);
 
 type PolicyChannel = "email" | "sms" | "push" | "inapp";
 
@@ -98,7 +109,13 @@ function preferenceSeverity(
 }
 
 function needsPermission(event: NotifyEvent): Permission {
-  return event === "device.registered" ? "manage.devices" : "view.alarms";
+  if (event === "device.registered") {
+    return "manage.devices";
+  }
+  if (HEALTH_EVENTS.has(event)) {
+    return "view.diagnostics";
+  }
+  return "view.alarms";
 }
 
 function resolveRecipients(
@@ -432,6 +449,71 @@ export async function emitDeviceRegistered(
     emailSubject: copy.subject,
     emailHtml: copy.html,
     smsBody: copy.sms,
+  });
+}
+
+/**
+ * Health transitions only. Modbus fail/recover stays on the alarm channel
+ * (COMM_LINK_FAIL) so operators are not double-paged.
+ */
+export async function emitHealthEvent(
+  ctx: MutationCtx,
+  args: {
+    organizationId: Id<"organizations">;
+    event:
+      | "health.gateway.offline"
+      | "health.gateway.recovered"
+      | "health.telemetry.stale"
+      | "health.telemetry.recovered";
+    deviceId: Id<"devices">;
+    siteId: Id<"sites">;
+    generatorId: Id<"generators"> | null;
+    at: number;
+  },
+) {
+  const organization = await ctx.db.get(args.organizationId);
+  const site = await ctx.db.get(args.siteId);
+  const device = await ctx.db.get(args.deviceId);
+  if (!organization || !site || !device || device.organizationId !== args.organizationId) {
+    return { created: false, messageIds: [] as Id<"messages">[] };
+  }
+  const titles: Record<typeof args.event, string> = {
+    "health.gateway.offline": `Gateway offline — ${device.name}`,
+    "health.gateway.recovered": `Gateway recovered — ${device.name}`,
+    "health.telemetry.stale": `Telemetry stale — ${device.name}`,
+    "health.telemetry.recovered": `Telemetry recovered — ${device.name}`,
+  };
+  const bodies: Record<typeof args.event, string> = {
+    "health.gateway.offline": `No gateway contact at ${site.name} for device ${device.name}.`,
+    "health.gateway.recovered": `Gateway contact restored for ${device.name} at ${site.name}.`,
+    "health.telemetry.stale": `Stored telemetry for ${device.name} at ${site.name} is older than three minutes.`,
+    "health.telemetry.recovered": `Fresh telemetry resumed for ${device.name} at ${site.name}.`,
+  };
+  const severity =
+    args.event === "health.gateway.offline" || args.event === "health.telemetry.stale"
+      ? ("warning" as const)
+      : ("informational" as const);
+  const title = titles[args.event];
+  const body = bodies[args.event];
+  return await emitNotificationEvent(ctx, {
+    organizationId: args.organizationId,
+    event: args.event,
+    severity,
+    title,
+    body,
+    idempotencyKey: `health:${args.deviceId}:${args.event}:${args.at}`,
+    siteId: args.siteId,
+    deviceId: args.deviceId,
+    generatorId: args.generatorId,
+    emailSubject: title,
+    emailHtml: [
+      `<p>${body}</p>`,
+      `<p>Organization: ${organization.name}</p>`,
+      `<p>Site: ${site.name}</p>`,
+      `<p>Device: ${device.name}</p>`,
+      `<p>Open: /gateways/${args.deviceId}</p>`,
+    ].join("\n"),
+    smsBody: `DSE ${args.event}: ${device.name} @ ${site.name}`,
   });
 }
 

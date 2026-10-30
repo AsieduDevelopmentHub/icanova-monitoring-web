@@ -82,6 +82,14 @@ http.route({
     }
     const record = body as Record<string, unknown>;
     if (isIngestHeartbeat(record)) {
+      const identity = typeof record.identity === "string" ? record.identity.trim().toLowerCase() : "";
+      if (/^[0-9a-f]{12}$/.test(identity)) {
+        try {
+          await ctx.runMutation(internal.deviceHealth.recordHeartbeat, { identity });
+        } catch {
+          // Heartbeat probes stay 204 even when persistence fails.
+        }
+      }
       return new Response(null, { status: 204 });
     }
     try {

@@ -31,6 +31,23 @@ async function ensureSummary(
     linkDegraded: 0,
     linkOther: 0,
     lastTelemetryAt: null,
+    gatewayOnline: 0,
+    gatewayOffline: 0,
+    gatewayUnknown: 0,
+    modbusOk: 0,
+    modbusDegraded: 0,
+    modbusFail: 0,
+    modbusUnknown: 0,
+    telemetryFresh: 0,
+    telemetryStale: 0,
+    telemetryMissing: 0,
+    overallHealthy: 0,
+    overallDegraded: 0,
+    overallUnhealthy: 0,
+    overallUnknown: 0,
+    activeCommProblems: 0,
+    devicesTracked: 0,
+    lastGatewayContactAt: null,
   });
   const created = await ctx.db.get(id);
   if (!created) {

@@ -40,6 +40,12 @@ export const PRUNE_BATCH = 80;
 /** Continuations after the per-minute cron tick. 10 * 80 * 60 = 48,000 deletes per hour. */
 export const PRUNE_ROUNDS = 10;
 
+/** Gateway / telemetry freshness window. Matches client STORED_STALE_MS. */
+export const HEALTH_STALE_MS = 3 * 60 * 1000;
+
+/** Devices marked offline or stale per sweep mutation. */
+export const HEALTH_SWEEP_BATCH = 40;
+
 export function boundedPage(opts: PaginationOptions): PaginationOptions {
   const requested = Number.isFinite(opts.numItems) ? Math.floor(opts.numItems) : 1;
   return {

@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
 import { observeCommunicationLink } from "./alarms";
+import { recordAcceptedBatch } from "./deviceHealth";
 import { METRIC_KEYS } from "./metrics";
 import { orderBatch } from "./order";
 
@@ -153,6 +154,15 @@ export const acceptBatch = internalMutation({
         ...cursorDoc,
       });
     }
+    const last = args.samples[args.samples.length - 1];
+    await recordAcceptedBatch(ctx, {
+      organizationId: device.organizationId,
+      deviceId: device._id,
+      siteId: generator.siteId,
+      generatorId: generator._id,
+      link: last?.link ?? null,
+      at: observedAt,
+    });
     return { status: "accepted" as const, accepted: args.samples.length };
   },
 });

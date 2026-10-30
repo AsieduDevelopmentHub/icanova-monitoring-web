@@ -92,9 +92,20 @@ export const inventory = query({
           continue;
         }
         const site = await ctx.db.get(device.siteId);
+        const health = await ctx.db
+          .query("deviceHealthCurrent")
+          .withIndex("by_device", (q) => q.eq("deviceId", device._id))
+          .unique();
+        if (health && health.organizationId !== args.organizationId) {
+          throw new Error("Forbidden");
+        }
         rows.push({
           ...device,
           siteName: site && site.organizationId === args.organizationId ? site.name : null,
+          gatewayStatus: health?.gatewayStatus ?? "unknown",
+          modbusStatus: health?.modbusStatus ?? "unknown",
+          telemetryFreshness: health?.telemetryFreshness ?? "missing",
+          overallStatus: health?.overallStatus ?? "unknown",
         });
       }
       return { rows, capped: batch.length === 200, isDone: true, continueCursor: null };
@@ -103,9 +114,20 @@ export const inventory = query({
     const rows = [];
     for (const device of page.page) {
       const site = await ctx.db.get(device.siteId);
+      const health = await ctx.db
+        .query("deviceHealthCurrent")
+        .withIndex("by_device", (q) => q.eq("deviceId", device._id))
+        .unique();
+      if (health && health.organizationId !== args.organizationId) {
+        throw new Error("Forbidden");
+      }
       rows.push({
         ...device,
         siteName: site && site.organizationId === args.organizationId ? site.name : null,
+        gatewayStatus: health?.gatewayStatus ?? "unknown",
+        modbusStatus: health?.modbusStatus ?? "unknown",
+        telemetryFreshness: health?.telemetryFreshness ?? "missing",
+        overallStatus: health?.overallStatus ?? "unknown",
       });
     }
     return { rows, capped: false, isDone: page.isDone, continueCursor: page.continueCursor };
@@ -138,11 +160,19 @@ export const detail = query({
     if (poll && poll.organizationId !== device.organizationId) {
       throw new Error("Forbidden");
     }
+    const health = await ctx.db
+      .query("deviceHealthCurrent")
+      .withIndex("by_device", (q) => q.eq("deviceId", device._id))
+      .unique();
+    if (health && health.organizationId !== device.organizationId) {
+      throw new Error("Forbidden");
+    }
     return {
       device,
       siteName: site?.name ?? null,
       generators,
       poll: poll ?? null,
+      health: health ?? null,
     };
   },
 });

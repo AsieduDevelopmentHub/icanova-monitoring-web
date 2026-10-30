@@ -124,7 +124,7 @@ describe("alarm center", () => {
   });
 
   it("does not treat a failed link or a missing RPM as an engine stop", () => {
-    expect(linkView("fail").label).toBe("Offline");
+    expect(linkView("fail").label).toBe("Modbus fail");
     expect(engineView(null, "unavailable").label).toBe("Unreported");
     expect(engineView(0, "measured").label).toBe("Stopped");
   });

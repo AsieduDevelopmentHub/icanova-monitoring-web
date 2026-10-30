@@ -6,6 +6,14 @@ import { id } from "../fleet/access";
 import { demoFrames, demoSamples } from "../telemetry/demoLog";
 import { demoDiagnostics } from "../telemetry/diagnosticsView";
 import { DEMO_GENERATOR_ID, DEMO_SOURCE } from "../telemetry/logModel";
+import {
+  contactAgeLabel,
+  freshnessView,
+  gatewayView,
+  modbusView,
+  overallView,
+} from "../telemetry/deviceHealthView";
+import { StatusMark } from "../ui/StatusMark";
 import { DiagnosticPanel } from "./DiagnosticPanel";
 
 const demoRows = demoDiagnostics(demoFrames, demoSamples);
@@ -73,6 +81,12 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
     );
   }
   const poll = detail.poll;
+  const health = detail.health;
+  const now = Date.now();
+  const gateway = gatewayView(health?.gatewayStatus);
+  const modbus = modbusView(health?.modbusStatus);
+  const fresh = freshnessView(health?.telemetryFreshness);
+  const overall = overallView(health?.overallStatus);
   return (
     <section className="page">
       <header className="page-head">
@@ -85,11 +99,25 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
         Identity {detail.device.identity}. Site {detail.siteName ?? "—"}. Remote register writes and
         start/stop are not enabled on this page.
       </p>
+      <div className="status-row">
+        <StatusMark tone={overall.tone}>{overall.label}</StatusMark>
+        <StatusMark tone={gateway.tone}>Gateway {gateway.label}</StatusMark>
+        <StatusMark tone={modbus.tone}>{modbus.label}</StatusMark>
+        <StatusMark tone={fresh.tone}>{fresh.label}</StatusMark>
+      </div>
+      <p className="meta">
+        Last heartbeat {contactAgeLabel(health?.lastHeartbeatAt, now)}. Last accepted batch{" "}
+        {contactAgeLabel(health?.lastAcceptedBatchAt, now)}. Last telemetry{" "}
+        {contactAgeLabel(health?.lastTelemetryAt, now)}.
+      </p>
       <p>
         {poll
           ? `Last successful poll: ${poll.label}. Source time ${poll.at == null ? "—" : String(poll.at)}.`
           : "No successful poll is stored for this device."}
       </p>
+      <FleetBoundary>
+        <HealthEvents deviceId={deviceId} />
+      </FleetBoundary>
       <h2>Generators</h2>
       {detail.generators.length === 0 ? (
         <p className="empty">No generator is linked to this device.</p>
@@ -106,6 +134,35 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
         <StoredFrames deviceId={deviceId} />
       </FleetBoundary>
     </section>
+  );
+}
+
+function HealthEvents({ deviceId }: { deviceId: string }) {
+  const page = useQuery(api.deviceHealth.listEvents, {
+    deviceId: id<"devices">(deviceId),
+    paginationOpts: { numItems: 20, cursor: null },
+  });
+  if (page === undefined) {
+    return <p className="empty">Loading health history.</p>;
+  }
+  if (page.page.length === 0) {
+    return <p className="meta">No health transitions are stored yet.</p>;
+  }
+  return (
+    <div className="stack">
+      <h2>Health transitions</h2>
+      <ul>
+        {page.page.map((row) => (
+          <li key={row._id}>
+            {new Date(row.at).toISOString()} · {row.reason}
+            {row.gatewayTo ? ` · gateway → ${row.gatewayTo}` : ""}
+            {row.modbusTo ? ` · modbus → ${row.modbusTo}` : ""}
+            {row.freshnessTo ? ` · freshness → ${row.freshnessTo}` : ""}
+            {row.overallTo ? ` · overall → ${row.overallTo}` : ""}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

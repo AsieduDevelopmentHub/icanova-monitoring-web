@@ -102,7 +102,7 @@ function SiteBoard({
     },
     {
       key: "link",
-      header: "Link",
+      header: "Modbus",
       render: (row) => {
         const link = linkView(row.link);
         return <StatusMark tone={link.tone}>{link.label}</StatusMark>;
@@ -114,6 +114,18 @@ function SiteBoard({
       render: (row) => {
         const engine = engineView(row.rpm, row.rpmQuality);
         return <StatusMark tone={engine.tone}>{engine.label}</StatusMark>;
+      },
+    },
+    {
+      key: "freshness",
+      header: "Freshness",
+      render: (row) => {
+        const state = storedFreshness(row.updatedAt, Date.now());
+        return (
+          <StatusMark tone={state.stale ? "warn" : state.state === "fresh" ? "ok" : "offline"}>
+            {state.state === "fresh" ? "Fresh" : state.state === "stale" ? "Stale" : "Missing"}
+          </StatusMark>
+        );
       },
     },
     {
@@ -190,27 +202,45 @@ function SiteBoard({
           note={siteReady ? "Generators with a stored reading" : "Rows with a stored reading in this page"}
         />
         <Metric
-          label="Online links"
-          value={siteReady ? String(summary?.linkOk) : String(scope.online)}
-          note={siteReady ? "Link ok. Not an engine state." : "Link ok in this page"}
+          label="Gateways online"
+          value={siteReady ? String(summary?.gatewayOnline ?? 0) : "—"}
+          note="Heartbeat or accepted ingest within 3 min. Not Modbus."
         />
         <Metric
-          label="Offline links"
-          value={siteReady ? String(summary?.linkFail) : String(scope.offline)}
-          note="Link fail. Not an engine stop"
+          label="Gateways offline"
+          value={siteReady ? String(summary?.gatewayOffline ?? 0) : "—"}
+          note="No gateway contact within 3 min"
         />
         <Metric
-          label="Degraded links"
-          value={siteReady ? String(summary?.linkDegraded) : String(scope.degraded)}
-          note="Link degraded"
+          label="Modbus ok"
+          value={siteReady ? String(summary?.linkOk) : String(scope.modbusOk)}
+          note={siteReady ? "Sample link ok. Not gateway Online." : "Modbus ok in this page"}
         />
         <Metric
-          label="Other links"
-          value={siteReady ? String(summary?.linkOther) : String(scope.unknown)}
-          note="Unknown, missing, or not ok, fail, or degraded"
+          label="Modbus fail"
+          value={siteReady ? String(summary?.linkFail) : String(scope.modbusFail)}
+          note="Sample link fail. Not an engine stop"
         />
-        <Metric label="Fresh" value={String(freshness.fresh)} note={freshness.note} />
-        <Metric label="Stale" value={String(freshness.stale)} note={freshness.note} />
+        <Metric
+          label="Modbus degraded"
+          value={siteReady ? String(summary?.linkDegraded) : String(scope.modbusDegraded)}
+          note="Sample link degraded"
+        />
+        <Metric
+          label="Fresh telemetry"
+          value={siteReady ? String(summary?.telemetryFresh ?? freshness.fresh) : String(freshness.fresh)}
+          note={siteReady ? "Stored health tally" : freshness.note}
+        />
+        <Metric
+          label="Stale telemetry"
+          value={siteReady ? String(summary?.telemetryStale ?? freshness.stale) : String(freshness.stale)}
+          note="Age of stored reading, not Modbus fail"
+        />
+        <Metric
+          label="Overall unhealthy"
+          value={siteReady ? String(summary?.overallUnhealthy ?? 0) : "—"}
+          note="Worst of gateway, Modbus, and freshness"
+        />
       </div>
       <SiteAlarmPanel
         organizationId={organizationId}

@@ -132,10 +132,10 @@ function SiteDetail({
       <p className="meta">{registrationLabel(registered.length, generators.isDone !== false)}</p>
       <p className="meta">
         {summary?.ready
-          ? `Site summary: ${summary.generators === null ? "generators not fully counted" : `${summary.generators} generators`}, ${summary.reporting} reporting, ${summary.linkOk} link ok, ${summary.linkFail} link fail, ${summary.linkDegraded} degraded, ${summary.linkOther} other. Link fail is not an engine stop.`
+          ? `Site summary: ${summary.generators === null ? "generators not fully counted" : `${summary.generators} generators`}, ${summary.reporting} reporting, gateways ${summary.gatewayOnline ?? 0} online / ${summary.gatewayOffline ?? 0} offline, Modbus ${summary.linkOk} ok / ${summary.linkFail} fail / ${summary.linkDegraded} degraded, telemetry fresh ${summary.telemetryFresh ?? 0} / stale ${summary.telemetryStale ?? 0}. Modbus fail is not an engine stop.`
           : "Site summary is stored when a generator is registered or a sample arrives."}{" "}
-        This page of links: {scope.online} online, {scope.offline} offline, {scope.degraded} degraded,{" "}
-        {scope.unknown} unknown. {scope.note}
+        This page of Modbus links: {scope.modbusOk} ok, {scope.modbusFail} fail, {scope.modbusDegraded}{" "}
+        degraded, {scope.unknown} unknown. {scope.note}
       </p>
       <DataTable
         caption={`Registered generators at ${siteName}`}
@@ -164,7 +164,7 @@ function SiteDetail({
           { key: "name", header: "Generator", render: (row) => row.name },
           {
             key: "link",
-            header: "Link",
+            header: "Modbus",
             render: (row) => {
               const link = linkView(row.link);
               return <StatusMark tone={link.tone}>{link.label}</StatusMark>;

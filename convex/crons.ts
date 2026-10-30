@@ -10,6 +10,13 @@ crons.interval(
   {},
 );
 
+crons.interval(
+  "device health sweep",
+  { minutes: 1 },
+  internal.deviceHealth.sweep,
+  {},
+);
+
 export default crons;
 
 // Delivery lease reclaim is scheduled per claim (reclaimIfStale). A global

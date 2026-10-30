@@ -149,8 +149,8 @@ export default defineSchema({
 
   /**
    * One row per site. Link counts change when a sample is stored.
-   * Fresh and stale are not stored here: they change as time passes, and a
-   * correct total would require reading every generator.
+   * Gateway / freshness / overall tallies are maintained from deviceHealth
+   * transitions so dashboards do not scan devices.
    */
   siteSummaries: defineTable({
     organizationId: v.id("organizations"),
@@ -163,9 +163,123 @@ export default defineSchema({
     linkDegraded: v.number(),
     linkOther: v.number(),
     lastTelemetryAt: v.union(v.number(), v.null()),
+    gatewayOnline: v.optional(v.number()),
+    gatewayOffline: v.optional(v.number()),
+    gatewayUnknown: v.optional(v.number()),
+    modbusOk: v.optional(v.number()),
+    modbusDegraded: v.optional(v.number()),
+    modbusFail: v.optional(v.number()),
+    modbusUnknown: v.optional(v.number()),
+    telemetryFresh: v.optional(v.number()),
+    telemetryStale: v.optional(v.number()),
+    telemetryMissing: v.optional(v.number()),
+    overallHealthy: v.optional(v.number()),
+    overallDegraded: v.optional(v.number()),
+    overallUnhealthy: v.optional(v.number()),
+    overallUnknown: v.optional(v.number()),
+    activeCommProblems: v.optional(v.number()),
+    devicesTracked: v.optional(v.number()),
+    lastGatewayContactAt: v.optional(v.union(v.number(), v.null())),
   })
     .index("by_site", ["siteId"])
     .index("by_org", ["organizationId"]),
+
+  /** One row per organization. Incremental tallies from deviceHealth transitions. */
+  orgHealthSummaries: defineTable({
+    organizationId: v.id("organizations"),
+    devicesTracked: v.number(),
+    gatewayOnline: v.number(),
+    gatewayOffline: v.number(),
+    gatewayUnknown: v.number(),
+    modbusOk: v.number(),
+    modbusDegraded: v.number(),
+    modbusFail: v.number(),
+    modbusUnknown: v.number(),
+    telemetryFresh: v.number(),
+    telemetryStale: v.number(),
+    telemetryMissing: v.number(),
+    overallHealthy: v.number(),
+    overallDegraded: v.number(),
+    overallUnhealthy: v.number(),
+    overallUnknown: v.number(),
+    activeCommProblems: v.number(),
+    lastGatewayContactAt: v.union(v.number(), v.null()),
+    lastTelemetryAt: v.union(v.number(), v.null()),
+    updatedAt: v.number(),
+  }).index("by_org", ["organizationId"]),
+
+  /**
+   * One row per device. Gateway contact is heartbeat or accepted batch.
+   * Modbus comes from the latest accepted sample link. Freshness ages out via sweep.
+   */
+  deviceHealthCurrent: defineTable({
+    organizationId: v.id("organizations"),
+    deviceId: v.id("devices"),
+    siteId: v.id("sites"),
+    generatorId: v.union(v.id("generators"), v.null()),
+    lastHeartbeatAt: v.union(v.number(), v.null()),
+    lastAcceptedBatchAt: v.union(v.number(), v.null()),
+    lastGatewayContactAt: v.union(v.number(), v.null()),
+    lastTelemetryAt: v.union(v.number(), v.null()),
+    link: v.union(v.string(), v.null()),
+    gatewayStatus: v.union(
+      v.literal("online"),
+      v.literal("offline"),
+      v.literal("unknown"),
+    ),
+    modbusStatus: v.union(
+      v.literal("ok"),
+      v.literal("degraded"),
+      v.literal("fail"),
+      v.literal("unknown"),
+    ),
+    telemetryFreshness: v.union(
+      v.literal("fresh"),
+      v.literal("stale"),
+      v.literal("missing"),
+    ),
+    overallStatus: v.union(
+      v.literal("healthy"),
+      v.literal("degraded"),
+      v.literal("unhealthy"),
+      v.literal("unknown"),
+    ),
+    gatewayOfflineNotified: v.boolean(),
+    telemetryStaleNotified: v.boolean(),
+    updatedAt: v.number(),
+  })
+    .index("by_device", ["deviceId"])
+    .index("by_org", ["organizationId"])
+    .index("by_site", ["siteId"])
+    .index("by_org_overall", ["organizationId", "overallStatus"])
+    .index("by_org_gateway", ["organizationId", "gatewayStatus"])
+    .index("by_gateway_contact", ["gatewayStatus", "lastGatewayContactAt"])
+    .index("by_freshness_telemetry", ["telemetryFreshness", "lastTelemetryAt"]),
+
+  deviceHealthEvents: defineTable({
+    organizationId: v.id("organizations"),
+    deviceId: v.id("devices"),
+    siteId: v.id("sites"),
+    generatorId: v.union(v.id("generators"), v.null()),
+    at: v.number(),
+    reason: v.union(
+      v.literal("heartbeat"),
+      v.literal("ingest"),
+      v.literal("sweep"),
+      v.literal("reconcile"),
+    ),
+    gatewayFrom: v.optional(v.string()),
+    gatewayTo: v.optional(v.string()),
+    modbusFrom: v.optional(v.string()),
+    modbusTo: v.optional(v.string()),
+    freshnessFrom: v.optional(v.string()),
+    freshnessTo: v.optional(v.string()),
+    overallFrom: v.optional(v.string()),
+    overallTo: v.optional(v.string()),
+  })
+    .index("by_device_at", ["deviceId", "at"])
+    .index("by_org_at", ["organizationId", "at"])
+    .index("by_site_at", ["siteId", "at"]),
 
   alarms: defineTable({
     organizationId: v.id("organizations"),
@@ -336,6 +450,10 @@ export default defineSchema({
       v.literal("alarm.cleared"),
       v.literal("device.registered"),
       v.literal("maintenance.recorded"),
+      v.literal("health.gateway.offline"),
+      v.literal("health.gateway.recovered"),
+      v.literal("health.telemetry.stale"),
+      v.literal("health.telemetry.recovered"),
     ),
     enabled: v.boolean(),
   }).index("by_org_event", ["organizationId", "event"]),

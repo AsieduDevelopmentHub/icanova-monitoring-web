@@ -1,4 +1,5 @@
 import type { StatusTone } from "../ui/StatusMark";
+import { modbusView } from "./deviceHealthView";
 
 export type LiveRow = {
   updatedAt: number | null;
@@ -8,21 +9,18 @@ export type LiveRow = {
   alarmCount: number | null;
 };
 
-export type LinkView = { label: "Online" | "Offline" | "Degraded" | "Unknown"; tone: StatusTone };
+export type LinkView = {
+  label: "Modbus ok" | "Modbus fail" | "Modbus degraded" | "Unknown";
+  tone: StatusTone;
+};
 export type EngineView = { label: "Running" | "Stopped" | "Unreported"; tone: StatusTone };
 
-/** Connectivity is the stored link. A missing document is unknown, not offline. */
+/**
+ * Modbus link from stored telemetry. Not gateway Online/Offline.
+ * Use gatewayView for cloud contact.
+ */
 export function linkView(link: string | null): LinkView {
-  if (link === "ok") {
-    return { label: "Online", tone: "ok" };
-  }
-  if (link === "fail") {
-    return { label: "Offline", tone: "alarm" };
-  }
-  if (link === "degraded") {
-    return { label: "Degraded", tone: "warn" };
-  }
-  return { label: "Unknown", tone: "offline" };
+  return modbusView(link);
 }
 
 /** Operating state comes from a measured RPM. A missing RPM is not stopped. */
@@ -35,29 +33,35 @@ export function engineView(rpm: number | null, quality: string): EngineView {
 
 export function snapshotScope(rows: LiveRow[], capped: boolean) {
   let reporting = 0;
-  let online = 0;
-  let offline = 0;
-  let degraded = 0;
+  let modbusOk = 0;
+  let modbusFail = 0;
+  let modbusDegraded = 0;
   for (const row of rows) {
     if (row.updatedAt !== null) {
       reporting += 1;
     }
     const link = linkView(row.link).label;
-    if (link === "Online") {
-      online += 1;
-    } else if (link === "Offline") {
-      offline += 1;
-    } else if (link === "Degraded") {
-      degraded += 1;
+    if (link === "Modbus ok") {
+      modbusOk += 1;
+    } else if (link === "Modbus fail") {
+      modbusFail += 1;
+    } else if (link === "Modbus degraded") {
+      modbusDegraded += 1;
     }
   }
   return {
     generators: rows.length,
     reporting,
-    online,
-    offline,
-    degraded,
-    unknown: rows.length - online - offline - degraded,
+    modbusOk,
+    modbusFail,
+    modbusDegraded,
+    /** @deprecated Use modbusOk. Kept for older call sites during migration. */
+    online: modbusOk,
+    /** @deprecated Use modbusFail. */
+    offline: modbusFail,
+    /** @deprecated Use modbusDegraded. */
+    degraded: modbusDegraded,
+    unknown: rows.length - modbusOk - modbusFail - modbusDegraded,
     capped,
     note: capped
       ? "First 50 generators on this site. Not an organization total."
