@@ -430,7 +430,7 @@ a {
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .metric .value {
@@ -440,6 +440,7 @@ a {
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
 }
 
 .metric .unit {
@@ -464,6 +465,8 @@ a {
 .table-wrap {
   border: 1px solid var(--line);
   background: var(--bg-elev);
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .chart-frame header,
