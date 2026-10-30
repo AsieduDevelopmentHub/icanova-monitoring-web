@@ -87,6 +87,14 @@ export default defineSchema({
      */
     lifecycle: v.optional(v.union(v.literal("active"), v.literal("inactive"))),
     lifecycleChangedAt: v.optional(v.number()),
+    /**
+     * Optional per-device ingest credential hashes (never plaintext).
+     * Shared INGEST_SECRET remains valid during migration. Never returned in queries.
+     */
+    ingestCredentialHash: v.optional(v.string()),
+    ingestCredentialPreviousHash: v.optional(v.string()),
+    ingestCredentialVersion: v.optional(v.number()),
+    ingestCredentialRotatedAt: v.optional(v.number()),
   })
     .index("by_org_site", ["organizationId", "siteId"])
     .index("by_org_identity", ["organizationId", "identity"])

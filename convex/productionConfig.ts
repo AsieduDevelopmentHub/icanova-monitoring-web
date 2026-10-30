@@ -302,3 +302,40 @@ export function productionProfileReady(env: {
   const issues = [...productionReady(env).issues, ...validateAppUrlEnv(env)];
   return { ok: issues.length === 0, issues };
 }
+
+export type ConfigAssessmentStatus =
+  | "missing"
+  | "placeholder"
+  | "invalid"
+  | "valid_unverified";
+
+/**
+ * Classify configuration quality. `valid_unverified` means structurally OK —
+ * not that login, restore, or hardware were proven.
+ */
+export function configurationAssessment(env: {
+  AUTH_JWT_ISSUER?: string;
+  AUTH_JWKS_URL?: string;
+  AUTH_JWT_AUDIENCE?: string;
+  INGEST_SECRET?: string;
+  EMAIL_ALERTS_ENABLED?: string;
+  SMS_ALERTS_ENABLED?: string;
+  RESEND_API_KEY?: string;
+  RESEND_FROM?: string;
+  ARKESEL_API_KEY?: string;
+  ARKESEL_SENDER?: string;
+  VITE_CONVEX_URL?: string;
+  CONVEX_CLOUD_URL?: string;
+}): { status: ConfigAssessmentStatus; issues: ConfigIssue[] } {
+  const issues = productionProfileReady(env).issues;
+  if (issues.length === 0) {
+    return { status: "valid_unverified", issues };
+  }
+  if (issues.some((i) => i.code.endsWith("_missing"))) {
+    return { status: "missing", issues };
+  }
+  if (issues.some((i) => i.code.includes("placeholder"))) {
+    return { status: "placeholder", issues };
+  }
+  return { status: "invalid", issues };
+}

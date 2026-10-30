@@ -14,6 +14,8 @@ import { GeneratorDetail } from "./pages/GeneratorDetail";
 import { Generators } from "./pages/Generators";
 import { Maintenance } from "./pages/Maintenance";
 import { Notifications } from "./pages/Notifications";
+import { AuthCallback } from "./auth/AuthCallback";
+import { AuthLogin } from "./auth/AuthLogin";
 import { Ops } from "./pages/Ops";
 import { Reports } from "./pages/Reports";
 import { RolesAdmin } from "./pages/RolesAdmin";
@@ -67,6 +69,8 @@ createRoot(document.getElementById("root")!).render(
               <Route path="admin/users" element={<UsersAdmin />} />
               <Route path="admin/roles" element={<RolesAdmin />} />
               <Route path="admin/settings" element={<Settings />} />
+              <Route path="auth/login" element={<AuthLogin />} />
+              <Route path="auth/callback" element={<AuthCallback />} />
               <Route path="*" element={<Unavailable />} />
             </Route>
           </Routes>

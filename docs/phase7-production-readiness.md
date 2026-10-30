@@ -350,6 +350,14 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 
 **Partially complete.** Software gates 7A–7L are implemented and verified on development. Production readiness remains blocked on operator IdP, secrets, staging/production infrastructure, backup restore, and hardware validation.
 
+---
+
+## 13. Phase 8.0 pointer
+
+See `docs/phase8-production-acceptance.md` for staging, OIDC foundations, Playwright, backup restore verification, device credential migration foundations, production environment readiness, and hardware acceptance planning.
+
+**Phase 8.0 does not declare production readiness.**
+
 ### Files added/updated in 7.5
 
 - `docs/frontend-production-readiness.md`

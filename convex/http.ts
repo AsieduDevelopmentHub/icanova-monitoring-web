@@ -2,7 +2,7 @@ import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 import { decodeBatch } from "./ingestDecode";
-import { ingestAuthorized, isIngestHeartbeat } from "./ingestAuth";
+import { extractBearer, ingestAuthorized, isIngestHeartbeat } from "./ingestAuth";
 import type { IngestOpKind } from "./ingestOps";
 import { mapBatchStatus } from "./ingestOps";
 import {
@@ -106,14 +106,8 @@ http.route({
   path: "/ncu/ingest",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
-    const gate = ingestAuthorized(request.headers.get("Authorization"), process.env.INGEST_SECRET);
-    if (gate === "unconfigured") {
-      return Response.json({ error: "Ingest is not configured" }, { status: 503 });
-    }
-    if (gate !== "ok") {
-      await note(ctx, "auth_failed");
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const authHeader = request.headers.get("Authorization");
+    const gate = ingestAuthorized(authHeader, process.env.INGEST_SECRET);
     const declared = request.headers.get("Content-Length");
     if (declared !== null) {
       const length = Number(declared);
@@ -140,6 +134,33 @@ http.route({
     }
     const record = body as Record<string, unknown>;
     const identityHint = extractIdentity(record);
+
+    // Dual-auth: shared INGEST_SECRET OR registered device credential (migration).
+    if (gate !== "ok") {
+      const presented = extractBearer(authHeader);
+      let deviceAuth: { ok: boolean; reason?: string; organizationId?: string } | null = null;
+      if (presented && identityHint) {
+        try {
+          deviceAuth = (await ctx.runMutation(internal.devices.verifyDeviceIngestCredential, {
+            identity: identityHint,
+            presented,
+          })) as { ok: boolean; reason?: string; organizationId?: string };
+        } catch {
+          deviceAuth = null;
+        }
+      }
+      if (!deviceAuth?.ok) {
+        if (deviceAuth?.reason === "inactive") {
+          await note(ctx, "inactive", deviceAuth.organizationId ?? null);
+          return Response.json({ error: "Device inactive", status: "inactive" }, { status: 403 });
+        }
+        if (gate === "unconfigured" && !presented) {
+          return Response.json({ error: "Ingest is not configured" }, { status: 503 });
+        }
+        await note(ctx, "auth_failed");
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    }
     let orgId: string | null = null;
     if (identityHint) {
       try {

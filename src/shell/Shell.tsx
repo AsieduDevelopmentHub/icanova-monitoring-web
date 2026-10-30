@@ -4,6 +4,7 @@ import { NavLink, Outlet, useLocation } from "react-router";
 import { api } from "../../convex/_generated/api";
 import { Drawer } from "../ui/Overlay";
 import { Icon } from "../ui/icons";
+import { logout, oidcConfigured, readOidcConfig } from "../auth/oidc";
 import { setBearerToken } from "../platform/bearer";
 import { useBearerToken } from "../fleet/useBearer";
 import { NAV, NAV_GROUPS, crumbsFor } from "./nav";
@@ -105,9 +106,24 @@ export function Shell() {
             </ol>
           </nav>
           <span className="session">{session}</span>
+          {!token && oidcConfigured() ? (
+            <NavLink to="/auth/login" className="text-btn">
+              Sign in
+            </NavLink>
+          ) : null}
           {token ? (
-            <button type="button" className="text-btn" onClick={() => setBearerToken(null)}>
-              Clear session
+            <button
+              type="button"
+              className="text-btn"
+              onClick={() => {
+                if (oidcConfigured()) {
+                  logout(readOidcConfig());
+                  return;
+                }
+                setBearerToken(null);
+              }}
+            >
+              {oidcConfigured() ? "Sign out" : "Clear session"}
             </button>
           ) : null}
         </header>

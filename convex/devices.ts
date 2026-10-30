@@ -1,15 +1,33 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
 import { assertSameOrg, requireName, requirePermission } from "./auth";
 import { lifecycleLabel } from "./deviceLifecycle";
 export { deviceIsActive, lifecycleLabel } from "./deviceLifecycle";
+import {
+  deviceCredentialMatches,
+  hashIngestCredential,
+} from "./ingestAuth";
 import { MAX_PAGE, boundedPage } from "./limits";
 import { emitDeviceRegistered } from "./notifyEmit";
 import { requireSite } from "./sites";
+
+/** Strip credential hashes from any client-facing device document. */
+export function publicDevice(device: Doc<"devices">) {
+  const {
+    ingestCredentialHash: _h,
+    ingestCredentialPreviousHash: _p,
+    ...safe
+  } = device;
+  return {
+    ...safe,
+    lifecycle: lifecycleLabel(device),
+    hasIngestCredential: Boolean(device.ingestCredentialHash),
+  };
+}
 
 export const list = query({
   args: {
@@ -20,12 +38,16 @@ export const list = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "view.dashboard");
     await requireSite(ctx, args.organizationId, args.siteId);
-    return await ctx.db
+    const page = await ctx.db
       .query("devices")
       .withIndex("by_org_site", (q) =>
         q.eq("organizationId", args.organizationId).eq("siteId", args.siteId),
       )
       .paginate(boundedPage(args.paginationOpts));
+    return {
+      ...page,
+      page: page.page.map((device) => publicDevice(device)),
+    };
   },
 });
 
@@ -139,8 +161,7 @@ export const inventory = query({
           throw new Error("Forbidden");
         }
         rows.push({
-          ...device,
-          lifecycle: lifecycleLabel(device),
+          ...publicDevice(device),
           siteName: site && site.organizationId === args.organizationId ? site.name : null,
           gatewayStatus: health?.gatewayStatus ?? "unknown",
           modbusStatus: health?.modbusStatus ?? "unknown",
@@ -162,8 +183,7 @@ export const inventory = query({
         throw new Error("Forbidden");
       }
       rows.push({
-        ...device,
-        lifecycle: lifecycleLabel(device),
+        ...publicDevice(device),
         siteName: site && site.organizationId === args.organizationId ? site.name : null,
         gatewayStatus: health?.gatewayStatus ?? "unknown",
         modbusStatus: health?.modbusStatus ?? "unknown",
@@ -209,14 +229,112 @@ export const detail = query({
       throw new Error("Forbidden");
     }
     return {
-      device: {
-        ...device,
-        lifecycle: lifecycleLabel(device),
-      },
+      device: publicDevice(device),
       siteName: site?.name ?? null,
       generators,
       poll: poll ?? null,
       health: health ?? null,
+    };
+  },
+});
+
+/**
+ * Set or rotate a per-device ingest credential. Stores only SHA-256 hex.
+ * Shared INGEST_SECRET remains accepted. Never returns the plaintext or hash.
+ */
+export const setIngestCredential = mutation({
+  args: {
+    deviceId: v.id("devices"),
+    plaintext: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const device = await ctx.db.get(args.deviceId);
+    if (!device) {
+      throw new Error("Not found");
+    }
+    await requirePermission(ctx, device.organizationId, "manage.devices");
+    const secret = args.plaintext.trim();
+    if (secret.length < 16) {
+      throw new Error("Credential is too short");
+    }
+    const hash = await hashIngestCredential(secret);
+    const at = Date.now();
+    await ctx.db.patch(device._id, {
+      ingestCredentialPreviousHash: device.ingestCredentialHash,
+      ingestCredentialHash: hash,
+      ingestCredentialVersion: (device.ingestCredentialVersion ?? 0) + 1,
+      ingestCredentialRotatedAt: at,
+    });
+    await writeAudit(ctx, device.organizationId, "device.ingest_credential.rotate", device._id);
+    return {
+      deviceId: device._id,
+      hasIngestCredential: true,
+      version: (device.ingestCredentialVersion ?? 0) + 1,
+    };
+  },
+});
+
+/** Revoke device credentials; shared INGEST_SECRET still works until cutover. */
+export const clearIngestCredential = mutation({
+  args: { deviceId: v.id("devices") },
+  handler: async (ctx, args) => {
+    const device = await ctx.db.get(args.deviceId);
+    if (!device) {
+      throw new Error("Not found");
+    }
+    await requirePermission(ctx, device.organizationId, "manage.devices");
+    await ctx.db.patch(device._id, {
+      ingestCredentialHash: undefined,
+      ingestCredentialPreviousHash: undefined,
+      ingestCredentialRotatedAt: Date.now(),
+    });
+    await writeAudit(ctx, device.organizationId, "device.ingest_credential.revoke", device._id);
+    return { deviceId: device._id, hasIngestCredential: false };
+  },
+});
+
+/**
+ * HTTP dual-auth helper: verify a presented bearer against device credential hashes.
+ * Does not accept inactive devices. Does not log the bearer.
+ */
+export const verifyDeviceIngestCredential = internalMutation({
+  args: {
+    identity: v.string(),
+    presented: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = args.identity.trim().toLowerCase();
+    if (!/^[0-9a-f]{12}$/.test(identity)) {
+      return { ok: false as const, reason: "bad_identity" as const };
+    }
+    const matches = await ctx.db
+      .query("devices")
+      .withIndex("by_identity", (q) => q.eq("identity", identity))
+      .take(2);
+    if (matches.length !== 1) {
+      return { ok: false as const, reason: "unknown" as const };
+    }
+    const device = matches[0]!;
+    if (lifecycleLabel(device) === "inactive") {
+      return { ok: false as const, reason: "inactive" as const, organizationId: device.organizationId };
+    }
+    if (!device.ingestCredentialHash && !device.ingestCredentialPreviousHash) {
+      return { ok: false as const, reason: "no_credential" as const };
+    }
+    const presentedHash = await hashIngestCredential(args.presented);
+    if (
+      !deviceCredentialMatches(
+        presentedHash,
+        device.ingestCredentialHash,
+        device.ingestCredentialPreviousHash,
+      )
+    ) {
+      return { ok: false as const, reason: "mismatch" as const };
+    }
+    return {
+      ok: true as const,
+      organizationId: device.organizationId,
+      deviceId: device._id,
     };
   },
 });

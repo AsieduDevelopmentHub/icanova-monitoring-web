@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   authProviderReady,
+  configurationAssessment,
   isHttpsUrl,
   productionProfileReady,
   productionReady,
@@ -134,5 +135,27 @@ describe("productionConfig", () => {
         VITE_CONVEX_URL: "https://my-prod.convex.cloud",
       }).ok,
     ).toBe(true);
+  });
+
+  it("configurationAssessment distinguishes missing placeholder invalid and valid_unverified", () => {
+    expect(configurationAssessment({}).status).toBe("missing");
+    expect(
+      configurationAssessment({
+        AUTH_JWT_ISSUER: "https://issuer.example",
+        AUTH_JWKS_URL: "https://issuer.example/jwks",
+        AUTH_JWT_AUDIENCE: "dse-gateway",
+        INGEST_SECRET: "a".repeat(32),
+        VITE_CONVEX_URL: "https://my-prod.convex.cloud",
+      }).status,
+    ).toBe("placeholder");
+    expect(
+      configurationAssessment({
+        AUTH_JWT_ISSUER: "https://login.auth0.com/",
+        AUTH_JWKS_URL: "https://login.auth0.com/.well-known/jwks.json",
+        AUTH_JWT_AUDIENCE: "dse-gateway",
+        INGEST_SECRET: "a".repeat(32),
+        VITE_CONVEX_URL: "https://my-prod.convex.cloud",
+      }).status,
+    ).toBe("valid_unverified");
   });
 });

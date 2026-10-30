@@ -11,6 +11,14 @@ Never put Convex secrets in `VITE_` variables. Never commit real values.
 | `VITE_SENTRY_DSN` | Optional | No | build env | Browser error reporting |
 | `VITE_GA_MEASUREMENT_ID` | Optional | No | build env | GA4; skipped in mock mode |
 | `VITE_USE_MOCK` | Dev only | No | mode/`dev:mock` | Explicit mock fleet |
+| `VITE_OIDC_ISSUER` | Optional SPA login | No | build env | Public OIDC issuer (https) |
+| `VITE_OIDC_CLIENT_ID` | Optional SPA login | No | build env | Public SPA client id |
+| `VITE_OIDC_AUDIENCE` | Optional SPA login | No | build env | JWT audience |
+| `VITE_OIDC_REDIRECT_URI` | Optional SPA login | No | build env | `/auth/callback` |
+| `VITE_OIDC_LOGOUT_REDIRECT_URI` | Optional | No | build env | Post-logout URL |
+| `VITE_OIDC_*_ENDPOINT` | Optional | No | build env | Override authorize/token/end-session |
+
+Never put an OIDC client **secret** in `VITE_*`.
 
 ## 2. Convex server (`pnpm exec convex env set`)
 
