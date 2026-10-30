@@ -41,13 +41,22 @@ export function accessMessage(error: unknown): string {
     return "This organization did not grant that permission.";
   }
   if (text.includes("Not found")) {
-    return "No generator is stored under that id.";
+    return "That record was not found.";
   }
   if (text.includes("Invalid transition")) {
-    return "That lifecycle change is not allowed from the current state.";
+    return "That change is not allowed from the current state.";
   }
   if (text.includes("Already registered")) {
     return "That identity is already registered in this organization.";
+  }
+  if (text.includes("Unknown permission")) {
+    return "That permission is not on the allowlist.";
+  }
+  if (text.includes("Attempt limit")) {
+    return "That delivery has already been attempted 3 times.";
+  }
+  if (text.includes("Export is too large")) {
+    return "The export exceeded the size limit.";
   }
   return "The request was refused.";
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
 import { Drawer } from "../ui/Overlay";
 import { Icon } from "../ui/icons";
+import { useBearerToken } from "../fleet/useBearer";
 import { NAV, NAV_GROUPS, crumbsFor } from "./nav";
 
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
@@ -33,6 +34,8 @@ export function Shell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const crumbs = crumbsFor(pathname);
   const here = crumbs[crumbs.length - 1]?.label ?? "DSE Control Center";
+  const token = useBearerToken();
+  const session = token ? "Session token stored" : "Not signed in";
 
   useEffect(() => {
     document.title = `${here} · DSE Control Center`;
@@ -60,6 +63,8 @@ export function Shell() {
             type="button"
             className="icon-btn menu-btn"
             aria-label="Open navigation"
+            aria-expanded={menuOpen}
+            aria-controls="app-navigation"
             onClick={() => setMenuOpen(true)}
           >
             <Icon name="menu" />
@@ -80,7 +85,7 @@ export function Shell() {
               })}
             </ol>
           </nav>
-          <span className="session">Not signed in</span>
+          <span className="session">{session}</span>
         </header>
         <main id="main" className="canvas">
           <Outlet />
@@ -88,7 +93,7 @@ export function Shell() {
       </div>
       <Drawer open={menuOpen} title="Navigation" side="left" onClose={() => setMenuOpen(false)}>
         <NavList onNavigate={() => setMenuOpen(false)} />
-        <p className="session drawer-session">Not signed in</p>
+        <p className="session drawer-session">{session}</p>
       </Drawer>
     </div>
   );

@@ -56,7 +56,7 @@ export function Monitor() {
       <p className="meta">
         {status
           ? `slave ${status.slaveId} · ${status.wifiMode} ${status.wifiIp}` +
-            (status.rssi ? ` · ${status.rssi} dBm` : "") +
+            ` · ${status.rssi} dBm` +
             ` · age ${status.ageMs} ms` +
             (status.lastError ? ` · ${status.lastError}` : "")
           : "Waiting for /api/status…"}

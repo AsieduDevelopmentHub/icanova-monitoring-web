@@ -391,8 +391,8 @@ export function GeneratorDetail() {
 
       {section?.id === "maintenance" ? (
         <p>
-          Engine hours and starts above are the only maintenance figures in the log. There is no
-          work-order or service record to show.
+          Engine hours and starts above are the only maintenance figures in the log. Organization
+          work records are kept separately on <Link to="/maintenance">Maintenance</Link>.
         </p>
       ) : null}
     </section>

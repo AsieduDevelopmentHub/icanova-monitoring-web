@@ -11,6 +11,9 @@ export const PERMISSIONS = [
   "manage.users",
   "manage.roles",
   "configure.notifications",
+  "view.maintenance",
+  "manage.maintenance",
+  "export.reports",
   "view.audit",
 ] as const;
 

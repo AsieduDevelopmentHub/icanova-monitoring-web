@@ -7,6 +7,7 @@ import { api } from "../../convex/_generated/api";
 import { FilterBar, FilterSelect } from "../ui/FilterBar";
 import { StatusMark } from "../ui/StatusMark";
 import { formatReading } from "../telemetry/readings";
+import { storedFreshness } from "../telemetry/freshness";
 import { accessMessage, id, storedReading } from "./access";
 import { FleetBoundary } from "./boundary";
 import { useBearerToken } from "./useBearer";
@@ -275,6 +276,7 @@ function CurrentTable({
           <tr>
             <th>Generator</th>
             <th>Link</th>
+            <th>Stored</th>
             <th>RPM</th>
             <th>Power</th>
             <th></th>
@@ -283,16 +285,21 @@ function CurrentTable({
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={5}>No generators on this site.</td>
+              <td colSpan={6}>No generators on this site.</td>
             </tr>
           ) : (
-            rows.map((row: { generatorId: string; name: string; link: string | null; rpm: number | null; rpmQuality: string; powerKw: number | null; powerQuality: string }) => {
+            rows.map((row: { generatorId: string; name: string; link: string | null; updatedAt: number | null; rpm: number | null; rpmQuality: string; powerKw: number | null; powerQuality: string }) => {
               const rpm = storedReading(row.rpm, row.rpmQuality, "rpm");
               const power = storedReading(row.powerKw, row.powerQuality, "kW");
+              const freshness = storedFreshness(row.updatedAt, Date.now());
               return (
                 <tr key={row.generatorId}>
                   <td>{row.name}</td>
                   <td>{row.link ?? "—"}</td>
+                  <td>
+                    {freshness.stale ? <StatusMark tone="warn">stale</StatusMark> : null}{" "}
+                    {freshness.label}
+                  </td>
                   <td>
                     <StatusMark tone={rpm.quality === "measured" ? "neutral" : "warn"}>
                       {formatReading(rpm)}

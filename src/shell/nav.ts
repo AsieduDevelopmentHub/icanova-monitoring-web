@@ -36,43 +36,12 @@ export const NAV: NavItem[] = [
     unavailable:
       "Organization audit rows exist. This screen does not list them. Alarm actions are listed on the alarm.",
   },
-  {
-    to: "/reports",
-    label: "Reports",
-    icon: "reports",
-    group: "Records",
-    unavailable: "Exports are not connected.",
-  },
-  {
-    to: "/notifications",
-    label: "Notifications",
-    icon: "bell",
-    group: "Records",
-    unavailable:
-      "Delivery policies are not connected. Resend and Arkesel actions exist only as Convex functions.",
-  },
-  {
-    to: "/admin/users",
-    label: "Users",
-    icon: "users",
-    group: "Admin",
-    unavailable: "Sign-in is not connected. No issuer is configured.",
-  },
-  {
-    to: "/admin/roles",
-    label: "Roles",
-    icon: "roles",
-    group: "Admin",
-    unavailable: "Roles are stored in Convex. This screen does not edit them.",
-  },
-  {
-    to: "/admin/settings",
-    label: "Settings",
-    icon: "settings",
-    group: "Admin",
-    unavailable:
-      "Retention and refresh settings are not stored. A browser preference does not change the ESP32 poll interval.",
-  },
+  { to: "/reports", label: "Reports", icon: "reports", group: "Records" },
+  { to: "/maintenance", label: "Maintenance", icon: "maintenance", group: "Records" },
+  { to: "/notifications", label: "Notifications", icon: "bell", group: "Records" },
+  { to: "/admin/users", label: "Users", icon: "users", group: "Admin" },
+  { to: "/admin/roles", label: "Roles", icon: "roles", group: "Admin" },
+  { to: "/admin/settings", label: "Settings", icon: "settings", group: "Admin" },
 ];
 
 export const NAV_GROUPS: NavGroup[] = ["Operate", "Fleet", "Records", "Admin"];

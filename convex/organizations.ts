@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
-import { ensureUser, requireName, requirePermission, userByToken } from "./auth";
+import { ensureUser, requireAnyPermission, requireName, requirePermission, userByToken } from "./auth";
 import { PERMISSIONS, isPermission } from "./permissions";
 import { MAX_PAGE } from "./limits";
 
@@ -80,6 +80,73 @@ export const createRole = mutation({
     });
     await writeAudit(ctx, args.organizationId, "role.create", roleId);
     return roleId;
+  },
+});
+
+export const updateRole = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    roleId: v.id("roles"),
+    name: v.string(),
+    permissions: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "manage.roles");
+    const role = await ctx.db.get(args.roleId);
+    if (!role || role.organizationId !== args.organizationId) {
+      throw new Error("Forbidden");
+    }
+    const name = requireName(args.name, "Role name");
+    if (args.permissions.length < 1 || args.permissions.some((item) => !isPermission(item))) {
+      throw new Error("Unknown permission");
+    }
+    await ctx.db.patch(role._id, { name, permissions: args.permissions });
+    await writeAudit(ctx, args.organizationId, "role.update", role._id);
+    return role._id;
+  },
+});
+
+export const listRoles = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    await requireAnyPermission(ctx, args.organizationId, ["manage.roles", "manage.users"]);
+    const roles = await ctx.db
+      .query("roles")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .take(MAX_PAGE);
+    return roles
+      .filter((role) => role.organizationId === args.organizationId)
+      .map((role) => ({
+        roleId: role._id,
+        name: role.name,
+        permissions: role.permissions.filter(isPermission),
+      }));
+  },
+});
+
+export const roster = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "manage.users");
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_org_user", (q) => q.eq("organizationId", args.organizationId))
+      .take(MAX_PAGE);
+    const rows = [];
+    for (const membership of memberships) {
+      const user = await ctx.db.get(membership.userId);
+      const role = await ctx.db.get(membership.roleId);
+      if (!user || !role || role.organizationId !== args.organizationId) {
+        continue;
+      }
+      rows.push({
+        userId: user._id,
+        name: user.name ?? user.email ?? user._id,
+        roleId: role._id,
+        roleName: role.name,
+      });
+    }
+    return rows;
   },
 });
 

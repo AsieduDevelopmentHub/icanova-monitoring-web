@@ -39,6 +39,16 @@ export const sendEmail = action({
     const apiKey = process.env.RESEND_API_KEY;
     const from = process.env.RESEND_FROM;
     if (!apiKey || !from) {
+      await ctx.runMutation(internal.messages.record, {
+        organizationId: args.organizationId,
+        channel: "email",
+        to: args.to,
+        subject: args.subject,
+        body: args.html,
+        status: "not_configured",
+        attempt: 1,
+        error: "Resend is not configured",
+      });
       throw new Error("Resend is not configured");
     }
     const resend = new Resend(apiKey);
@@ -49,6 +59,16 @@ export const sendEmail = action({
       html: args.html,
     });
     if (result.error) {
+      await ctx.runMutation(internal.messages.record, {
+        organizationId: args.organizationId,
+        channel: "email",
+        to: args.to,
+        subject: args.subject,
+        body: args.html,
+        status: "failed",
+        attempt: 1,
+        error: result.error.message.slice(0, 300),
+      });
       throw new Error(result.error.message);
     }
     await ctx.runMutation(internal.messages.record, {
@@ -59,6 +79,7 @@ export const sendEmail = action({
       body: args.html,
       providerId: result.data?.id,
       status: "sent",
+      attempt: 1,
     });
     return { id: result.data?.id ?? null };
   },
@@ -78,6 +99,15 @@ export const sendSms = action({
     const apiKey = process.env.ARKESEL_API_KEY;
     const sender = process.env.ARKESEL_SENDER;
     if (!apiKey || !sender) {
+      await ctx.runMutation(internal.messages.record, {
+        organizationId: args.organizationId,
+        channel: "sms",
+        to: args.to,
+        body: args.message,
+        status: "not_configured",
+        attempt: 1,
+        error: "Arkesel is not configured",
+      });
       throw new Error("Arkesel is not configured");
     }
     const response = await fetch("https://sms.arkesel.com/api/v2/sms/send", {
@@ -98,7 +128,17 @@ export const sendSms = action({
       data?: unknown;
     };
     if (!response.ok || payload.status === "error") {
-      throw new Error(payload.message ?? `Arkesel SMS failed (${response.status})`);
+      const error = (payload.message ?? `Arkesel SMS failed (${response.status})`).slice(0, 300);
+      await ctx.runMutation(internal.messages.record, {
+        organizationId: args.organizationId,
+        channel: "sms",
+        to: args.to,
+        body: args.message,
+        status: "failed",
+        attempt: 1,
+        error,
+      });
+      throw new Error(error);
     }
     const id = providerId(payload.data);
     await ctx.runMutation(internal.messages.record, {
@@ -108,6 +148,7 @@ export const sendSms = action({
       body: args.message,
       providerId: id,
       status: "sent",
+      attempt: 1,
     });
     return { id: id ?? null };
   },

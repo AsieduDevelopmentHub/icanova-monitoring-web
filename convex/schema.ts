@@ -192,16 +192,58 @@ export default defineSchema({
 
   messages: defineTable({
     organizationId: v.id("organizations"),
-    channel: v.union(v.literal("email"), v.literal("sms")),
+    channel: v.union(v.literal("email"), v.literal("sms"), v.literal("push")),
     to: v.string(),
     subject: v.optional(v.string()),
     body: v.string(),
     providerId: v.optional(v.string()),
     status: v.string(),
+    attempt: v.number(),
+    error: v.optional(v.string()),
+    event: v.optional(v.string()),
     createdAt: v.number(),
   })
-    .index("by_org", ["organizationId"])
+    .index("by_org_created", ["organizationId", "createdAt"])
     .index("by_channel", ["channel"]),
+
+  notificationPolicies: defineTable({
+    organizationId: v.id("organizations"),
+    channel: v.union(v.literal("email"), v.literal("sms"), v.literal("push")),
+    event: v.union(v.literal("alarm.raised"), v.literal("maintenance.recorded")),
+    enabled: v.boolean(),
+  }).index("by_org_event", ["organizationId", "event"]),
+
+  notificationPreferences: defineTable({
+    organizationId: v.id("organizations"),
+    userId: v.id("users"),
+    email: v.union(v.string(), v.null()),
+    phone: v.union(v.string(), v.null()),
+    emailEnabled: v.boolean(),
+    smsEnabled: v.boolean(),
+    pushEnabled: v.boolean(),
+  }).index("by_org_user", ["organizationId", "userId"]),
+
+  maintenanceRecords: defineTable({
+    organizationId: v.id("organizations"),
+    generatorId: v.id("generators"),
+    summary: v.string(),
+    notes: v.string(),
+    performedAt: v.union(v.number(), v.null()),
+    recordedAt: v.number(),
+  })
+    .index("by_org", ["organizationId"])
+    .index("by_generator", ["generatorId"]),
+
+  reports: defineTable({
+    organizationId: v.id("organizations"),
+    requestedBy: v.id("users"),
+    kind: v.string(),
+    format: v.string(),
+    rowCount: v.number(),
+    capped: v.boolean(),
+    content: v.string(),
+    createdAt: v.number(),
+  }).index("by_org", ["organizationId"]),
 
   files: defineTable({
     organizationId: v.id("organizations"),

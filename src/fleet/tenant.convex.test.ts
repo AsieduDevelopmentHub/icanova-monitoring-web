@@ -452,4 +452,197 @@ describe("tenant isolation", () => {
     });
     expect(own.rows.map((row) => row.identity)).toEqual(["gw-a"]);
   });
+
+  test("roles, exports, maintenance, and deliveries enforce permissions", async () => {
+    const { t, asA, asB, asC, orgA, orgC, generatorA } = await seed();
+    const userA = await asA.mutation(api.users.ensure, {});
+    const roles = await asA.query(api.organizations.listRoles, { organizationId: orgA });
+    await expect(
+      asB.mutation(api.organizations.updateRole, {
+        organizationId: orgA,
+        roleId: roles[0].roleId,
+        name: "Viewer",
+        permissions: ["view.dashboard"],
+      }),
+    ).rejects.toThrow(/Forbidden/);
+    await expect(
+      asA.mutation(api.organizations.updateRole, {
+        organizationId: orgA,
+        roleId: roles[0].roleId,
+        name: "Broken",
+        permissions: ["export.reports", "issue.commands"],
+      }),
+    ).rejects.toThrow(/Unknown permission/);
+    await expect(
+      asB.mutation(api.reports.build, { organizationId: orgA, kind: "alarms", format: "csv" }),
+    ).rejects.toThrow(/Forbidden/);
+    await expect(
+      asB.mutation(api.notifications.savePolicy, {
+        organizationId: orgA,
+        channel: "push",
+        event: "alarm.raised",
+        enabled: true,
+      }),
+    ).rejects.toThrow(/Forbidden/);
+    const csv = await asA.mutation(api.reports.build, {
+      organizationId: orgA,
+      kind: "devices",
+      format: "csv",
+    });
+    const pdf = await asA.mutation(api.reports.build, {
+      organizationId: orgA,
+      kind: "alarms",
+      format: "pdf",
+    });
+    const excel = await asA.mutation(api.reports.build, {
+      organizationId: orgA,
+      kind: "deliveries",
+      format: "xlsx",
+    });
+    const ownFile = await asA.query(api.reports.file, { reportId: csv.reportId });
+    expect(ownFile.content).toContain("Gateway A");
+    expect(ownFile.content.startsWith("Name,Identity,Site")).toBe(true);
+    expect(pdf.rowCount).toBe(0);
+    expect(excel.capped).toBe(false);
+    await expect(asC.query(api.reports.file, { reportId: csv.reportId })).rejects.toThrow(/Forbidden/);
+    await expect(
+      asB.mutation(api.maintenance.create, {
+        organizationId: orgA,
+        generatorId: generatorA,
+        summary: "Oil",
+        notes: "",
+        performedAt: null,
+      }),
+    ).rejects.toThrow(/Forbidden/);
+    await asA.mutation(api.maintenance.create, {
+      organizationId: orgA,
+      generatorId: generatorA,
+      summary: "Filter",
+      notes: "logged",
+      performedAt: null,
+    });
+    await expect(
+      asC.query(api.maintenance.list, { organizationId: orgA, paginationOpts: page }),
+    ).rejects.toThrow(/Forbidden/);
+    const listed = await asA.query(api.maintenance.list, {
+      organizationId: orgA,
+      paginationOpts: page,
+    });
+    expect(listed.page.map((row) => row.summary)).toContain("Filter");
+    const clerk = await asA.mutation(api.organizations.createRole, {
+      organizationId: orgA,
+      name: "Clerk",
+      permissions: ["view.dashboard"],
+    });
+    await asA.mutation(api.organizations.updateRole, {
+      organizationId: orgA,
+      roleId: clerk,
+      name: "Clerk",
+      permissions: ["view.dashboard", "view.maintenance"],
+    });
+    await t.run(async (ctx) => {
+      for (let index = 0; index < 201; index += 1) {
+        await ctx.db.insert("maintenanceRecords", {
+          organizationId: orgA,
+          generatorId: generatorA,
+          summary: `Row ${index}`,
+          notes: "",
+          performedAt: null,
+          recordedAt: index,
+        });
+      }
+    });
+    const capped = await asA.mutation(api.reports.build, {
+      organizationId: orgA,
+      kind: "maintenance",
+      format: "csv",
+    });
+    expect(capped.rowCount).toBe(200);
+    expect(capped.capped).toBe(true);
+    await asA.mutation(api.notifications.savePolicy, {
+      organizationId: orgA,
+      channel: "push",
+      event: "alarm.raised",
+      enabled: true,
+    });
+    await asA.mutation(api.notifications.savePreference, {
+      organizationId: orgA,
+      email: null,
+      phone: null,
+      emailEnabled: false,
+      smsEnabled: false,
+      pushEnabled: true,
+    });
+    const ids = await asA.mutation(api.notifications.requestDelivery, {
+      organizationId: orgA,
+      userId: userA,
+      event: "alarm.raised",
+    });
+    expect(ids).toHaveLength(1);
+    let messageId = ids[0];
+    for (let attempt = 2; attempt <= 3; attempt += 1) {
+      messageId = await asA.mutation(api.notifications.retryDelivery, { messageId });
+    }
+    await expect(asA.mutation(api.notifications.retryDelivery, { messageId })).rejects.toThrow(
+      /Attempt limit/,
+    );
+    const deliveries = await asA.query(api.notifications.listDeliveries, {
+      organizationId: orgA,
+      paginationOpts: page,
+    });
+    expect(deliveries.page.every((row) => row.status === "not_configured")).toBe(true);
+    expect(deliveries.page.map((row) => row.error)).toContain("VAPID is not configured");
+    expect(deliveries.page.map((row) => row.attempt).sort()).toEqual([1, 2, 3]);
+    await expect(
+      asC.query(api.notifications.listDeliveries, { organizationId: orgA, paginationOpts: page }),
+    ).rejects.toThrow(/Forbidden/);
+    const audits = await asA.query(api.audits.list, { organizationId: orgA, paginationOpts: page });
+    expect(audits.page.map((row) => row.action)).toEqual(
+      expect.arrayContaining([
+        "report.build",
+        "maintenance.create",
+        "notification.policy",
+        "notification.request",
+        "role.update",
+      ]),
+    );
+    const south = await asC.query(api.audits.list, { organizationId: orgC, paginationOpts: page });
+    expect(south.page.map((row) => row.action)).not.toContain("notification.request");
+  });
+
+  test("direct Resend and Arkesel calls record a missing configuration", async () => {
+    const { asA, asB, orgA } = await seed();
+    await expect(
+      asB.action(api.notify.sendEmail, {
+        organizationId: orgA,
+        to: "ops@example.com",
+        subject: "Alarm",
+        html: "raised",
+      }),
+    ).rejects.toThrow(/Forbidden/);
+    await expect(
+      asA.action(api.notify.sendEmail, {
+        organizationId: orgA,
+        to: "ops@example.com",
+        subject: "Alarm",
+        html: "raised",
+      }),
+    ).rejects.toThrow(/Resend is not configured/);
+    await expect(
+      asA.action(api.notify.sendSms, {
+        organizationId: orgA,
+        to: "+233200000000",
+        message: "raised",
+      }),
+    ).rejects.toThrow(/Arkesel is not configured/);
+    const deliveries = await asA.query(api.notifications.listDeliveries, {
+      organizationId: orgA,
+      paginationOpts: page,
+    });
+    expect(deliveries.page.map((row) => row.error).sort()).toEqual([
+      "Arkesel is not configured",
+      "Resend is not configured",
+    ]);
+    expect(JSON.stringify(deliveries.page)).not.toMatch(/RESEND_API_KEY|ARKESEL_API_KEY/);
+  });
 });

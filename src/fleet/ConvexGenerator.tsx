@@ -4,6 +4,7 @@ import { api } from "../../convex/_generated/api";
 import { Metric } from "../ui/Metric";
 import { StatusMark } from "../ui/StatusMark";
 import { formatReading, machineFlag, machinePose } from "../telemetry/readings";
+import { storedFreshness } from "../telemetry/freshness";
 import { GeneratorScene } from "../viz/GeneratorScene";
 import { storedReading, id } from "./access";
 import { FleetBoundary } from "./boundary";
@@ -61,6 +62,7 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
   );
   const pose = machinePose(rpm);
   const flag = machineFlag(typeof current?.link === "string" ? current.link : null);
+  const freshness = storedFreshness(current?.updatedAt ?? null, Date.now());
 
   return (
     <section className="page">
@@ -75,6 +77,10 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
         page of 15-minute buckets, not the live poll. Engine, electrical, and mains sections remain
         on the demo log. This is not a Modbus session.
       </div>
+      <div className="status-row">
+        {freshness.stale ? <StatusMark tone="warn">stale</StatusMark> : null}
+        <span className="meta">{freshness.label}</span>
+      </div>
       <GeneratorScene pose={pose} flag={flag} />
       <div className="metric-grid">
         <Metric label="RPM" value={formatReading(rpm)} />
@@ -84,7 +90,7 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
         <Metric label="L1 voltage" value={formatReading(voltage)} />
         <Metric
           label="Source time"
-          value={current?.sourceTime == null ? "—" : String(current.sourceTime)}
+          value={current?.sourceTime == null ? "—" : new Date(current.sourceTime).toISOString()}
         />
       </div>
       <p className="meta">
@@ -116,7 +122,9 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
                 const bucketVoltage = storedReading(bucket.voltageL1, bucket.voltageQuality, "V");
                 return (
                   <tr key={bucket._id}>
-                    <td className="num">{bucket.bucketStart}</td>
+                    <td className="num">
+                      {new Date(bucket.bucketStart).toISOString()}
+                    </td>
                     <td>
                       <StatusMark tone={bucketRpm.quality === "measured" ? "neutral" : "warn"}>
                         {formatReading(bucketRpm)}

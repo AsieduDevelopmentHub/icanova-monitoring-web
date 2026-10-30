@@ -7,17 +7,20 @@ const FOCUSABLE =
 function useDismiss(open: boolean, onClose: () => void) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) {
       return;
     }
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeRef.current?.focus();
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab" || !panelRef.current) {
@@ -41,8 +44,11 @@ function useDismiss(open: boolean, onClose: () => void) {
     return () => {
       document.body.style.overflow = previous;
       window.removeEventListener("keydown", onKey);
+      if (previousFocus && document.contains(previousFocus)) {
+        previousFocus.focus();
+      }
     };
-  }, [open, onClose]);
+  }, [open]);
 
   return { panelRef, closeRef };
 }
@@ -70,6 +76,7 @@ export function Drawer({
       <div
         ref={panelRef}
         className={`drawer ${side}`}
+        id="app-navigation"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

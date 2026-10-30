@@ -8,6 +8,7 @@ export type IconName =
   | "gateway"
   | "events"
   | "reports"
+  | "maintenance"
   | "bell"
   | "users"
   | "roles"
@@ -81,6 +82,11 @@ const ICONS: Record<IconName, ReactNode> = {
     <Svg>
       <path d="M6 3h8l4 4v14H6z" />
       <path d="M14 3v4h4M8 13h8M8 17h5" />
+    </Svg>
+  ),
+  maintenance: (
+    <Svg>
+      <path d="M14.5 6.5a4 4 0 0 0-5.3 5.3L4 17l3 3 5.2-5.2a4 4 0 0 0 5.3-5.3l-2.4 2.4-2.1-2.1z" />
     </Svg>
   ),
   bell: (

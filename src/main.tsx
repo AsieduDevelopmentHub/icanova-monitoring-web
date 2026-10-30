@@ -12,7 +12,13 @@ import { GatewayDetail } from "./pages/GatewayDetail";
 import { Gateways } from "./pages/Gateways";
 import { GeneratorDetail } from "./pages/GeneratorDetail";
 import { Generators } from "./pages/Generators";
+import { Maintenance } from "./pages/Maintenance";
+import { Notifications } from "./pages/Notifications";
+import { Reports } from "./pages/Reports";
+import { RolesAdmin } from "./pages/RolesAdmin";
+import { Settings } from "./pages/Settings";
 import { Unavailable } from "./pages/Unavailable";
+import { UsersAdmin } from "./pages/UsersAdmin";
 import { Platform } from "./platform/Platform";
 import { Shell } from "./shell/Shell";
 import "./styles.css";
@@ -49,11 +55,12 @@ createRoot(document.getElementById("root")!).render(
             <Route path="gateways" element={<Gateways />} />
             <Route path="gateways/:id" element={<GatewayDetail />} />
             <Route path="events" element={<Unavailable />} />
-            <Route path="reports" element={<Unavailable />} />
-            <Route path="notifications" element={<Unavailable />} />
-            <Route path="admin/users" element={<Unavailable />} />
-            <Route path="admin/roles" element={<Unavailable />} />
-            <Route path="admin/settings" element={<Unavailable />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="maintenance" element={<Maintenance />} />
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="admin/users" element={<UsersAdmin />} />
+            <Route path="admin/roles" element={<RolesAdmin />} />
+            <Route path="admin/settings" element={<Settings />} />
             <Route path="*" element={<Unavailable />} />
           </Route>
         </Routes>
