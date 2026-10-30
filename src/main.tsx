@@ -14,6 +14,7 @@ import { GeneratorDetail } from "./pages/GeneratorDetail";
 import { Generators } from "./pages/Generators";
 import { Maintenance } from "./pages/Maintenance";
 import { Notifications } from "./pages/Notifications";
+import { Ops } from "./pages/Ops";
 import { Reports } from "./pages/Reports";
 import { RolesAdmin } from "./pages/RolesAdmin";
 import { Settings } from "./pages/Settings";
@@ -60,6 +61,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="reports" element={<Reports />} />
             <Route path="maintenance" element={<Maintenance />} />
             <Route path="notifications" element={<Notifications />} />
+            <Route path="admin/ops" element={<Ops />} />
             <Route path="admin/users" element={<UsersAdmin />} />
             <Route path="admin/roles" element={<RolesAdmin />} />
             <Route path="admin/settings" element={<Settings />} />

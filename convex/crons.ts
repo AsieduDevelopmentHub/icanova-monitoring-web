@@ -24,6 +24,20 @@ crons.interval(
   {},
 );
 
+crons.interval(
+  "prune ingest op windows",
+  { hours: 1 },
+  internal.ingestOps.pruneOld,
+  {},
+);
+
+crons.interval(
+  "prune device health events",
+  { minutes: 15 },
+  internal.deviceHealth.pruneHealthEvents,
+  {},
+);
+
 export default crons;
 
 // Delivery lease reclaim is scheduled per claim (reclaimIfStale). A global

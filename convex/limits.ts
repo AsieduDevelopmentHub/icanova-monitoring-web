@@ -70,6 +70,21 @@ export const INGEST_RATE_STALE_MS = 2 * 60 * 60 * 1000;
 /** Rate-limit rows removed per prune mutation. */
 export const INGEST_RATE_PRUNE_BATCH = 40;
 
+/** Ingest operational counter window (1 hour). */
+export const INGEST_OPS_WINDOW_MS = 60 * 60 * 1000;
+
+/** Keep ingest op windows this long. */
+export const INGEST_OPS_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Device health transition history retention. */
+export const HEALTH_EVENT_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
+
+/** Health events deleted per prune mutation. */
+export const HEALTH_EVENT_PRUNE_BATCH = 40;
+
+/** Ingest op windows deleted per prune mutation. */
+export const INGEST_OPS_PRUNE_BATCH = 40;
+
 export function boundedPage(opts: PaginationOptions): PaginationOptions {
   const requested = Number.isFinite(opts.numItems) ? Math.floor(opts.numItems) : 1;
   return {

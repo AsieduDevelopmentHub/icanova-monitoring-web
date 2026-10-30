@@ -3,6 +3,8 @@ import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 import { decodeBatch } from "./ingestDecode";
 import { ingestAuthorized, isIngestHeartbeat } from "./ingestAuth";
+import type { IngestOpKind } from "./ingestOps";
+import { mapBatchStatus } from "./ingestOps";
 import {
   INGEST_MAX_BODY,
   INGEST_RATE_DEVICE_MAX,
@@ -44,6 +46,17 @@ function extractIdentity(record: Record<string, unknown>): string | null {
     return /^[0-9a-f]{12}$/.test(id) ? id : null;
   }
   return null;
+}
+
+async function note(ctx: any, kind: IngestOpKind, organizationId?: string | null) {
+  try {
+    await ctx.runMutation(internal.ingestOps.record, {
+      kind,
+      organizationId: organizationId ?? null,
+    });
+  } catch {
+    // Metrics must not break ingest.
+  }
 }
 
 http.route({
@@ -98,12 +111,14 @@ http.route({
       return Response.json({ error: "Ingest is not configured" }, { status: 503 });
     }
     if (gate !== "ok") {
+      await note(ctx, "auth_failed");
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
     const declared = request.headers.get("Content-Length");
     if (declared !== null) {
       const length = Number(declared);
       if (!Number.isFinite(length) || length < 2 || length > INGEST_MAX_BODY) {
+        await note(ctx, "oversized");
         return Response.json({ error: "Invalid sample" }, { status: 400 });
       }
     }
@@ -111,17 +126,30 @@ http.route({
     try {
       const raw = await request.text();
       if (raw.length < 2 || raw.length > INGEST_MAX_BODY) {
+        await note(ctx, "oversized");
         return Response.json({ error: "Invalid sample" }, { status: 400 });
       }
       body = JSON.parse(raw) as unknown;
     } catch {
+      await note(ctx, "invalid");
       return Response.json({ error: "Invalid sample" }, { status: 400 });
     }
     if (!body || typeof body !== "object") {
+      await note(ctx, "invalid");
       return Response.json({ error: "Invalid sample" }, { status: 400 });
     }
     const record = body as Record<string, unknown>;
     const identityHint = extractIdentity(record);
+    let orgId: string | null = null;
+    if (identityHint) {
+      try {
+        orgId = (await ctx.runMutation(internal.ingestOps.resolveOrgIdentity, {
+          identity: identityHint,
+        })) as string | null;
+      } catch {
+        orgId = null;
+      }
+    }
     const ipKey = ipKeyFromRequest(request);
     const limit = await ctx.runMutation(internal.ingestRateLimit.check, {
       identity: identityHint,
@@ -131,6 +159,7 @@ http.route({
       windowMs: rateEnv("INGEST_RATE_WINDOW_MS", INGEST_RATE_WINDOW_MS),
     });
     if (!limit.allowed) {
+      await note(ctx, "rate_limited", orgId);
       return new Response(JSON.stringify({ error: "Rate limited", retryAfterSec: limit.retryAfterSec }), {
         status: 429,
         headers: {
@@ -146,7 +175,11 @@ http.route({
         try {
           const result = await ctx.runMutation(internal.deviceHealth.recordHeartbeat, { identity });
           if (result.status === "inactive") {
+            await note(ctx, "inactive", orgId);
             return Response.json({ error: "Device inactive", status: "inactive" }, { status: 403 });
+          }
+          if (result.status === "ok") {
+            await note(ctx, "heartbeat_ok", orgId);
           }
         } catch {
           // Heartbeat probes stay 204 when persistence fails for unknown/transient errors.
@@ -157,6 +190,7 @@ http.route({
     try {
       const batch = decodeBatch(record);
       const result = await ctx.runMutation(internal.ingest.acceptBatch, batch);
+      await note(ctx, mapBatchStatus(result.status), orgId);
       if (result.status === "unknown" || result.status === "no-generator") {
         return Response.json(result, { status: 404 });
       }
@@ -170,8 +204,10 @@ http.route({
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       if (message.includes("Invalid sample")) {
+        await note(ctx, "invalid", orgId);
         return Response.json({ error: "Invalid sample" }, { status: 400 });
       }
+      await note(ctx, "error", orgId);
       return Response.json({ error: "Ingest failed" }, { status: 500 });
     }
   }),

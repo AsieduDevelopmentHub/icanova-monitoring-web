@@ -211,7 +211,7 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 - [x] Production auth setup guide (`docs/production-auth-setup.md`) — **operator must still supply real IdP values**
 - [x] Backup/RPO/RTO documented from Convex product reality (7G) — see `docs/backup-and-disaster-recovery.md` (**restore drill still operator**)
 - [x] Scheduled job inventory + run visibility (7H) — `docs/scheduled-jobs-audit.md`, `jobRunState`
-- [ ] Admin observability UI polish (7I) — API exists; dedicated dashboard deferred
+- [x] Observability / ops overview (7I) — `docs/observability-audit.md`, `/admin/ops`, ingest op windows
 - [ ] Separate Resend/Arkesel production credentials
 - [ ] Confirm gateway does not print uplink bearer/key on serial
 
@@ -311,3 +311,17 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 | Restore drill | **NOT TESTED — OPERATOR ACTION REQUIRED** |
 | Periodic Pro backups enabled | **OPERATOR ACTION REQUIRED** |
 | Production deploy | **Not done** |
+
+---
+
+## 11. Phase 7.4 delivery notes
+
+| Item | Status |
+|---|---|
+| Observability audit | `docs/observability-audit.md` |
+| Retention policy | `docs/observability-retention.md` |
+| Ingest hourly counters | `ingestOpWindows` + HTTP wiring |
+| Ops overview API/UI | `api.ops.overview`, `/admin/ops` |
+| Health event prune (14d) | Cron every 15 min |
+| External APM | Not introduced |
+| Live DSE validation | Not claimed |

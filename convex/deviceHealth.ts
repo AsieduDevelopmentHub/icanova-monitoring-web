@@ -27,7 +27,14 @@ import {
 } from "./deviceHealthLogic";
 import { deviceIsActive } from "./deviceLifecycle";
 import { recordJobRun } from "./jobStatus";
-import { HEALTH_STALE_MS, HEALTH_SWEEP_BATCH, MAX_PAGE, boundedPage } from "./limits";
+import {
+  HEALTH_EVENT_PRUNE_BATCH,
+  HEALTH_EVENT_RETENTION_MS,
+  HEALTH_STALE_MS,
+  HEALTH_SWEEP_BATCH,
+  MAX_PAGE,
+  boundedPage,
+} from "./limits";
 import { emitHealthEvent } from "./notifyEmit";
 
 type HealthReason = "heartbeat" | "ingest" | "sweep" | "reconcile";
@@ -568,6 +575,30 @@ export const sweep = internalMutation({
       durationMs: Date.now() - now,
       status: continued ? "partial" : "ok",
     });
+  },
+});
+
+/** Delete aged health transition rows. Never deletes alarms or audits. */
+export const pruneHealthEvents = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const started = Date.now();
+    const cutoff = started - HEALTH_EVENT_RETENTION_MS;
+    const batch = await ctx.db
+      .query("deviceHealthEvents")
+      .withIndex("by_at", (q) => q.lt("at", cutoff))
+      .take(HEALTH_EVENT_PRUNE_BATCH);
+    for (const row of batch) {
+      await ctx.db.delete(row._id);
+    }
+    await recordJobRun(ctx, {
+      jobName: "deviceHealth.pruneHealthEvents",
+      processed: batch.length,
+      pendingHint: batch.length === HEALTH_EVENT_PRUNE_BATCH ? HEALTH_EVENT_PRUNE_BATCH : 0,
+      durationMs: Date.now() - started,
+      status: batch.length === HEALTH_EVENT_PRUNE_BATCH ? "partial" : "ok",
+    });
+    return { deleted: batch.length };
   },
 });
 

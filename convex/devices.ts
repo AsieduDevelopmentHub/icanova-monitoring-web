@@ -58,6 +58,41 @@ export const create = mutation({
       lifecycle: "active",
       lifecycleChangedAt: Date.now(),
     });
+    const orgSummary = await ctx.db
+      .query("orgHealthSummaries")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .unique();
+    if (orgSummary) {
+      await ctx.db.patch(orgSummary._id, {
+        devicesActive: (orgSummary.devicesActive ?? 0) + 1,
+        updatedAt: Date.now(),
+      });
+    } else {
+      await ctx.db.insert("orgHealthSummaries", {
+        organizationId: args.organizationId,
+        devicesTracked: 0,
+        gatewayOnline: 0,
+        gatewayOffline: 0,
+        gatewayUnknown: 0,
+        modbusOk: 0,
+        modbusDegraded: 0,
+        modbusFail: 0,
+        modbusUnknown: 0,
+        telemetryFresh: 0,
+        telemetryStale: 0,
+        telemetryMissing: 0,
+        overallHealthy: 0,
+        overallDegraded: 0,
+        overallUnhealthy: 0,
+        overallUnknown: 0,
+        activeCommProblems: 0,
+        devicesActive: 1,
+        devicesInactive: 0,
+        lastGatewayContactAt: null,
+        lastTelemetryAt: null,
+        updatedAt: Date.now(),
+      });
+    }
     await writeAudit(ctx, args.organizationId, "device.create", deviceId);
     await emitDeviceRegistered(ctx, {
       organizationId: args.organizationId,
@@ -210,6 +245,27 @@ export const setLifecycle = mutation({
       lifecycle: args.lifecycle,
       lifecycleChangedAt: at,
     });
+    const orgSummary = await ctx.db
+      .query("orgHealthSummaries")
+      .withIndex("by_org", (q) => q.eq("organizationId", device.organizationId))
+      .unique();
+    if (orgSummary) {
+      const active = orgSummary.devicesActive ?? 0;
+      const inactive = orgSummary.devicesInactive ?? 0;
+      if (args.lifecycle === "inactive") {
+        await ctx.db.patch(orgSummary._id, {
+          devicesActive: Math.max(0, active - 1),
+          devicesInactive: inactive + 1,
+          updatedAt: at,
+        });
+      } else {
+        await ctx.db.patch(orgSummary._id, {
+          devicesActive: active + 1,
+          devicesInactive: Math.max(0, inactive - 1),
+          updatedAt: at,
+        });
+      }
+    }
     await writeAudit(
       ctx,
       device.organizationId,

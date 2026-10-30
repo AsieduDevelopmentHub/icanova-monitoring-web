@@ -105,6 +105,33 @@ export default defineSchema({
     .index("by_key", ["key"])
     .index("by_updated", ["updatedAt"]),
 
+  /**
+   * Bounded hourly ingest counters. Not one row per request.
+   * key is "global" or "org:<organizationId>".
+   */
+  ingestOpWindows: defineTable({
+    key: v.string(),
+    windowStart: v.number(),
+    accepted: v.number(),
+    heartbeatOk: v.number(),
+    duplicate: v.number(),
+    unknown: v.number(),
+    noGenerator: v.number(),
+    ambiguous: v.number(),
+    inactive: v.number(),
+    invalid: v.number(),
+    rateLimited: v.number(),
+    authFailed: v.number(),
+    oversized: v.number(),
+    error: v.number(),
+    lastAcceptedAt: v.union(v.number(), v.null()),
+    lastErrorAt: v.union(v.number(), v.null()),
+    lastErrorKind: v.union(v.string(), v.null()),
+    updatedAt: v.number(),
+  })
+    .index("by_key_window", ["key", "windowStart"])
+    .index("by_window", ["windowStart"]),
+
   generators: defineTable({
     organizationId: v.id("organizations"),
     siteId: v.id("sites"),
@@ -222,6 +249,8 @@ export default defineSchema({
     overallUnhealthy: v.number(),
     overallUnknown: v.number(),
     activeCommProblems: v.number(),
+    devicesActive: v.optional(v.number()),
+    devicesInactive: v.optional(v.number()),
     lastGatewayContactAt: v.union(v.number(), v.null()),
     lastTelemetryAt: v.union(v.number(), v.null()),
     updatedAt: v.number(),
@@ -298,7 +327,8 @@ export default defineSchema({
   })
     .index("by_device_at", ["deviceId", "at"])
     .index("by_org_at", ["organizationId", "at"])
-    .index("by_site_at", ["siteId", "at"]),
+    .index("by_site_at", ["siteId", "at"])
+    .index("by_at", ["at"]),
 
   alarms: defineTable({
     organizationId: v.id("organizations"),
