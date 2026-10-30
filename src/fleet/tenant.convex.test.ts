@@ -136,6 +136,24 @@ describe("tenant isolation", () => {
 
     const sites = await asB.query(api.sites.list, { organizationId: orgA, paginationOpts: page });
     expect(sites.page.map((site: { name: string }) => site.name)).toEqual(["Yard"]);
+    const generators = await asA.query(api.generators.list, {
+      organizationId: orgA,
+      siteId: siteA,
+      paginationOpts: page,
+    });
+    expect(generators.page.map((row: { name: string }) => row.name)).toEqual(["Set A"]);
+    await expect(
+      asA.query(api.generators.list, { organizationId: orgC, siteId: siteC, paginationOpts: page }),
+    ).rejects.toThrow(/Forbidden/);
+    await expect(
+      asC.query(api.generators.list, { organizationId: orgA, siteId: siteA, paginationOpts: page }),
+    ).rejects.toThrow(/Forbidden/);
+    await expect(
+      asA.query(api.audits.list, { organizationId: orgC, paginationOpts: page }),
+    ).rejects.toThrow(/Forbidden/);
+    await expect(
+      asB.query(api.audits.list, { organizationId: orgA, paginationOpts: page }),
+    ).rejects.toThrow(/Forbidden/);
     await expect(
       asB.mutation(api.sites.create, { organizationId: orgA, name: "Blocked" }),
     ).rejects.toThrow(/Forbidden/);

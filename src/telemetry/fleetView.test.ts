@@ -3,6 +3,8 @@ import { formatReading } from "./readings";
 import { storedReading } from "../fleet/access";
 import { DEMO_GENERATOR_ID } from "./logModel";
 import { NAV } from "../shell/nav";
+import { sessionView } from "../fleet/session";
+import { authProviderReady } from "../../convex/auth.config";
 import {
   auditActor,
   engineView,
@@ -74,6 +76,22 @@ describe("audit display", () => {
   });
 });
 
+describe("session and auth readiness", () => {
+  test("a stored token with no user record does not open organization data", () => {
+    expect(sessionView(false, undefined)).toBe("signed-out");
+    expect(sessionView(true, undefined)).toBe("loading");
+    expect(sessionView(true, null)).toBe("rejected");
+    expect(sessionView(true, { _id: "user" })).toBe("open");
+    expect(sessionView(false, { _id: "user" })).toBe("signed-out");
+  });
+
+  test("placeholder issuer values do not enable a provider", () => {
+    expect(authProviderReady("disabled", "disabled")).toBe(false);
+    expect(authProviderReady(undefined, "https://issuer.example/jwks")).toBe(false);
+    expect(authProviderReady("https://issuer.example", undefined)).toBe(false);
+    expect(authProviderReady(" https://issuer.example ", " https://issuer.example/jwks ")).toBe(true);
+  });
+});
 describe("routes", () => {
   test("sites and events are no longer placeholders and the demo id remains", () => {
     expect(NAV.find((item) => item.to === "/sites")?.unavailable).toBeUndefined();

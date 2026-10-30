@@ -1,23 +1,8 @@
-import { mockStatus } from "./mockStatus";
 import type { GatewayStatus } from "./types";
 import type { GenCatalog } from "./gencomm";
 
-const useMock = import.meta.env.VITE_USE_MOCK === "1";
-
 export async function fetchStatus(): Promise<GatewayStatus> {
-  if (useMock) {
-    await new Promise((r) => setTimeout(r, 120));
-    return {
-      ...mockStatus,
-      ageMs: Math.floor(Math.random() * 800),
-      uptimeMs: mockStatus.uptimeMs + Date.now() % 100000,
-    };
-  }
-  const res = await fetch("/api/status");
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  return (await res.json()) as GatewayStatus;
+  throw new Error("Readings come from Convex, not the gateway HTTP API.");
 }
 
 export async function fetchCatalog(): Promise<GenCatalog> {
@@ -29,34 +14,18 @@ export async function fetchCatalog(): Promise<GenCatalog> {
 }
 
 export async function readWords(addr: number, qty: number): Promise<number[]> {
-  const res = await fetch(`/api/read?addr=${addr}&qty=${qty}`);
-  const body = (await res.json()) as { result?: string; error?: string; words?: number[] };
-  if (!res.ok || body.result !== "ok" || !body.words) {
-    throw new Error(body.error || body.result || `HTTP ${res.status}`);
-  }
-  return body.words;
+  void addr;
+  void qty;
+  throw new Error("Register reads are not sent to the gateway.");
 }
 
 export async function writeWords(addr: number, words: number[]): Promise<void> {
-  const res = await fetch("/api/write", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ addr, words }),
-  });
-  const body = (await res.json()) as { result?: string; error?: string };
-  if (!res.ok || body.result !== "ok") {
-    throw new Error(body.error || body.result || `HTTP ${res.status}`);
-  }
+  void addr;
+  void words;
+  throw new Error("Register writes are not sent to the gateway.");
 }
 
 export async function sendControl(key: number): Promise<void> {
-  const res = await fetch("/api/control", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ key }),
-  });
-  const body = (await res.json()) as { result?: string; error?: string };
-  if (!res.ok || body.result !== "ok") {
-    throw new Error(body.error || body.result || `HTTP ${res.status}`);
-  }
+  void key;
+  throw new Error("Controller commands are not sent to the gateway.");
 }

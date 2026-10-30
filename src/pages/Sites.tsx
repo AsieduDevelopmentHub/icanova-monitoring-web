@@ -5,6 +5,7 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { api } from "../../convex/_generated/api";
 import { id } from "../fleet/access";
 import { LiveGate } from "../fleet/scope";
+import { FleetBoundary } from "../fleet/boundary";
 import { engineView, linkView, registrationLabel, snapshotScope } from "../telemetry/fleetView";
 import { storedFreshness } from "../telemetry/freshness";
 import { DataTable } from "../ui/DataTable";
@@ -72,11 +73,13 @@ function SiteList({ organizationId }: { organizationId: string }) {
         </p>
       ) : null}
       {selected ? (
-        <SiteDetail
-          organizationId={organizationId}
-          siteId={id<"sites">(selected._id)}
-          siteName={selected.name}
-        />
+        <FleetBoundary key={selected._id}>
+          <SiteDetail
+            organizationId={organizationId}
+            siteId={id<"sites">(selected._id)}
+            siteName={selected.name}
+          />
+        </FleetBoundary>
       ) : null}
     </div>
   );

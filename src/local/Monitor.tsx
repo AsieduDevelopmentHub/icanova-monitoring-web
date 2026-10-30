@@ -1,103 +1,103 @@
-import { useEffect, useState } from "react";
-import { fetchStatus } from "../api";
-import type { GatewayStatus } from "../types";
-import { Metric, formatMeasure } from "../ui/Metric";
-import { StatusMark, statusToneForLink } from "../ui/StatusMark";
+import { useQuery } from "convex/react";
+import type { Id } from "../../convex/_generated/dataModel";
+import { api } from "../../convex/_generated/api";
+import { storedReading } from "../fleet/access";
+import { LiveGate, SiteSelect } from "../fleet/scope";
+import { engineView, linkView } from "../telemetry/fleetView";
+import { storedFreshness } from "../telemetry/freshness";
+import { formatReading } from "../telemetry/readings";
+import { Metric } from "../ui/Metric";
+import { StatusMark } from "../ui/StatusMark";
+
+type LiveRow = {
+  name: string;
+  updatedAt: number | null;
+  link: string | null;
+  alarmCount: number | null;
+  rpm: number | null;
+  rpmQuality: string;
+  batteryV: number | null;
+  batteryQuality: string;
+  frequencyHz: number | null;
+  frequencyQuality: string;
+  powerKw: number | null;
+  powerQuality: string;
+  voltageL1: number | null;
+  voltageQuality: string;
+};
 
 export function Monitor() {
-  const [status, setStatus] = useState<GatewayStatus | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const tick = async () => {
-      try {
-        const next = await fetchStatus();
-        if (!cancelled) {
-          setStatus(next);
-          setError(null);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "fetch failed");
-        }
-      }
-    };
-    tick();
-    const id = window.setInterval(tick, 2000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
-  }, []);
-
-  const stale = (status?.ageMs ?? 0) > 8000;
-  const mode = status?.opMode?.name ?? "—";
-  const engine = status?.engStatus?.name ?? "—";
-  const mock = import.meta.env.VITE_USE_MOCK === "1";
-
   return (
-    <section className={`page${stale ? " stale" : ""}`}>
+    <section className="page">
       <header className="page-head">
-        <h1>{status?.headline ?? (error ? "Offline" : "…")}</h1>
-        <p>
-          {mode} · {engine}
-        </p>
+        <h1>Live readings</h1>
+        <p>Stored telemetry from Convex for one site. This page does not call the gateway.</p>
       </header>
+      <LiveGate>
+        {(org) => (
+          <SiteSelect organizationId={org.organizationId}>
+            {(siteId, siteName) => (
+              <SiteReadings organizationId={org.organizationId} siteId={siteId} siteName={siteName} />
+            )}
+          </SiteSelect>
+        )}
+      </LiveGate>
+    </section>
+  );
+}
+
+function SiteReadings({
+  organizationId,
+  siteId,
+  siteName,
+}: {
+  organizationId: string;
+  siteId: Id<"sites">;
+  siteName: string;
+}) {
+  const data = useQuery(api.telemetry.currentForSite, {
+    organizationId: organizationId as Id<"organizations">,
+    siteId,
+  });
+  if (data === undefined) {
+    return <p className="empty">Loading current readings.</p>;
+  }
+  const rows = (Array.isArray(data.rows) ? data.rows : []) as LiveRow[];
+  return (
+    <div className="stack">
+      <p className="meta">Site {siteName}. Phase B and C, current, and load are not in the stored sample.</p>
+      {rows.length === 0 ? (
+        <p className="empty">No generators are registered on this site.</p>
+      ) : (
+        rows.map((row) => <ReadingRow key={row.name} row={row} />)
+      )}
+    </div>
+  );
+}
+
+function ReadingRow({ row }: { row: LiveRow }) {
+  const link = linkView(row.link);
+  const engine = engineView(row.rpm, row.rpmQuality);
+  const freshness = storedFreshness(row.updatedAt, Date.now());
+  return (
+    <section className="section">
+      <h2>{row.name}</h2>
       <div className="status-row">
-        {status ? (
-          <StatusMark tone={statusToneForLink(status.link)}>
-            {status.link === "ok" ? "link ok" : status.link}
-          </StatusMark>
-        ) : null}
-        {stale ? <StatusMark tone="warn">stale</StatusMark> : null}
-        {mock ? <StatusMark tone="info">mock</StatusMark> : null}
+        <StatusMark tone={link.tone}>{link.label}</StatusMark>
+        <StatusMark tone={engine.tone}>{engine.label}</StatusMark>
+        {freshness.stale ? <StatusMark tone="warn">Stale</StatusMark> : null}
       </div>
       <p className="meta">
-        {status
-          ? `slave ${status.slaveId} · ${status.wifiMode} ${status.wifiIp}` +
-            ` · ${status.rssi} dBm` +
-            ` · age ${status.ageMs} ms` +
-            (status.lastError ? ` · ${status.lastError}` : "")
-          : "Waiting for /api/status…"}
+        {freshness.label}
+        {row.alarmCount === null ? "" : ` · alarm count ${row.alarmCount}`}
       </p>
-      {error ? <p className="err">{error}</p> : null}
-
       <div className="metric-grid">
-        <Metric label="Battery" value={formatMeasure(status?.batteryV, 1)} unit="V" />
-        <Metric label="Engine RPM" value={formatMeasure(status?.engRpm, 0)} />
-        <Metric label="Frequency" value={formatMeasure(status?.genFreq, 1)} unit="Hz" />
-        <Metric label="L1 voltage" value={formatMeasure(status?.genVan, 1)} unit="V" />
-        <Metric label="L2 voltage" value={formatMeasure(status?.genVbn, 1)} unit="V" />
-        <Metric label="L3 voltage" value={formatMeasure(status?.genVcn, 1)} unit="V" />
-        <Metric label="L1 current" value={formatMeasure(status?.genIa, 1)} unit="A" />
-        <Metric label="L2 current" value={formatMeasure(status?.genIb, 1)} unit="A" />
-        <Metric label="L3 current" value={formatMeasure(status?.genIc, 1)} unit="A" />
-        <Metric label="Total power" value={formatMeasure(status?.genPTotKw, 2)} unit="kW" />
-        <Metric label="Load" value={formatMeasure(status?.genPctKw, 1)} unit="%" />
+        <Metric label="Battery" value={formatReading(storedReading(row.batteryV, row.batteryQuality, "V"))} />
+        <Metric label="Engine RPM" value={formatReading(storedReading(row.rpm, row.rpmQuality, "rpm"))} />
+        <Metric label="Frequency" value={formatReading(storedReading(row.frequencyHz, row.frequencyQuality, "Hz"))} />
+        <Metric label="L1 voltage" value={formatReading(storedReading(row.voltageL1, row.voltageQuality, "V"))} />
+        <Metric label="Total power" value={formatReading(storedReading(row.powerKw, row.powerQuality, "kW"))} />
       </div>
-
-      <section className="section">
-        <h2>Active alarms</h2>
-        {!status?.alarms?.length ? (
-          <p className="empty">No active alarms</p>
-        ) : (
-          <ul className="alarms">
-            {status.alarms.map((alarm) => (
-              <li key={`${alarm.addr}-${alarm.slot}`}>
-                <span className="state">{alarm.state}</span> — {alarm.name}{" "}
-                <span className="meta">
-                  @{alarm.addr}[{alarm.slot}]
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-      <p className="footnote">
-        This page polls GET /api/status every 2 s. That request does not change the ESP32
-        Modbus interval.
-      </p>
     </section>
   );
 }

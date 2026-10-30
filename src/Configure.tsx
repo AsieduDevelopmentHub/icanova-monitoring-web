@@ -1,32 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchCatalog, readWords, sendControl, writeWords } from "./api";
-import {
-  formatWord,
-  readSpans,
-  wordsForWrite,
-  type GenCatalog,
-  type GenPage,
-  type GenReg,
-} from "./gencomm";
-
-const mock = import.meta.env.VITE_USE_MOCK === "1";
-
-function applyWords(page: GenPage, addr: number, words: number[]): GenPage {
-  const regs = page.regs.map((reg) => {
-    const start = page.b + reg.o;
-    const next = reg.v ? [...reg.v] : Array.from({ length: reg.w }, () => null);
-    let touched = false;
-    for (let i = 0; i < words.length; i++) {
-      const at = addr + i;
-      if (at >= start && at < start + reg.w) {
-        next[at - start] = words[i];
-        touched = true;
-      }
-    }
-    return touched ? { ...reg, v: next } : reg;
-  });
-  return { ...page, regs };
-}
+import { fetchCatalog } from "./api";
+import { formatWord, type GenCatalog, type GenReg } from "./gencomm";
 
 export function Configure() {
   const [catalog, setCatalog] = useState<GenCatalog | null>(null);
@@ -35,7 +9,6 @@ export function Configure() {
   const [writableOnly, setWritableOnly] = useState(false);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [message, setMessage] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -77,102 +50,20 @@ export function Configure() {
     });
   }, [page, query, writableOnly]);
 
-  function replacePage(next: GenPage) {
-    setCatalog((current) =>
-      current
-        ? {
-            ...current,
-            pages: current.pages.map((item) => (item.p === next.p ? next : item)),
-          }
-        : current,
-    );
-  }
-
   async function readPage() {
-    if (!page) {
-      return;
-    }
-    if (mock) {
-      setMessage("Showing the captured snapshot. Connect the gateway to read the module.");
-      return;
-    }
-    setBusy(true);
-    setMessage("Reading…");
-    try {
-      let next = page;
-      for (const span of readSpans(page)) {
-        const words = await readWords(span.addr, span.qty);
-        next = applyWords(next, span.addr, words);
-      }
-      replacePage(next);
-      setMessage(`Read page ${page.p}.`);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "read failed");
-      setMessage(null);
-    } finally {
-      setBusy(false);
-    }
+    setMessage("Readings come from Convex. This page does not call the gateway.");
   }
 
   async function writeReg(reg: GenReg) {
-    if (!page) {
-      return;
-    }
-    const addr = page.b + reg.o;
-    let words: number[];
-    try {
-      words = wordsForWrite(reg, drafts[addr] ?? "");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "bad value");
-      return;
-    }
-    const prompt = reg.comp
-      ? `Write ${words[0]} and its complement ${words[1]} to ${addr} (${reg.n})? A wrong password locks the module after three tries.`
-      : `Write ${words.join(", ")} to ${addr} (${reg.n})?`;
-    if (!window.confirm(prompt)) {
-      return;
-    }
-    if (mock) {
-      replacePage(applyWords(page, addr, words.slice(0, reg.w)));
-      setMessage("Stored on this page only. The module is not connected.");
-      setError(null);
-      return;
-    }
-    setBusy(true);
-    try {
-      await writeWords(addr, words);
-      replacePage(applyWords(page, addr, words.slice(0, reg.w)));
-      setMessage(`Wrote ${addr}.`);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "write failed");
-    } finally {
-      setBusy(false);
-    }
+    void reg;
+    setMessage("Controller writes are not sent to Convex.");
   }
 
   async function control(key: number, name: string, risk: boolean) {
-    const prompt = risk
-      ? `${name} can start the engine, change mode, or move a breaker. Send it?`
-      : `Send “${name}”?`;
-    if (!window.confirm(prompt)) {
-      return;
-    }
-    if (mock) {
-      setMessage("Not sent. The module is not connected.");
-      return;
-    }
-    setBusy(true);
-    try {
-      await sendControl(key);
-      setMessage(`Sent ${name}.`);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "control failed");
-    } finally {
-      setBusy(false);
-    }
+    void key;
+    void name;
+    void risk;
+    setMessage("Controller commands are not sent to Convex.");
   }
 
   if (error && !catalog) {
@@ -219,7 +110,7 @@ export function Configure() {
           />
           Writable only
         </label>
-        <button type="button" onClick={readPage} disabled={busy}>
+        <button type="button" onClick={readPage}>
           Read page
         </button>
       </div>
@@ -232,14 +123,13 @@ export function Configure() {
             <button
               key={cmd.k}
               type="button"
-              disabled={busy}
               onClick={() => control(cmd.k, cmd.n, !!cmd.risk)}
             >
               {cmd.n}
             </button>
           ))}
       </div>
-      <p className="meta">Stop and off mode stay blocked. Other control commands ask before they are sent.</p>
+      <p className="meta">Controller commands are not sent to Convex. Stop and off mode stay blocked on the gateway.</p>
 
       <div className="table-wrap">
         <table className="cfg">
@@ -293,7 +183,7 @@ export function Configure() {
                             }))
                           }
                         />
-                        <button type="button" disabled={busy} onClick={() => writeReg(reg)}>
+                        <button type="button" onClick={() => writeReg(reg)}>
                           Write
                         </button>
                       </div>

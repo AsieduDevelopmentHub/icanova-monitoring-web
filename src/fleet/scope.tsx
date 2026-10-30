@@ -3,6 +3,8 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { FilterBar, FilterSelect } from "../ui/FilterBar";
+import { setBearerToken } from "../platform/bearer";
+import { sessionView } from "./session";
 import { FleetBoundary } from "./boundary";
 import { id } from "./access";
 import { useBearerToken } from "./useBearer";
@@ -33,10 +35,23 @@ export function LiveGate({ children }: { children: (org: OrgRow) => ReactNode })
 }
 
 function OrgBody({ children }: { children: (org: OrgRow) => ReactNode }) {
+  const me = useQuery(api.users.me, {});
   const orgs = useQuery(api.organizations.mine, {});
   const [picked, setPicked] = useState("");
-  if (orgs === undefined) {
+  const gate = sessionView(true, me === undefined ? undefined : me);
+  if (gate === "loading" || orgs === undefined) {
     return <p className="empty">Loading organizations.</p>;
+  }
+  if (gate === "rejected") {
+    return (
+      <div className="notice" role="note">
+        <strong>Session was not accepted.</strong> Protected organization data is not loaded. The
+        token is missing a user record, or the deployment did not accept it.
+        <button type="button" onClick={() => setBearerToken(null)}>
+          Clear session
+        </button>
+      </div>
+    );
   }
   if (!Array.isArray(orgs) || orgs.length === 0) {
     return <p className="empty">This account has no organization membership.</p>;

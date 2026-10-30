@@ -6,6 +6,24 @@ import { ingestAuthorized } from "./ingestAuth";
 const http = httpRouter();
 
 http.route({
+  path: "/.well-known/jwks.json",
+  method: "GET",
+  handler: httpAction(async () => {
+    const body = process.env.AUTH_JWT_JWKS?.trim() ?? "";
+    if (!body.startsWith("{")) {
+      return Response.json({ error: "JWKS is not configured" }, { status: 503 });
+    }
+    return new Response(body, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, max-age=300",
+      },
+    });
+  }),
+});
+
+http.route({
   path: "/me",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
@@ -13,7 +31,12 @@ http.route({
     if (!header.startsWith("Bearer ")) {
       return Response.json({ error: "Missing bearer token" }, { status: 401 });
     }
-    const identity = await ctx.auth.getUserIdentity();
+    let identity = null;
+    try {
+      identity = await ctx.auth.getUserIdentity();
+    } catch {
+      return Response.json({ error: "Invalid bearer token" }, { status: 401 });
+    }
     if (!identity) {
       return Response.json({ error: "Invalid bearer token" }, { status: 401 });
     }
@@ -57,6 +80,9 @@ http.route({
       return Response.json({ error: "Invalid sample" }, { status: 400 });
     }
     const record = body as Record<string, unknown>;
+    if (record.kind === "heartbeat") {
+      return new Response(null, { status: 204 });
+    }
     try {
       const result = await ctx.runMutation(internal.ingest.acceptBatch, {
         identity: record.identity,

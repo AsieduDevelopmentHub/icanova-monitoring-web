@@ -6,4 +6,5 @@ package-lock.json
 .env.local
 .env.*.local
 .convex
+.jwt/
 gpt.md

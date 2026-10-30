@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
 import { Drawer } from "../ui/Overlay";
 import { Icon } from "../ui/icons";
+import { setBearerToken } from "../platform/bearer";
 import { useBearerToken } from "../fleet/useBearer";
 import { NAV, NAV_GROUPS, crumbsFor } from "./nav";
 
@@ -86,6 +87,11 @@ export function Shell() {
             </ol>
           </nav>
           <span className="session">{session}</span>
+          {token ? (
+            <button type="button" className="text-btn" onClick={() => setBearerToken(null)}>
+              Clear session
+            </button>
+          ) : null}
         </header>
         <main id="main" className="canvas">
           <Outlet />

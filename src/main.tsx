@@ -30,7 +30,7 @@ function ConfigurePage() {
     <div className="page">
       <header className="page-head">
         <h1>Configure</h1>
-        <p>GenComm pages on the gateway this dev server proxies.</p>
+        <p>GenComm catalog. Register reads and controller commands are not sent to Convex.</p>
       </header>
       <Configure />
     </div>

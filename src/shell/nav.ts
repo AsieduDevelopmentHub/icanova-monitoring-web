@@ -16,7 +16,7 @@ export type NavItem = {
 
 export const NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: "dashboard", group: "Operate", end: true },
-  { to: "/local", label: "Local gateway", icon: "local", group: "Operate", end: true },
+  { to: "/local", label: "Live readings", icon: "local", group: "Operate", end: true },
   { to: "/local/configure", label: "Configure", icon: "configure", group: "Operate" },
   { to: "/alarms", label: "Alarms", icon: "alarm", group: "Operate" },
   { to: "/sites", label: "Sites", icon: "sites", group: "Fleet" },

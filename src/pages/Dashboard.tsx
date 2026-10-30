@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import type { Id } from "../../convex/_generated/dataModel";
 import { api } from "../../convex/_generated/api";
 import { LiveGate, SiteSelect } from "../fleet/scope";
+import { FleetBoundary } from "../fleet/boundary";
 import { storedReading } from "../fleet/access";
 import { DEMO_GENERATOR_ID } from "../telemetry/logModel";
 import { engineView, linkView, snapshotScope, type LiveRow } from "../telemetry/fleetView";
@@ -32,7 +33,14 @@ export function Dashboard() {
         {(org) => (
           <SiteSelect organizationId={org.organizationId}>
             {(siteId, siteName, moreSites) => (
-              <SiteBoard organizationId={org.organizationId} siteId={siteId} siteName={siteName} moreSites={moreSites} />
+              <FleetBoundary key={siteId}>
+                <SiteBoard
+                  organizationId={org.organizationId}
+                  siteId={siteId}
+                  siteName={siteName}
+                  moreSites={moreSites}
+                />
+              </FleetBoundary>
             )}
           </SiteSelect>
         )}
@@ -151,7 +159,7 @@ function SiteBoard({
       ) : scope.reporting === 0 ? (
         <div className="notice" role="note">
           <strong>No live telemetry.</strong> Generators are registered, and none has a stored reading.
-          Check the collector and that the gateway identity matches the registered device.
+          Check that the gateway identity matches the registered device.
         </div>
       ) : null}
       <div className="metric-grid">
