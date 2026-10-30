@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { FleetBoundary } from "../fleet/boundary";
 import { id } from "../fleet/access";
@@ -73,6 +73,7 @@ function DemoGateway() {
 
 function StoredGateway({ deviceId }: { deviceId: string }) {
   const detail = useQuery(api.devices.detail, { deviceId: id<"devices">(deviceId) });
+  const setLifecycle = useMutation(api.devices.setLifecycle);
   if (detail === undefined) {
     return (
       <section className="page">
@@ -87,6 +88,7 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
   const modbus = modbusView(health?.modbusStatus);
   const fresh = freshnessView(health?.telemetryFreshness);
   const overall = overallView(health?.overallStatus);
+  const active = detail.device.lifecycle !== "inactive";
   return (
     <section className="page">
       <header className="page-head">
@@ -96,10 +98,12 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
         </p>
       </header>
       <p className="meta">
-        Identity {detail.device.identity}. Site {detail.siteName ?? "—"}. Remote register writes and
-        start/stop are not enabled on this page.
+        Identity {detail.device.identity}. Site {detail.siteName ?? "—"}. Lifecycle{" "}
+        {active ? "active" : "inactive"}. Remote register writes and start/stop are not enabled on
+        this page.
       </p>
       <div className="status-row">
+        <StatusMark tone={active ? "ok" : "alarm"}>{active ? "Active" : "Inactive"}</StatusMark>
         <StatusMark tone={overall.tone}>{overall.label}</StatusMark>
         <StatusMark tone={gateway.tone}>Gateway {gateway.label}</StatusMark>
         <StatusMark tone={modbus.tone}>{modbus.label}</StatusMark>
@@ -109,6 +113,22 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
         Last heartbeat {contactAgeLabel(health?.lastHeartbeatAt, now)}. Last accepted batch{" "}
         {contactAgeLabel(health?.lastAcceptedBatchAt, now)}. Last telemetry{" "}
         {contactAgeLabel(health?.lastTelemetryAt, now)}.
+      </p>
+      <p>
+        <button
+          type="button"
+          className="text-btn"
+          onClick={() =>
+            void setLifecycle({
+              deviceId: id<"devices">(deviceId),
+              lifecycle: active ? "inactive" : "active",
+            })
+          }
+        >
+          {active ? "Deactivate device" : "Reactivate device"}
+        </button>
+        {" · "}
+        Deactivation stops ingest and heartbeat writes. Historical telemetry is kept.
       </p>
       <p>
         {poll

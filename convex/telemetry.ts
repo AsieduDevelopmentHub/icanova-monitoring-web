@@ -7,6 +7,7 @@ import { internal } from "./_generated/api";
 import { BUCKET_MS, BUCKET_RETENTION_MS, CHART_POINTS, MAX_PAGE, PRUNE_BATCH, PRUNE_ROUNDS, SERIES_READ, boundedPage } from "./limits";
 import { METRIC_KEYS } from "./metrics";
 import { downsample, foldMetric, type MetricFold, type SeriesPoint } from "./rollup";
+import { recordJobRun } from "./jobStatus";
 import { noteSample } from "./siteSummary";
 
 const quality = v.union(
@@ -555,7 +556,8 @@ export const siteSummary = query({
 export const pruneBuckets = internalMutation({
   args: { round: v.optional(v.number()) },
   handler: async (ctx, args) => {
-    const cutoff = Date.now() - BUCKET_RETENTION_MS;
+    const started = Date.now();
+    const cutoff = started - BUCKET_RETENTION_MS;
     const old = await ctx.db
       .query("telemetryBuckets")
       .withIndex("by_bucket", (q) => q.lt("bucketStart", cutoff))
@@ -575,6 +577,13 @@ export const pruneBuckets = internalMutation({
     } else {
       await ctx.db.insert("retentionState", progress);
     }
+    await recordJobRun(ctx, {
+      jobName: "telemetry.pruneBuckets",
+      processed: old.length,
+      pendingHint: backlog ? PRUNE_BATCH : 0,
+      durationMs: Date.now() - started,
+      status: backlog ? "partial" : "ok",
+    });
     return old.length;
   },
 });

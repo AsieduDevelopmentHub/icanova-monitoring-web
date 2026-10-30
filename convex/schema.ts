@@ -81,10 +81,29 @@ export default defineSchema({
     siteId: v.id("sites"),
     name: v.string(),
     identity: v.string(),
+    /**
+     * Missing or "active" accepts ingest. "inactive" rejects before telemetry/health writes.
+     * Optional for migration-compatible handling of existing rows.
+     */
+    lifecycle: v.optional(v.union(v.literal("active"), v.literal("inactive"))),
+    lifecycleChangedAt: v.optional(v.number()),
   })
     .index("by_org_site", ["organizationId", "siteId"])
     .index("by_org_identity", ["organizationId", "identity"])
     .index("by_identity", ["identity"]),
+
+  /**
+   * Bounded per-key ingest counters. One row per device identity or IP key.
+   * Windows reset automatically; stale rows are pruned in small batches.
+   */
+  ingestRateWindows: defineTable({
+    key: v.string(),
+    windowStart: v.number(),
+    count: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_key", ["key"])
+    .index("by_updated", ["updatedAt"]),
 
   generators: defineTable({
     organizationId: v.id("organizations"),
@@ -532,6 +551,51 @@ export default defineSchema({
     backlog: v.boolean(),
     updatedAt: v.number(),
   }),
+
+  /**
+   * One row per scheduled/internal job name. Operational visibility only.
+   * Never store secrets, tokens, or provider payloads here.
+   */
+  jobRunState: defineTable({
+    jobName: v.string(),
+    lastAttemptAt: v.number(),
+    lastSuccessAt: v.union(v.number(), v.null()),
+    lastErrorAt: v.union(v.number(), v.null()),
+    lastError: v.union(v.string(), v.null()),
+    processed: v.number(),
+    failed: v.number(),
+    pendingHint: v.union(v.number(), v.null()),
+    durationMs: v.union(v.number(), v.null()),
+    status: v.union(
+      v.literal("ok"),
+      v.literal("partial"),
+      v.literal("failed"),
+      v.literal("running"),
+    ),
+    updatedAt: v.number(),
+  }).index("by_job", ["jobName"]),
+
+  /**
+   * Bounded, resumable backfill progress. Migrations never auto-delete data.
+   * dryRun batches must not mutate business tables.
+   */
+  migrationState: defineTable({
+    name: v.string(),
+    cursor: v.union(v.string(), v.null()),
+    processed: v.number(),
+    updated: v.number(),
+    skipped: v.number(),
+    errors: v.number(),
+    dryRun: v.boolean(),
+    status: v.union(
+      v.literal("idle"),
+      v.literal("running"),
+      v.literal("completed"),
+      v.literal("failed"),
+    ),
+    lastError: v.union(v.string(), v.null()),
+    updatedAt: v.number(),
+  }).index("by_name", ["name"]),
 
   files: defineTable({
     organizationId: v.id("organizations"),

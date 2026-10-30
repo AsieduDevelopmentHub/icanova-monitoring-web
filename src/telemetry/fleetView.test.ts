@@ -88,9 +88,15 @@ describe("session and auth readiness", () => {
 
   test("placeholder issuer values do not enable a provider", () => {
     expect(authProviderReady("disabled", "disabled")).toBe(false);
-    expect(authProviderReady(undefined, "https://issuer.example/jwks")).toBe(false);
-    expect(authProviderReady("https://issuer.example", undefined)).toBe(false);
-    expect(authProviderReady(" https://issuer.example ", " https://issuer.example/jwks ")).toBe(true);
+    expect(authProviderReady(undefined, "https://login.auth0.com/.well-known/jwks.json")).toBe(false);
+    expect(authProviderReady("https://login.auth0.com/", undefined)).toBe(false);
+    expect(authProviderReady("https://issuer.example", "https://issuer.example/jwks")).toBe(false);
+    expect(
+      authProviderReady(
+        " https://login.auth0.com/ ",
+        " https://login.auth0.com/.well-known/jwks.json ",
+      ),
+    ).toBe(true);
   });
 });
 describe("routes", () => {

@@ -46,6 +46,30 @@ export const HEALTH_STALE_MS = 3 * 60 * 1000;
 /** Devices marked offline or stale per sweep mutation. */
 export const HEALTH_SWEEP_BATCH = 40;
 
+/** Maximum accepted JSON body for /ncu/ingest (bytes). */
+export const INGEST_MAX_BODY = 8192;
+
+/** Maximum samples in one accepted batch (matches firmware/decoder). */
+export const INGEST_MAX_SAMPLES = 8;
+
+/** Sliding window for ingest rate limits. */
+export const INGEST_RATE_WINDOW_MS = 60_000;
+
+/**
+ * Max authenticated ingest requests per device identity per window.
+ * Normal duty (~2–4/min) plus short recovery bursts after outages.
+ */
+export const INGEST_RATE_DEVICE_MAX = 60;
+
+/** Max ingest requests per source IP per window (collector fan-in). */
+export const INGEST_RATE_IP_MAX = 600;
+
+/** Stale rate-limit rows eligible for prune. */
+export const INGEST_RATE_STALE_MS = 2 * 60 * 60 * 1000;
+
+/** Rate-limit rows removed per prune mutation. */
+export const INGEST_RATE_PRUNE_BATCH = 40;
+
 export function boundedPage(opts: PaginationOptions): PaginationOptions {
   const requested = Number.isFinite(opts.numItems) ? Math.floor(opts.numItems) : 1;
   return {

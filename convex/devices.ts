@@ -5,6 +5,8 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
 import { assertSameOrg, requireName, requirePermission } from "./auth";
+import { lifecycleLabel } from "./deviceLifecycle";
+export { deviceIsActive, lifecycleLabel } from "./deviceLifecycle";
 import { MAX_PAGE, boundedPage } from "./limits";
 import { emitDeviceRegistered } from "./notifyEmit";
 import { requireSite } from "./sites";
@@ -53,6 +55,8 @@ export const create = mutation({
       siteId: args.siteId,
       name,
       identity,
+      lifecycle: "active",
+      lifecycleChangedAt: Date.now(),
     });
     await writeAudit(ctx, args.organizationId, "device.create", deviceId);
     await emitDeviceRegistered(ctx, {
@@ -101,6 +105,7 @@ export const inventory = query({
         }
         rows.push({
           ...device,
+          lifecycle: lifecycleLabel(device),
           siteName: site && site.organizationId === args.organizationId ? site.name : null,
           gatewayStatus: health?.gatewayStatus ?? "unknown",
           modbusStatus: health?.modbusStatus ?? "unknown",
@@ -123,6 +128,7 @@ export const inventory = query({
       }
       rows.push({
         ...device,
+        lifecycle: lifecycleLabel(device),
         siteName: site && site.organizationId === args.organizationId ? site.name : null,
         gatewayStatus: health?.gatewayStatus ?? "unknown",
         modbusStatus: health?.modbusStatus ?? "unknown",
@@ -168,12 +174,49 @@ export const detail = query({
       throw new Error("Forbidden");
     }
     return {
-      device,
+      device: {
+        ...device,
+        lifecycle: lifecycleLabel(device),
+      },
       siteName: site?.name ?? null,
       generators,
       poll: poll ?? null,
       health: health ?? null,
     };
+  },
+});
+
+/**
+ * Activate or deactivate a device. Idempotent. Does not delete history.
+ * Deactivated devices are rejected by ingest and heartbeat before writes.
+ */
+export const setLifecycle = mutation({
+  args: {
+    deviceId: v.id("devices"),
+    lifecycle: v.union(v.literal("active"), v.literal("inactive")),
+  },
+  handler: async (ctx, args) => {
+    const device = await ctx.db.get(args.deviceId);
+    if (!device) {
+      throw new Error("Not found");
+    }
+    await requirePermission(ctx, device.organizationId, "manage.devices");
+    const current = lifecycleLabel(device);
+    if (current === args.lifecycle) {
+      return { deviceId: device._id, lifecycle: current, changed: false as const };
+    }
+    const at = Date.now();
+    await ctx.db.patch(device._id, {
+      lifecycle: args.lifecycle,
+      lifecycleChangedAt: at,
+    });
+    await writeAudit(
+      ctx,
+      device.organizationId,
+      args.lifecycle === "inactive" ? "device.deactivate" : "device.activate",
+      device._id,
+    );
+    return { deviceId: device._id, lifecycle: args.lifecycle, changed: true as const };
   },
 });
 

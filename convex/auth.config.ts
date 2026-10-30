@@ -1,4 +1,5 @@
 import type { AuthConfig } from "convex/server";
+import { authProviderReady as ready } from "./productionConfig";
 
 function configured(value: string | undefined) {
   const text = value?.trim() ?? "";
@@ -8,9 +9,9 @@ function configured(value: string | undefined) {
   return text;
 }
 
-/** Both values must be real. The sentinel "disabled" leaves providers empty. */
+/** Both values must be real https endpoints. The sentinel "disabled" leaves providers empty. */
 export function authProviderReady(issuer: string | undefined, jwks: string | undefined) {
-  return Boolean(configured(issuer) && configured(jwks));
+  return ready(issuer, jwks);
 }
 
 const issuer = configured(process.env.AUTH_JWT_ISSUER);
@@ -19,7 +20,8 @@ const applicationID = configured(process.env.AUTH_JWT_AUDIENCE) ?? "dse-gateway"
 
 const providers: AuthConfig["providers"] = [];
 
-if (issuer && jwks) {
+// Production must set real AUTH_JWT_ISSUER + AUTH_JWKS_URL. Do not invent them.
+if (issuer && jwks && ready(issuer, jwks)) {
   providers.push({
     type: "customJwt",
     applicationID,

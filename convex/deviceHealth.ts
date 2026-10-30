@@ -25,6 +25,8 @@ import {
   type OverallStatus,
   type TelemetryFreshness,
 } from "./deviceHealthLogic";
+import { deviceIsActive } from "./deviceLifecycle";
+import { recordJobRun } from "./jobStatus";
 import { HEALTH_STALE_MS, HEALTH_SWEEP_BATCH, MAX_PAGE, boundedPage } from "./limits";
 import { emitHealthEvent } from "./notifyEmit";
 
@@ -445,6 +447,9 @@ export const recordHeartbeat = internalMutation({
       return { status: "ambiguous" as const };
     }
     const device = matches[0];
+    if (!deviceIsActive(device)) {
+      return { status: "inactive" as const };
+    }
     const generators = await ctx.db
       .query("generators")
       .withIndex("by_device", (q) => q.eq("deviceId", device._id))
@@ -498,6 +503,7 @@ export const sweep = internalMutation({
     const now = Date.now();
     const cutoff = now - HEALTH_STALE_MS;
     let continued = false;
+    let processed = 0;
 
     const online = await ctx.db
       .query("deviceHealthCurrent")
@@ -518,6 +524,7 @@ export const sweep = internalMutation({
         reason: "sweep",
         forceGatewayOffline: true,
       });
+      processed += 1;
     }
     if (online.length === HEALTH_SWEEP_BATCH) {
       continued = true;
@@ -542,6 +549,7 @@ export const sweep = internalMutation({
         reason: "sweep",
         forceTelemetryStale: true,
       });
+      processed += 1;
     }
     if (fresh.length === HEALTH_SWEEP_BATCH) {
       continued = true;
@@ -553,6 +561,13 @@ export const sweep = internalMutation({
         cursorFresh: args.cursorFresh ?? null,
       });
     }
+    await recordJobRun(ctx, {
+      jobName: "deviceHealth.sweep",
+      processed,
+      pendingHint: continued ? HEALTH_SWEEP_BATCH : 0,
+      durationMs: Date.now() - now,
+      status: continued ? "partial" : "ok",
+    });
   },
 });
 

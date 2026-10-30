@@ -3,8 +3,48 @@ import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 import { decodeBatch } from "./ingestDecode";
 import { ingestAuthorized, isIngestHeartbeat } from "./ingestAuth";
+import {
+  INGEST_MAX_BODY,
+  INGEST_RATE_DEVICE_MAX,
+  INGEST_RATE_IP_MAX,
+  INGEST_RATE_WINDOW_MS,
+} from "./limits";
 
 const http = httpRouter();
+
+function rateEnv(name: string, fallback: number): number {
+  const raw = process.env[name]?.trim();
+  if (!raw) {
+    return fallback;
+  }
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : fallback;
+}
+
+/** Hash IP to a short key so raw addresses are not stored as free text longer than needed. */
+function ipKeyFromRequest(request: Request): string | null {
+  const forwarded = request.headers.get("x-forwarded-for") ?? request.headers.get("cf-connecting-ip");
+  if (!forwarded) {
+    return null;
+  }
+  const first = forwarded.split(",")[0]?.trim() ?? "";
+  if (!first || first.length > 64) {
+    return null;
+  }
+  let hash = 0;
+  for (let i = 0; i < first.length; i += 1) {
+    hash = (hash * 31 + first.charCodeAt(i)) >>> 0;
+  }
+  return hash.toString(16);
+}
+
+function extractIdentity(record: Record<string, unknown>): string | null {
+  if (typeof record.identity === "string") {
+    const id = record.identity.trim().toLowerCase();
+    return /^[0-9a-f]{12}$/.test(id) ? id : null;
+  }
+  return null;
+}
 
 http.route({
   path: "/.well-known/jwks.json",
@@ -63,14 +103,14 @@ http.route({
     const declared = request.headers.get("Content-Length");
     if (declared !== null) {
       const length = Number(declared);
-      if (!Number.isFinite(length) || length < 2 || length > 8192) {
+      if (!Number.isFinite(length) || length < 2 || length > INGEST_MAX_BODY) {
         return Response.json({ error: "Invalid sample" }, { status: 400 });
       }
     }
     let body: unknown;
     try {
       const raw = await request.text();
-      if (raw.length < 2 || raw.length > 8192) {
+      if (raw.length < 2 || raw.length > INGEST_MAX_BODY) {
         return Response.json({ error: "Invalid sample" }, { status: 400 });
       }
       body = JSON.parse(raw) as unknown;
@@ -81,13 +121,35 @@ http.route({
       return Response.json({ error: "Invalid sample" }, { status: 400 });
     }
     const record = body as Record<string, unknown>;
+    const identityHint = extractIdentity(record);
+    const ipKey = ipKeyFromRequest(request);
+    const limit = await ctx.runMutation(internal.ingestRateLimit.check, {
+      identity: identityHint,
+      ipKey,
+      deviceMax: rateEnv("INGEST_RATE_LIMIT_DEVICE", INGEST_RATE_DEVICE_MAX),
+      ipMax: rateEnv("INGEST_RATE_LIMIT_IP", INGEST_RATE_IP_MAX),
+      windowMs: rateEnv("INGEST_RATE_WINDOW_MS", INGEST_RATE_WINDOW_MS),
+    });
+    if (!limit.allowed) {
+      return new Response(JSON.stringify({ error: "Rate limited", retryAfterSec: limit.retryAfterSec }), {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": String(limit.retryAfterSec),
+        },
+      });
+    }
+
     if (isIngestHeartbeat(record)) {
-      const identity = typeof record.identity === "string" ? record.identity.trim().toLowerCase() : "";
+      const identity = identityHint ?? "";
       if (/^[0-9a-f]{12}$/.test(identity)) {
         try {
-          await ctx.runMutation(internal.deviceHealth.recordHeartbeat, { identity });
+          const result = await ctx.runMutation(internal.deviceHealth.recordHeartbeat, { identity });
+          if (result.status === "inactive") {
+            return Response.json({ error: "Device inactive", status: "inactive" }, { status: 403 });
+          }
         } catch {
-          // Heartbeat probes stay 204 even when persistence fails.
+          // Heartbeat probes stay 204 when persistence fails for unknown/transient errors.
         }
       }
       return new Response(null, { status: 204 });
@@ -100,6 +162,9 @@ http.route({
       }
       if (result.status === "ambiguous") {
         return Response.json(result, { status: 409 });
+      }
+      if (result.status === "inactive") {
+        return Response.json(result, { status: 403 });
       }
       return Response.json(result, { status: 200 });
     } catch (error) {

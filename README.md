@@ -48,3 +48,5 @@ Copy `.env.example` to `.env.local`. Each integration stays off until its variab
 | GA4 | `src/analytics.ts` | `VITE_GA_MEASUREMENT_ID`. Skipped in `pnpm dev:mock` |
 
 Convex secrets are set with `pnpm exec convex env set NAME value`, not `VITE_` variables.
+
+Production readiness: see `docs/phase7-production-readiness.md` and `docs/env-inventory.md`. Do not invent production JWT issuer or JWKS values.

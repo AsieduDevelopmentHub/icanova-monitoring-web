@@ -2,7 +2,9 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
 import { observeCommunicationLink } from "./alarms";
+import { deviceIsActive } from "./deviceLifecycle";
 import { recordAcceptedBatch } from "./deviceHealth";
+import { INGEST_MAX_SAMPLES } from "./limits";
 import { METRIC_KEYS } from "./metrics";
 import { orderBatch } from "./order";
 
@@ -48,7 +50,7 @@ export const acceptBatch = internalMutation({
     if (!Number.isInteger(args.boot) || !Number.isInteger(args.seq) || args.seq < 1) {
       throw new Error("Invalid sample");
     }
-    if (args.samples.length < 1 || args.samples.length > 8) {
+    if (args.samples.length < 1 || args.samples.length > INGEST_MAX_SAMPLES) {
       throw new Error("Invalid sample");
     }
     const matches = await ctx.db
@@ -62,6 +64,9 @@ export const acceptBatch = internalMutation({
       return { status: "ambiguous" as const, accepted: 0 };
     }
     const device = matches[0];
+    if (!deviceIsActive(device)) {
+      return { status: "inactive" as const, accepted: 0 };
+    }
     const generators = await ctx.db
       .query("generators")
       .withIndex("by_device", (q) => q.eq("deviceId", device._id))

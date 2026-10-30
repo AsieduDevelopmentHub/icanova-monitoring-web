@@ -171,6 +171,15 @@ function DeviceTable({ organizationId, search }: { organizationId: string; searc
           { key: "identity", header: "Identity", render: (row) => row.identity },
           { key: "site", header: "Site", render: (row) => row.siteName ?? "—" },
           {
+            key: "lifecycle",
+            header: "Lifecycle",
+            render: (row) => (
+              <StatusMark tone={row.lifecycle === "inactive" ? "alarm" : "ok"}>
+                {row.lifecycle === "inactive" ? "Inactive" : "Active"}
+              </StatusMark>
+            ),
+          },
+          {
             key: "gateway",
             header: "Gateway",
             render: (row) => {

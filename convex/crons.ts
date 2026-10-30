@@ -17,6 +17,13 @@ crons.interval(
   {},
 );
 
+crons.interval(
+  "prune ingest rate windows",
+  { minutes: 15 },
+  internal.ingestRateLimit.pruneStale,
+  {},
+);
+
 export default crons;
 
 // Delivery lease reclaim is scheduled per claim (reclaimIfStale). A global
