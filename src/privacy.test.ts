@@ -22,6 +22,7 @@ describe("stored reading age", () => {
     expect(storedFreshness(null, 1_000_000)).toEqual({
       label: "No stored reading",
       stale: false,
+      state: "unknown",
     });
   });
 
@@ -30,7 +31,8 @@ describe("stored reading age", () => {
     expect(storedFreshness(now - 1_000, now).stale).toBe(false);
     expect(storedFreshness(now - STORED_STALE_MS - 1, now)).toMatchObject({
       stale: true,
-      label: "Stored 3 min ago",
+      label: "Last telemetry 3 min ago",
+      state: "stale",
     });
   });
 });

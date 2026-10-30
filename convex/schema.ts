@@ -94,6 +94,8 @@ export default defineSchema({
     generatorId: v.id("generators"),
     updatedAt: v.number(),
     ...sampleFields,
+    boot: v.optional(v.number()),
+    seq: v.optional(v.number()),
   })
     .index("by_generator", ["generatorId"])
     .index("by_org_site", ["organizationId", "siteId"]),
@@ -106,9 +108,54 @@ export default defineSchema({
     bucketStart: v.number(),
     updatedAt: v.number(),
     ...sampleFields,
+    sampleCount: v.optional(v.number()),
+    rpmMin: v.optional(v.union(v.number(), v.null())),
+    rpmMax: v.optional(v.union(v.number(), v.null())),
+    rpmSum: v.optional(v.number()),
+    rpmCount: v.optional(v.number()),
+    rpmLast: v.optional(v.union(v.number(), v.null())),
+    batteryMin: v.optional(v.union(v.number(), v.null())),
+    batteryMax: v.optional(v.union(v.number(), v.null())),
+    batterySum: v.optional(v.number()),
+    batteryCount: v.optional(v.number()),
+    batteryLast: v.optional(v.union(v.number(), v.null())),
+    frequencyMin: v.optional(v.union(v.number(), v.null())),
+    frequencyMax: v.optional(v.union(v.number(), v.null())),
+    frequencySum: v.optional(v.number()),
+    frequencyCount: v.optional(v.number()),
+    frequencyLast: v.optional(v.union(v.number(), v.null())),
+    powerMin: v.optional(v.union(v.number(), v.null())),
+    powerMax: v.optional(v.union(v.number(), v.null())),
+    powerSum: v.optional(v.number()),
+    powerCount: v.optional(v.number()),
+    powerLast: v.optional(v.union(v.number(), v.null())),
+    voltageMin: v.optional(v.union(v.number(), v.null())),
+    voltageMax: v.optional(v.union(v.number(), v.null())),
+    voltageSum: v.optional(v.number()),
+    voltageCount: v.optional(v.number()),
+    voltageLast: v.optional(v.union(v.number(), v.null())),
   })
     .index("by_generator_time", ["generatorId", "bucketStart"])
     .index("by_bucket", ["bucketStart"]),
+
+  /**
+   * One row per site. Link counts change when a sample is stored.
+   * Fresh and stale are not stored here: they change as time passes, and a
+   * correct total would require reading every generator.
+   */
+  siteSummaries: defineTable({
+    organizationId: v.id("organizations"),
+    siteId: v.id("sites"),
+    generators: v.union(v.number(), v.null()),
+    reporting: v.number(),
+    linkOk: v.number(),
+    linkFail: v.number(),
+    linkDegraded: v.number(),
+    linkOther: v.number(),
+    lastTelemetryAt: v.union(v.number(), v.null()),
+  })
+    .index("by_site", ["siteId"])
+    .index("by_org", ["organizationId"]),
 
   alarms: defineTable({
     organizationId: v.id("organizations"),
@@ -132,9 +179,25 @@ export default defineSchema({
     clearedAt: v.union(v.number(), v.null()),
     resolvedAt: v.union(v.number(), v.null()),
     resolvedBy: v.union(v.id("users"), v.null()),
+    category: v.optional(
+      v.union(v.literal("generator"), v.literal("communication"), v.literal("gateway")),
+    ),
+    code: v.optional(v.string()),
+    severity: v.optional(
+      v.union(v.literal("critical"), v.literal("warning"), v.literal("informational")),
+    ),
+    source: v.optional(v.string()),
+    occurrenceCount: v.optional(v.number()),
+    firstOccurredAt: v.optional(v.number()),
+    lastOccurredAt: v.optional(v.number()),
+    evidenceBoot: v.optional(v.number()),
+    evidenceSeq: v.optional(v.number()),
   })
     .index("by_org_raised", ["organizationId", "raisedAt"])
-    .index("by_org_device", ["organizationId", "deviceId"]),
+    .index("by_org_device", ["organizationId", "deviceId"])
+    .index("by_org_site_raised", ["organizationId", "siteId", "raisedAt"])
+    .index("by_generator_raised", ["generatorId", "raisedAt"])
+    .index("by_generator_code_raised", ["generatorId", "code", "raisedAt"]),
 
   alarmComments: defineTable({
     organizationId: v.id("organizations"),

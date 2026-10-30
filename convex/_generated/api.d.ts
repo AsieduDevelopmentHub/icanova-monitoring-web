@@ -29,6 +29,8 @@ import type * as notify from "../notify.js";
 import type * as organizations from "../organizations.js";
 import type * as permissions from "../permissions.js";
 import type * as reports from "../reports.js";
+import type * as rollup from "../rollup.js";
+import type * as siteSummary from "../siteSummary.js";
 import type * as sites from "../sites.js";
 import type * as storage from "../storage.js";
 import type * as telemetry from "../telemetry.js";
@@ -62,6 +64,8 @@ declare const fullApi: ApiFromModules<{
   organizations: typeof organizations;
   permissions: typeof permissions;
   reports: typeof reports;
+  rollup: typeof rollup;
+  siteSummary: typeof siteSummary;
   sites: typeof sites;
   storage: typeof storage;
   telemetry: typeof telemetry;

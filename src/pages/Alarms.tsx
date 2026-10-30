@@ -4,24 +4,52 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { FleetBoundary } from "../fleet/boundary";
 import { accessMessage, id } from "../fleet/access";
-import { useBearerToken } from "../fleet/useBearer";
+import { LiveGate } from "../fleet/scope";
 import { demoAlarms, filterAlarms, type AlarmKind } from "../telemetry/alarms";
 import { DEMO_SOURCE } from "../telemetry/logModel";
 import { demoSamples } from "../telemetry/demoLog";
+import {
+  alarmCardFields,
+  alarmListCopy,
+  alarmTime,
+  canManageAlarms,
+  categoryLabel,
+  filterAlarmCenter,
+  pageBanner,
+  severityTone,
+  toAlarmRecord,
+  type AlarmFilter,
+  type StoredAlarmRow,
+} from "../telemetry/alarmCenter";
 import { DataTable } from "../ui/DataTable";
 import { FilterBar, FilterSearch, FilterSelect } from "../ui/FilterBar";
 import { StatusMark } from "../ui/StatusMark";
 
 const demoRows = demoAlarms(demoSamples);
 
+const STATUSES = ["all", "active", "acknowledged", "cleared", "resolved"] as const;
+const SEVERITIES = ["all", "critical", "warning", "informational"] as const;
+const CATEGORIES = ["all", "communication", "generator", "gateway"] as const;
+
+function oneOf<T extends string>(value: string | null, allowed: readonly T[], fallback: T): T {
+  return allowed.find((item) => item === value) ?? fallback;
+}
+
 export function Alarms() {
   return (
     <section className="page">
       <header className="page-head">
         <h1>Alarms</h1>
-        <p>Transport failures stay separate from controller alarms. Lifecycle actions are checked in Convex.</p>
+        <p>
+          Communication faults are link transitions. The controller alarm count is not a named
+          generator alarm.
+        </p>
       </header>
-      {import.meta.env.VITE_CONVEX_URL ? <SignedAlarms /> : null}
+      <LiveGate>
+        {(org) => (
+          <OrgAlarms organizationId={org.organizationId} permissions={org.permissions} />
+        )}
+      </LiveGate>
       <DemoAlarmList />
     </section>
   );
@@ -58,7 +86,8 @@ function DemoAlarmList() {
     <div className="stack">
       <div className="notice fixture" role="note">
         <strong>Demo log.</strong> Rows come from {DEMO_SOURCE}. Acknowledgement is not stored for these
-        rows. Alarm-page FAIL is a failed read, listed as transport.
+        rows. Alarm-page FAIL is a failed read, listed as transport. These rows are not this
+        organization.
       </div>
       <FilterBar label="Demo alarm filters">
         <FilterSearch label="Search" value={search} onChange={setSearch} placeholder="Link, batch, page" />
@@ -102,36 +131,24 @@ function DemoAlarmList() {
   );
 }
 
-function SignedAlarms() {
-  const token = useBearerToken();
-  if (!token) {
-    return (
-      <div className="notice" role="note">
-        <strong>Not signed in.</strong> No organization alarm query is running.
-      </div>
-    );
-  }
-  return (
-    <FleetBoundary>
-      <OrgAlarms />
-    </FleetBoundary>
-  );
-}
-
-function OrgAlarms() {
-  const orgs = useQuery(api.organizations.mine, {});
-  const [picked, setPicked] = useState("");
+function OrgAlarms({
+  organizationId,
+  permissions,
+}: {
+  organizationId: string;
+  permissions: readonly string[];
+}) {
   const [params, setParams] = useSearchParams();
-  if (orgs === undefined) {
-    return <p className="empty">Loading organizations.</p>;
-  }
-  if (!Array.isArray(orgs) || orgs.length === 0) {
-    return <p className="empty">This account has no organization membership.</p>;
-  }
-  const orgId = orgs.some((org) => org.organizationId === picked) ? picked : orgs[0].organizationId;
   const search = params.get("orgq") ?? "";
-  const state = params.get("state") ?? "all";
-  const kind = params.get("orgkind") ?? "all";
+  const status = oneOf(params.get("state"), STATUSES, "all");
+  const severity = oneOf(params.get("severity"), SEVERITIES, "all");
+  const category = oneOf(params.get("category"), CATEGORIES, "all");
+  const siteId = params.get("site") ?? "";
+  const generatorId = params.get("generator") ?? "";
+  const scope = useQuery(api.alarms.scope, {
+    organizationId: id<"organizations">(organizationId),
+    siteId: siteId ? id<"sites">(siteId) : null,
+  });
 
   function setParam(key: string, value: string) {
     const next = new URLSearchParams(params);
@@ -140,55 +157,89 @@ function OrgAlarms() {
     } else {
       next.set(key, value);
     }
+    if (key === "site") {
+      next.delete("generator");
+    }
     setParams(next);
   }
 
+  const sites = scope?.sites ?? [];
+  const generators = scope?.generators ?? [];
+  const siteValue =
+    scope === undefined ? siteId : sites.some((site) => site.id === siteId) ? siteId : "";
+  const generatorValue =
+    scope === undefined
+      ? generatorId
+      : generators.some((generator) => generator.id === generatorId)
+        ? generatorId
+        : "";
+  const filter: AlarmFilter = {
+    status,
+    severity,
+    category,
+    siteId: siteValue,
+    generatorId: generatorValue,
+    search,
+  };
+
   return (
-    <div className="stack">
-      <div className="notice" role="note">
-        <strong>Organization alarms.</strong> Recording an alarm does not write to the controller.
-        The server checks manage.alarms before any change.
-      </div>
-      <FilterBar label="Organization">
-        <FilterSelect
-          label="Organization"
-          value={orgId}
-          onChange={setPicked}
-          options={orgs.map((org) => ({ value: org.organizationId, label: org.name }))}
-        />
+    <div className="stack alarm-board">
+      <p className="meta">
+        Recording an operator note does not write to the controller. Acknowledgement does not clear
+        the condition.
+      </p>
+      <FilterBar label="Alarm filters">
         <FilterSearch label="Search" value={search} onChange={(value) => setParam("orgq", value)} />
         <FilterSelect
-          label="State"
-          value={state}
+          label="Status"
+          value={status}
           onChange={(value) => setParam("state", value)}
+          options={STATUSES.map((value) => ({ value, label: value === "all" ? "All statuses" : value }))}
+        />
+        <FilterSelect
+          label="Severity"
+          value={severity}
+          onChange={(value) => setParam("severity", value)}
+          options={SEVERITIES.map((value) => ({
+            value,
+            label: value === "all" ? "All severities" : value,
+          }))}
+        />
+        <FilterSelect
+          label="Category"
+          value={category}
+          onChange={(value) => setParam("category", value)}
+          options={CATEGORIES.map((value) => ({
+            value,
+            label: value === "all" ? "All categories" : value,
+          }))}
+        />
+        <FilterSelect
+          label="Site"
+          value={siteValue}
+          onChange={(value) => setParam("site", value)}
           options={[
-            { value: "all", label: "All states" },
-            { value: "active", label: "Active" },
-            { value: "acknowledged", label: "Acknowledged" },
-            { value: "cleared", label: "Cleared" },
-            { value: "resolved", label: "Resolved" },
+            { value: "", label: "All loaded sites" },
+            ...sites.map((site) => ({ value: site.id, label: site.name })),
           ]}
         />
         <FilterSelect
-          label="Kind"
-          value={kind}
-          onChange={(value) => setParam("orgkind", value)}
+          label="Generator"
+          value={generatorValue}
+          onChange={(value) => setParam("generator", value)}
           options={[
-            { value: "all", label: "All kinds" },
-            { value: "transport", label: "Transport" },
-            { value: "controller", label: "Controller" },
+            { value: "", label: siteValue ? "All loaded generators" : "Choose a site" },
+            ...generators.map((generator) => ({ value: generator.id, label: generator.name })),
           ]}
         />
       </FilterBar>
-      <FleetBoundary key={`${orgId}:${state}:${kind}:${search}`}>
-        <AlarmTable
-          organizationId={orgId}
-          search={search}
-          state={state}
-          kind={kind}
-        />
+      {scope?.sitesCapped || scope?.generatorsCapped ? (
+        <p className="meta">The site or generator filter lists the first 50 names.</p>
+      ) : null}
+      <FleetBoundary key={`${organizationId}:${status}:${severity}:${category}:${siteValue}:${generatorValue}:${search}`}>
+        <AlarmTable organizationId={organizationId} filter={filter} />
       </FleetBoundary>
-      <RecordAlarm organizationId={orgId} />
+      {canManageAlarms(permissions) ? <RecordAlarm organizationId={organizationId} /> : null}
     </div>
   );
 }
@@ -236,9 +287,12 @@ function RecordAlarm({ organizationId }: { organizationId: string }) {
 
   return (
     <form className="stack" onSubmit={onSubmit}>
-      <h2>Record an alarm</h2>
-      <p className="meta">This stores an operator record. It does not send a start, stop, or register write.</p>
-      <FilterBar label="Record an alarm">
+      <h2>Operator note</h2>
+      <p className="meta">
+        This stores an operator note. It is not a DSE alarm name from the controller, and it does not
+        send a start, stop, or register write.
+      </p>
+      <FilterBar label="Record an operator note">
         <FilterSelect
           label="Device"
           value={selected}
@@ -255,7 +309,7 @@ function RecordAlarm({ organizationId }: { organizationId: string }) {
           onChange={(value) => setRecordKind(value === "controller" ? "controller" : "transport")}
           options={[
             { value: "transport", label: "Transport" },
-            { value: "controller", label: "Controller" },
+            { value: "controller", label: "Controller note" },
           ]}
         />
         <label className="filter-field">
@@ -266,7 +320,7 @@ function RecordAlarm({ organizationId }: { organizationId: string }) {
           <span>Detail</span>
           <input value={detail} onChange={(event) => setDetail(event.target.value)} />
         </label>
-        <button type="submit">Record alarm</button>
+        <button type="submit">Record note</button>
       </FilterBar>
       {error ? <p className="err">{error}</p> : null}
     </form>
@@ -275,54 +329,109 @@ function RecordAlarm({ organizationId }: { organizationId: string }) {
 
 function AlarmTable({
   organizationId,
-  search,
-  state,
-  kind,
+  filter,
 }: {
   organizationId: string;
-  search: string;
-  state: string;
-  kind: string;
+  filter: AlarmFilter;
 }) {
   const [cursor, setCursor] = useState<string | null>(null);
-  const filtered = state !== "all" || kind !== "all" || search !== "";
+  const narrowed =
+    filter.status !== "all" ||
+    filter.severity !== "all" ||
+    filter.category !== "all" ||
+    filter.generatorId !== "" ||
+    filter.search !== "";
   const data = useQuery(api.alarms.list, {
     organizationId: id<"organizations">(organizationId),
-    state: state === "active" || state === "acknowledged" || state === "cleared" || state === "resolved" ? state : "all",
-    kind: kind === "controller" || kind === "transport" ? kind : "all",
+    state: filter.status,
+    kind: "all",
     deviceId: null,
-    search,
-    paginationOpts: { numItems: 50, cursor: filtered ? null : cursor },
+    search: filter.search,
+    severity: filter.severity,
+    category: filter.category,
+    siteId: filter.siteId ? id<"sites">(filter.siteId) : null,
+    generatorId: filter.generatorId ? id<"generators">(filter.generatorId) : null,
+    paginationOpts: { numItems: 50, cursor: narrowed ? null : cursor },
   });
   if (data === undefined) {
     return <p className="empty">Loading alarms.</p>;
   }
+  const records = filterAlarmCenter((data.rows as StoredAlarmRow[]).map(toAlarmRecord), filter);
+  const copy = alarmListCopy({
+    status: filter.status,
+    capped: Boolean(data.capped),
+    filtered: narrowed || filter.siteId !== "",
+  });
+  const banner = pageBanner(records, filter.status);
   return (
     <div className="stack">
+      {banner ? <p className="empty">{banner}</p> : null}
       <DataTable
         caption="Stored alarms for this organization"
-        rows={data.rows}
-        getRowKey={(row) => row._id}
-        empty="No stored alarms match this filter."
+        rows={records}
+        getRowKey={(row) => row.id}
+        empty={copy.empty}
         columns={[
-          {
-            key: "kind",
-            header: "Kind",
-            render: (row) => (
-              <StatusMark tone={row.kind === "transport" ? "warn" : "alarm"}>{row.kind}</StatusMark>
-            ),
-          },
-          { key: "state", header: "State", render: (row) => row.state },
-          { key: "summary", header: "Summary", render: (row) => row.summary },
-          {
-            key: "open",
-            header: "",
-            render: (row) => <Link to={`/alarms/${row._id}`}>Open</Link>,
-          },
-        ]}
-      />
-      {data.capped ? <p className="meta">The filter read stopped at 200 alarms.</p> : null}
-      {!filtered && data.continueCursor && !data.isDone ? (
+            { key: "title", header: "Alarm", render: (row) => row.title },
+            {
+              key: "severity",
+              header: "Severity",
+              render: (row) => <StatusMark tone={severityTone(row.severity)}>{row.severity}</StatusMark>,
+            },
+            { key: "category", header: "Category", render: (row) => categoryLabel(row) },
+            { key: "generator", header: "Generator", render: (row) => row.generatorName },
+            { key: "site", header: "Site", render: (row) => row.siteName },
+            { key: "status", header: "Status", render: (row) => row.status },
+            {
+              key: "first",
+              header: "First",
+              render: (row) => alarmTime(row.firstOccurredAt),
+            },
+            {
+              key: "last",
+              header: "Last",
+              render: (row) => alarmTime(row.lastOccurredAt),
+            },
+            {
+              key: "ack",
+              header: "Acknowledgement",
+              render: (row) => (row.acknowledged ? "Acknowledged" : "Not acknowledged"),
+            },
+            {
+              key: "by",
+              header: "Acknowledged by",
+              render: (row) => row.acknowledgedBy ?? "—",
+            },
+            {
+              key: "open",
+              header: "",
+              render: (row) => <Link to={`/alarms/${row.id}`}>Open</Link>,
+            },
+          ]}
+        />
+      <div className="alarm-cards">
+        {records.length === 0 ? (
+          <p className="empty">{copy.empty}</p>
+        ) : (
+          records.map((row) => (
+            <article className="alarm-card" key={row.id}>
+              <h3>{row.title}</h3>
+              <StatusMark tone={severityTone(row.severity)}>{row.severity}</StatusMark>
+              <dl>
+                {alarmCardFields(row).map((field) => (
+                  <div key={field.label}>
+                    <dt>{field.label}</dt>
+                    <dd>{field.value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <Link to={`/alarms/${row.id}`}>Open</Link>
+            </article>
+          ))
+        )}
+      </div>
+      <p className="meta">{copy.note}</p>
+      {!narrowed && data.continueCursor && !data.isDone ? (
         <button type="button" onClick={() => setCursor(data.continueCursor)}>
           Next page
         </button>

@@ -73,6 +73,7 @@ describe("audit display", () => {
     expect(auditActor("https://issuer.test|owner")).toBe("owner");
     expect(auditActor("https://issuer.test|owner")).not.toContain("https://");
     expect(auditActor("raw-token")).toBe("Recorded");
+    expect(auditActor("ingest")).toBe("Ingest");
   });
 });
 

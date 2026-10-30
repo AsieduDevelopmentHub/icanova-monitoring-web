@@ -8,12 +8,13 @@ import { FleetBoundary } from "../fleet/boundary";
 import { storedReading } from "../fleet/access";
 import { DEMO_GENERATOR_ID } from "../telemetry/logModel";
 import { engineView, linkView, snapshotScope, type LiveRow } from "../telemetry/fleetView";
-import { storedFreshness } from "../telemetry/freshness";
+import { pageFreshness, storedFreshness } from "../telemetry/freshness";
 import { formatReading } from "../telemetry/readings";
 import { DataTable, type Column } from "../ui/DataTable";
 import { FilterBar, FilterSearch } from "../ui/FilterBar";
 import { Metric } from "../ui/Metric";
 import { StatusMark } from "../ui/StatusMark";
+import { SiteAlarmPanel } from "../fleet/AlarmPanel";
 
 type BoardRow = LiveRow & {
   generatorId: string;
@@ -39,6 +40,7 @@ export function Dashboard() {
                   siteId={siteId}
                   siteName={siteName}
                   moreSites={moreSites}
+                  permissions={org.permissions}
                 />
               </FleetBoundary>
             )}
@@ -59,13 +61,19 @@ function SiteBoard({
   siteId,
   siteName,
   moreSites,
+  permissions,
 }: {
   organizationId: string;
   siteId: Id<"sites">;
   siteName: string;
   moreSites: boolean;
+  permissions: readonly string[];
 }) {
   const data = useQuery(api.telemetry.currentForSite, {
+    organizationId: organizationId as Id<"organizations">,
+    siteId,
+  });
+  const summary = useQuery(api.telemetry.siteSummary, {
     organizationId: organizationId as Id<"organizations">,
     siteId,
   });
@@ -84,6 +92,8 @@ function SiteBoard({
   }
   const loaded = (Array.isArray(data.rows) ? data.rows : []) as BoardRow[];
   const scope = snapshotScope(loaded, Boolean(data.capped));
+  const freshness = pageFreshness(loaded, Date.now());
+  const siteReady = summary?.ready === true;
   const columns: Column<BoardRow>[] = [
     {
       key: "name",
@@ -163,13 +173,50 @@ function SiteBoard({
         </div>
       ) : null}
       <div className="metric-grid">
-        <Metric label="Generators" value={String(scope.generators)} note={scope.note} />
-        <Metric label="Reporting" value={String(scope.reporting)} note="Rows with a stored reading" />
-        <Metric label="Online links" value={String(scope.online)} note="Link ok in this snapshot" />
-        <Metric label="Offline links" value={String(scope.offline)} note="Link fail. Not an engine stop" />
-        <Metric label="Degraded links" value={String(scope.degraded)} note="Link degraded" />
-        <Metric label="Unknown links" value={String(scope.unknown)} note="No link, or link unknown" />
+        <Metric
+          label="Generators"
+          value={siteReady && summary?.generators !== null ? String(summary?.generators) : String(scope.generators)}
+          note={
+            siteReady
+              ? summary?.generators === null
+                ? "More than 50 generators. Not a complete count."
+                : "Stored site summary."
+              : scope.note
+          }
+        />
+        <Metric
+          label="Reporting"
+          value={siteReady ? String(summary?.reporting) : String(scope.reporting)}
+          note={siteReady ? "Generators with a stored reading" : "Rows with a stored reading in this page"}
+        />
+        <Metric
+          label="Online links"
+          value={siteReady ? String(summary?.linkOk) : String(scope.online)}
+          note={siteReady ? "Link ok. Not an engine state." : "Link ok in this page"}
+        />
+        <Metric
+          label="Offline links"
+          value={siteReady ? String(summary?.linkFail) : String(scope.offline)}
+          note="Link fail. Not an engine stop"
+        />
+        <Metric
+          label="Degraded links"
+          value={siteReady ? String(summary?.linkDegraded) : String(scope.degraded)}
+          note="Link degraded"
+        />
+        <Metric
+          label="Other links"
+          value={siteReady ? String(summary?.linkOther) : String(scope.unknown)}
+          note="Unknown, missing, or not ok, fail, or degraded"
+        />
+        <Metric label="Fresh" value={String(freshness.fresh)} note={freshness.note} />
+        <Metric label="Stale" value={String(freshness.stale)} note={freshness.note} />
       </div>
+      <SiteAlarmPanel
+        organizationId={organizationId}
+        siteId={siteId}
+        permissions={permissions}
+      />
       <FilterBar label="Filter this site snapshot">
         <FilterSearch label="Name" value={query} onChange={setQuery} placeholder="Generator name" />
       </FilterBar>

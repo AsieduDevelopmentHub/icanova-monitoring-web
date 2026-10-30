@@ -10,6 +10,7 @@ const kind = v.union(
   v.literal("maintenance"),
   v.literal("devices"),
   v.literal("deliveries"),
+  v.literal("telemetry"),
 );
 const format = v.union(v.literal("csv"), v.literal("xlsx"), v.literal("pdf"));
 
@@ -69,7 +70,7 @@ export const file = query({
 async function loadRows(
   ctx: { db: import("./_generated/server").QueryCtx["db"] },
   organizationId: import("./_generated/dataModel").Id<"organizations">,
-  reportKind: "alarms" | "maintenance" | "devices" | "deliveries",
+  reportKind: "alarms" | "maintenance" | "devices" | "deliveries" | "telemetry",
 ): Promise<{ headers: string[]; rows: string[][]; capped: boolean }> {
   if (reportKind === "alarms") {
     const batch = await ctx.db
@@ -77,7 +78,17 @@ async function loadRows(
       .withIndex("by_org_raised", (q) => q.eq("organizationId", organizationId))
       .take(MAX_EXPORT + 1);
     return {
-      headers: ["Kind", "State", "Summary", "Detail", "Source time (UTC)"],
+      headers: [
+        "Kind",
+        "State",
+        "Summary",
+        "Detail",
+        "Source time (UTC)",
+        "Category",
+        "Severity",
+        "Source",
+        "Occurrences",
+      ],
       capped: batch.length > MAX_EXPORT,
       rows: batch.slice(0, MAX_EXPORT).map((row) => [
         row.kind,
@@ -85,6 +96,10 @@ async function loadRows(
         row.summary,
         row.detail,
         formatExportTime(row.sourceTime),
+        row.category ?? (row.kind === "controller" ? "generator" : "communication"),
+        row.severity ?? "warning",
+        row.source ?? "",
+        String(row.occurrenceCount ?? 1),
       ]),
     };
   }
@@ -102,6 +117,40 @@ async function loadRows(
         formatExportTime(row.performedAt),
         formatExportTime(row.recordedAt),
       ]),
+    };
+  }
+  if (reportKind === "telemetry") {
+    const batch = await ctx.db
+      .query("siteSummaries")
+      .withIndex("by_org", (q) => q.eq("organizationId", organizationId))
+      .take(MAX_EXPORT + 1);
+    const rows: string[][] = [];
+    for (const row of batch.slice(0, MAX_EXPORT)) {
+      const site = await ctx.db.get(row.siteId);
+      rows.push([
+        site && site.organizationId === organizationId ? site.name : "",
+        row.generators === null ? "" : String(row.generators),
+        String(row.reporting),
+        String(row.linkOk),
+        String(row.linkFail),
+        String(row.linkDegraded),
+        String(row.linkOther),
+        formatExportTime(row.lastTelemetryAt),
+      ]);
+    }
+    return {
+      headers: [
+        "Site",
+        "Generators",
+        "Reporting",
+        "Link ok",
+        "Link fail",
+        "Link degraded",
+        "Other link",
+        "Last telemetry (UTC)",
+      ],
+      capped: batch.length > MAX_EXPORT,
+      rows,
     };
   }
   if (reportKind === "devices") {

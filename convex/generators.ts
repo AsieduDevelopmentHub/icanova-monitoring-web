@@ -5,6 +5,7 @@ import { writeAudit } from "./audits";
 import { assertSameOrg, requireName, requirePermission } from "./auth";
 import { requireDevice } from "./devices";
 import { boundedPage } from "./limits";
+import { noteGenerator } from "./siteSummary";
 import { requireSite } from "./sites";
 
 export const list = query({
@@ -70,6 +71,7 @@ export const create = mutation({
       deviceId: args.deviceId,
       name,
     });
+    await noteGenerator(ctx, args.organizationId, args.siteId);
     await writeAudit(ctx, args.organizationId, "generator.create", generatorId);
     return generatorId;
   },

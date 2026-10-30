@@ -1,3 +1,11 @@
+/** Heartbeats are probes. They are not telemetry samples and must not open alarms. */
+export function isIngestHeartbeat(body: unknown): boolean {
+  if (!body || typeof body !== "object") {
+    return false;
+  }
+  return (body as { kind?: unknown }).kind === "heartbeat";
+}
+
 /** Compare the collector bearer without logging either value. */
 export function ingestAuthorized(header: string | null, secret: string | undefined): "ok" | "unconfigured" | "unauthorized" {
   if (!secret) {

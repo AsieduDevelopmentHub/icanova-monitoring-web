@@ -1,4 +1,5 @@
 import { Link, useParams } from "react-router";
+import { useState } from "react";
 import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Metric } from "../ui/Metric";
@@ -6,8 +7,11 @@ import { StatusMark } from "../ui/StatusMark";
 import { formatReading, machineFlag, machinePose } from "../telemetry/readings";
 import { storedFreshness } from "../telemetry/freshness";
 import { GeneratorScene } from "../viz/GeneratorScene";
+import { SeriesChart } from "../ui/SeriesChart";
+import { FilterBar, FilterSelect } from "../ui/FilterBar";
 import { storedReading, id } from "./access";
 import { FleetBoundary } from "./boundary";
+import { GeneratorAlarms } from "./AlarmPanel";
 
 export function ConvexGenerator() {
   const { id } = useParams();
@@ -94,8 +98,15 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
         />
       </div>
       <p className="meta">
-        Alarm count {current?.alarmCount == null ? "—" : String(current.alarmCount)}. Mode{" "}
-        {current?.mode ?? "—"}. Link {current?.link ?? "—"}.
+        Reported alarm count {current?.alarmCount == null ? "—" : String(current.alarmCount)}. This
+        number is not a list of generator alarm names. Mode {current?.mode ?? "—"}. Link{" "}
+        {current?.link ?? "—"}. {freshness.label}. Link and freshness are separate.
+      </p>
+      <HistoryCharts generatorId={generatorId} />
+      <GeneratorAlarms generatorId={generatorId} organizationId={detail.organizationId} />
+      <p className="meta">
+        Each row is one 15-minute bucket. Buckets are kept for 7 days. A missing measurement stays
+        unavailable. The chart above does not connect across a gap.
       </p>
       <div className="table-wrap">
         <table className="data-table">
@@ -145,5 +156,80 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
         </button>
       ) : null}
     </section>
+  );
+}
+
+const RANGES = ["hour", "six", "day", "week"] as const;
+type RangeName = (typeof RANGES)[number];
+
+function HistoryCharts({ generatorId }: { generatorId: string }) {
+  const [range, setRange] = useState<RangeName>("day");
+  const series = useQuery(api.telemetry.series, {
+    generatorId: id<"generators">(generatorId),
+    range,
+  });
+  const caption =
+    range === "hour"
+      ? "Last hour. Resolution is 15 minutes, so this range has at most four buckets."
+      : range === "six"
+        ? "Last 6 hours. Resolution is 15 minutes."
+        : range === "week"
+          ? "Last 7 days. Resolution is 15 minutes. Older buckets are deleted."
+          : "Last 24 hours. Resolution is 15 minutes.";
+  return (
+    <div className="stack">
+      <FilterBar label="History range">
+        <FilterSelect
+          label="Range"
+          value={range}
+          onChange={(value) => setRange(RANGES.find((item) => item === value) ?? "day")}
+          options={[
+            { value: "hour", label: "Last hour" },
+            { value: "six", label: "Last 6 hours" },
+            { value: "day", label: "Last 24 hours" },
+            { value: "week", label: "Last 7 days" },
+          ]}
+        />
+      </FilterBar>
+      {series === undefined ? <p className="empty">Loading history.</p> : null}
+      {series?.capped ? (
+        <p className="meta">This range stopped at the read limit. It is not every stored bucket.</p>
+      ) : null}
+      <SeriesChart
+        title="RPM"
+        unit="rpm"
+        points={series?.rpm ?? []}
+        reduced={Boolean(series?.reduced.rpm)}
+        caption={caption}
+      />
+      <SeriesChart
+        title="Battery"
+        unit="V"
+        points={series?.battery ?? []}
+        reduced={Boolean(series?.reduced.battery)}
+        caption={caption}
+      />
+      <SeriesChart
+        title="Frequency"
+        unit="Hz"
+        points={series?.frequency ?? []}
+        reduced={Boolean(series?.reduced.frequency)}
+        caption={caption}
+      />
+      <SeriesChart
+        title="Power"
+        unit="kW"
+        points={series?.power ?? []}
+        reduced={Boolean(series?.reduced.power)}
+        caption={caption}
+      />
+      <SeriesChart
+        title="L1 voltage"
+        unit="V"
+        points={series?.voltage ?? []}
+        reduced={Boolean(series?.reduced.voltage)}
+        caption={caption}
+      />
+    </div>
   );
 }

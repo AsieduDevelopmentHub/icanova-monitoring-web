@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
+import { observeCommunicationLink } from "./alarms";
 
 const ncuSample = v.object({
   t: v.number(),
@@ -72,6 +73,14 @@ export const acceptBatch = internalMutation({
       return { status: "duplicate" as const, accepted: 0 };
     }
     const observedAt = Date.now();
+    const current = await ctx.db
+      .query("telemetryCurrent")
+      .withIndex("by_generator", (q) => q.eq("generatorId", generator._id))
+      .unique();
+    let previousLink = current?.link ?? null;
+    // A different boot id is not ordered against the stored link. Samples
+    // inside this accepted batch are ordered with each other.
+    let ordered = cursor !== null && cursor.boot === args.boot;
     for (const sample of args.samples) {
       if (!Number.isFinite(sample.t) || !Number.isFinite(sample.age) || !links.has(sample.link)) {
         throw new Error("Invalid sample");
@@ -99,7 +108,23 @@ export const acceptBatch = internalMutation({
         powerQuality: power.quality,
         voltageL1: voltage.value,
         voltageQuality: voltage.quality,
+        boot: args.boot,
+        seq: args.seq,
       });
+      await observeCommunicationLink(ctx, {
+        organizationId: device.organizationId,
+        siteId: generator.siteId,
+        deviceId: device._id,
+        generatorId: generator._id,
+        previousLink: ordered ? previousLink : null,
+        link: sample.link,
+        boot: args.boot,
+        seq: args.seq,
+        ordered,
+        at: observedAt,
+      });
+      previousLink = sample.link;
+      ordered = true;
     }
     if (cursor) {
       await ctx.db.patch(cursor._id, { boot: args.boot, seq: args.seq });

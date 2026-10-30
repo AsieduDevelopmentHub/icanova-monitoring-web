@@ -5,6 +5,7 @@ export const PERMISSIONS = [
   "view.telemetry",
   "view.diagnostics",
   "view.alarms",
+  "acknowledge.alarms",
   "manage.alarms",
   "manage.devices",
   "manage.sites",

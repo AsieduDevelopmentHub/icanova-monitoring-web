@@ -11,11 +11,12 @@ export async function writeAudit(
   organizationId: Id<"organizations">,
   action: string,
   target: string,
+  actorToken?: string,
 ) {
   const identity = await ctx.auth.getUserIdentity();
   await ctx.db.insert("audits", {
     organizationId,
-    actorToken: identity?.tokenIdentifier ?? "unknown",
+    actorToken: actorToken ?? identity?.tokenIdentifier ?? "unknown",
     action,
     target,
     at: Date.now(),

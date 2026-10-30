@@ -9,6 +9,14 @@ import { demoAlarms } from "../telemetry/alarms";
 import { demoSamples } from "../telemetry/demoLog";
 import { DEMO_SOURCE } from "../telemetry/logModel";
 import { StatusMark } from "../ui/StatusMark";
+import {
+  acknowledgementLabel,
+  alarmTime,
+  canAcknowledge,
+  canManageAlarms,
+  categoryLabel,
+  severityTone,
+} from "../telemetry/alarmCenter";
 
 const demoRows = demoAlarms(demoSamples);
 
@@ -67,6 +75,7 @@ function DemoAlarm({ row }: { row: (typeof demoRows)[number] }) {
 
 function StoredAlarm({ alarmId }: { alarmId: string }) {
   const data = useQuery(api.alarms.detail, { alarmId: id<"alarms">(alarmId) });
+  const orgs = useQuery(api.organizations.mine, {});
   const acknowledge = useMutation(api.alarms.acknowledge);
   const clear = useMutation(api.alarms.clear);
   const resolve = useMutation(api.alarms.resolve);
@@ -83,6 +92,10 @@ function StoredAlarm({ alarmId }: { alarmId: string }) {
     );
   }
   const alarm = data.alarm;
+  const permissions =
+    orgs?.find((org) => org.organizationId === alarm.organizationId)?.permissions ?? [];
+  const allowAck = canAcknowledge(permissions);
+  const allowManage = canManageAlarms(permissions);
 
   async function run(action: () => Promise<unknown>) {
     setError(null);
@@ -102,49 +115,65 @@ function StoredAlarm({ alarmId }: { alarmId: string }) {
         </p>
       </header>
       <p>
-        <StatusMark tone={alarm.kind === "transport" ? "warn" : "alarm"}>{alarm.kind}</StatusMark>{" "}
-        <StatusMark tone={alarm.state === "resolved" ? "ok" : alarm.state === "active" ? "alarm" : "warn"}>
+        <StatusMark tone={severityTone(alarm.severity)}>{alarm.severity}</StatusMark>{" "}
+        <StatusMark tone={alarm.state === "resolved" || alarm.state === "cleared" ? "ok" : alarm.state === "active" ? "alarm" : "warn"}>
           {alarm.state}
-        </StatusMark>
+        </StatusMark>{" "}
+        <span className="meta">{categoryLabel(alarm)}</span>
       </p>
       <p>{alarm.detail}</p>
       <p className="meta">
-        Source time {alarm.sourceTime == null ? "—" : String(alarm.sourceTime)}. Recorded{" "}
-        {new Date(alarm.raisedAt).toISOString()}. These actions do not write to the controller.
+        First {alarmTime(alarm.firstOccurredAt)}. Last {alarmTime(alarm.lastOccurredAt)}. Occurrences{" "}
+        {alarm.occurrenceCount}. {acknowledgementLabel({
+          acknowledged: alarm.acknowledgedAt !== null,
+          acknowledgedBy: alarm.acknowledgedByName,
+        })}
+        . Source {alarm.source}. These actions do not write to the controller. Acknowledgement does
+        not clear the condition.
       </p>
       <div className="filter-bar">
-        <button type="button" onClick={() => run(() => acknowledge({ alarmId: alarm._id }))}>
-          Acknowledge
-        </button>
-        <button type="button" onClick={() => run(() => clear({ alarmId: alarm._id }))}>
-          Clear
-        </button>
-        <button type="button" onClick={() => run(() => resolve({ alarmId: alarm._id }))}>
-          Resolve
-        </button>
+        {allowAck ? (
+          <button type="button" onClick={() => run(() => acknowledge({ alarmId: alarm._id }))}>
+            Acknowledge
+          </button>
+        ) : null}
+        {allowManage ? (
+          <>
+            <button type="button" onClick={() => run(() => clear({ alarmId: alarm._id }))}>
+              Clear
+            </button>
+            <button type="button" onClick={() => run(() => resolve({ alarmId: alarm._id }))}>
+              Resolve
+            </button>
+          </>
+        ) : null}
       </div>
-      <FleetBoundary>
-        <AssignForm
-          organizationId={alarm.organizationId}
-          onAssign={(userId) => run(() => assign({ alarmId: alarm._id, userId }))}
-        />
-      </FleetBoundary>
-      <form
-        className="filter-bar"
-        onSubmit={(event: FormEvent) => {
-          event.preventDefault();
-          void run(async () => {
-            await comment({ alarmId: alarm._id, body });
-            setBody("");
-          });
-        }}
-      >
-        <label className="filter-field grow">
-          <span>Comment</span>
-          <input value={body} onChange={(event) => setBody(event.target.value)} />
-        </label>
-        <button type="submit">Add comment</button>
-      </form>
+      {allowManage ? (
+        <>
+          <FleetBoundary>
+            <AssignForm
+              organizationId={alarm.organizationId}
+              onAssign={(userId) => run(() => assign({ alarmId: alarm._id, userId }))}
+            />
+          </FleetBoundary>
+          <form
+            className="filter-bar"
+            onSubmit={(event: FormEvent) => {
+              event.preventDefault();
+              void run(async () => {
+                await comment({ alarmId: alarm._id, body });
+                setBody("");
+              });
+            }}
+          >
+            <label className="filter-field grow">
+              <span>Comment</span>
+              <input value={body} onChange={(event) => setBody(event.target.value)} />
+            </label>
+            <button type="submit">Add comment</button>
+          </form>
+        </>
+      ) : null}
       {error ? <p className="err">{error}</p> : null}
       <h2>Comments</h2>
       {data.comments.length === 0 ? (

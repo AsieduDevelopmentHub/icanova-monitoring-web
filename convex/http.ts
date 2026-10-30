@@ -1,7 +1,7 @@
 import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
-import { ingestAuthorized } from "./ingestAuth";
+import { ingestAuthorized, isIngestHeartbeat } from "./ingestAuth";
 
 const http = httpRouter();
 
@@ -80,7 +80,7 @@ http.route({
       return Response.json({ error: "Invalid sample" }, { status: 400 });
     }
     const record = body as Record<string, unknown>;
-    if (record.kind === "heartbeat") {
+    if (isIngestHeartbeat(record)) {
       return new Response(null, { status: 204 });
     }
     try {

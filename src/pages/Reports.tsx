@@ -9,7 +9,7 @@ export function Reports() {
   return (
     <OrgGate
       title="Reports"
-      lede="CSV, Excel, and PDF files are built on the server. One export reads at most 200 rows."
+      lede="CSV, Excel, and PDF files are built on the server. One export reads at most 200 rows. Site telemetry is the stored summary, not an energy total."
       offline="No export is running."
     >
       {(organizationId) => <ExportForm organizationId={organizationId} />}
@@ -19,7 +19,9 @@ export function Reports() {
 
 function ExportForm({ organizationId }: { organizationId: Id<"organizations"> }) {
   const build = useMutation(api.reports.build);
-  const [kind, setKind] = useState<"alarms" | "maintenance" | "devices" | "deliveries">("alarms");
+  const [kind, setKind] = useState<"alarms" | "maintenance" | "devices" | "deliveries" | "telemetry">(
+    "alarms",
+  );
   const [format, setFormat] = useState<"csv" | "xlsx" | "pdf">("csv");
   const [reportId, setReportId] = useState<Id<"reports"> | null>(null);
   const [capped, setCapped] = useState(false);
@@ -48,6 +50,7 @@ function ExportForm({ organizationId }: { organizationId: Id<"organizations"> })
             <option value="maintenance">Maintenance</option>
             <option value="devices">Devices</option>
             <option value="deliveries">Deliveries</option>
+            <option value="telemetry">Site telemetry</option>
           </select>
         </label>
         <label className="filter-field">

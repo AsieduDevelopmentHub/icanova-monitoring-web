@@ -522,6 +522,40 @@ a {
   overflow-x: auto;
 }
 
+.alarm-cards {
+  display: none;
+}
+
+.alarm-card {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+}
+
+.alarm-card h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.alarm-card dl {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.alarm-card dt {
+  color: var(--faint);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.alarm-card dd {
+  margin: 0;
+}
+
 .data-table,
 table.cfg {
   width: 100%;
@@ -753,6 +787,15 @@ table.cfg td.num {
 
   .canvas {
     padding: var(--space-4) var(--space-3) var(--space-6);
+  }
+
+  .alarm-board .table-wrap {
+    display: none;
+  }
+
+  .alarm-board .alarm-cards {
+    display: grid;
+    gap: var(--space-3);
   }
 }
 

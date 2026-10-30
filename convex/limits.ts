@@ -12,11 +12,23 @@ export const MAX_EXPORT_BYTES = 700_000;
 /** Delivery attempts for one message, including the first. */
 export const MAX_ATTEMPTS = 3;
 
-/** History is one replaced document per generator per window, not per poll. */
+/**
+ * History is one 15-minute aggregate per generator, not one document per poll.
+ * telemetryCurrent is the live document and is not pruned.
+ * Buckets older than BUCKET_RETENTION_MS are deleted by the hourly cron.
+ * There is no raw-sample archive and no daily tier. A week is at most 672 buckets
+ * per generator. NCU sample time is uptime, so buckets are keyed by server observedAt.
+ */
 export const BUCKET_MS = 15 * 60 * 1000;
 
 /** Bucket documents older than this are eligible for the prune mutation. */
 export const BUCKET_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** One chart query reads at most a week of 15-minute buckets, plus one to detect overflow. */
+export const SERIES_READ = 673;
+
+/** A chart combines contiguous buckets above this so the browser does not plot hundreds of points. */
+export const CHART_POINTS = 160;
 
 export function boundedPage(opts: PaginationOptions): PaginationOptions {
   const requested = Number.isFinite(opts.numItems) ? Math.floor(opts.numItems) : 1;

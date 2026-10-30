@@ -10,6 +10,7 @@ import { engineView, linkView, registrationLabel, snapshotScope } from "../telem
 import { storedFreshness } from "../telemetry/freshness";
 import { DataTable } from "../ui/DataTable";
 import { StatusMark } from "../ui/StatusMark";
+import { SiteAlarmPanel } from "../fleet/AlarmPanel";
 
 type SiteRow = { _id: string; name: string };
 
@@ -20,12 +21,20 @@ export function Sites() {
         <h1>Sites</h1>
         <p>Sites in the signed-in organization. A site record stores a name. It has no location field.</p>
       </header>
-      <LiveGate>{(org) => <SiteList organizationId={org.organizationId} />}</LiveGate>
+      <LiveGate>
+        {(org) => <SiteList organizationId={org.organizationId} permissions={org.permissions} />}
+      </LiveGate>
     </section>
   );
 }
 
-function SiteList({ organizationId }: { organizationId: string }) {
+function SiteList({
+  organizationId,
+  permissions,
+}: {
+  organizationId: string;
+  permissions: readonly string[];
+}) {
   const [cursor, setCursor] = useState<string | null>(null);
   const [picked, setPicked] = useState("");
   const sites = useQuery(api.sites.list, {
@@ -78,6 +87,7 @@ function SiteList({ organizationId }: { organizationId: string }) {
             organizationId={organizationId}
             siteId={id<"sites">(selected._id)}
             siteName={selected.name}
+            permissions={permissions}
           />
         </FleetBoundary>
       ) : null}
@@ -89,10 +99,12 @@ function SiteDetail({
   organizationId,
   siteId,
   siteName,
+  permissions,
 }: {
   organizationId: string;
   siteId: Id<"sites">;
   siteName: string;
+  permissions: readonly string[];
 }) {
   const [cursor, setCursor] = useState<string | null>(null);
   const generators = useQuery(api.generators.list, {
@@ -104,7 +116,11 @@ function SiteDetail({
     organizationId: id<"organizations">(organizationId),
     siteId,
   });
-  if (generators === undefined || current === undefined) {
+  const summary = useQuery(api.telemetry.siteSummary, {
+    organizationId: id<"organizations">(organizationId),
+    siteId,
+  });
+  if (generators === undefined || current === undefined || summary === undefined) {
     return <p className="empty">Loading {siteName}.</p>;
   }
   const registered = Array.isArray(generators.page) ? generators.page : [];
@@ -115,8 +131,11 @@ function SiteDetail({
       <h2>{siteName}</h2>
       <p className="meta">{registrationLabel(registered.length, generators.isDone !== false)}</p>
       <p className="meta">
-        Links in the current snapshot: {scope.online} online, {scope.offline} offline, {scope.degraded}{" "}
-        degraded, {scope.unknown} unknown. {scope.note}
+        {summary?.ready
+          ? `Site summary: ${summary.generators === null ? "generators not fully counted" : `${summary.generators} generators`}, ${summary.reporting} reporting, ${summary.linkOk} link ok, ${summary.linkFail} link fail, ${summary.linkDegraded} degraded, ${summary.linkOther} other. Link fail is not an engine stop.`
+          : "Site summary is stored when a generator is registered or a sample arrives."}{" "}
+        This page of links: {scope.online} online, {scope.offline} offline, {scope.degraded} degraded,{" "}
+        {scope.unknown} unknown. {scope.note}
       </p>
       <DataTable
         caption={`Registered generators at ${siteName}`}
@@ -169,6 +188,7 @@ function SiteDetail({
           },
         ]}
       />
+      <SiteAlarmPanel organizationId={organizationId} siteId={siteId} permissions={permissions} />
     </div>
   );
 }

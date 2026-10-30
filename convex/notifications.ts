@@ -1,3 +1,9 @@
+/**
+ * Policies and preferences are stored for a later delivery phase.
+ * Ingest must not call sendEmail or sendSms. A future phase may emit one
+ * alarm.raised notice when a new alarm row is inserted, never once per sample.
+ * Email and SMS stay operator-requested and are not sent from this phase.
+ */
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";

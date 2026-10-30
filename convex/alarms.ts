@@ -1,6 +1,6 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
@@ -8,6 +8,13 @@ import { requireAnyPermission, requirePermission } from "./auth";
 import { requireDevice } from "./devices";
 import { MAX_PAGE, boundedPage } from "./limits";
 import { requireSite } from "./sites";
+
+/** Stable id for the only automatic alarm. It is a link transition, not a DSE name. */
+export const COMM_LINK_FAIL = "comm.link.fail";
+
+const COMM_SUMMARY = "Controller communication failed";
+const COMM_DETAIL =
+  "The gateway reported link fail after link ok on the same boot. This is a communication fault, not a generator alarm and not an engine stop.";
 
 const kind = v.union(v.literal("controller"), v.literal("transport"));
 const state = v.union(
@@ -43,25 +50,74 @@ async function loadAlarm(ctx: QueryCtx | MutationCtx, alarmId: Id<"alarms">) {
   return alarm;
 }
 
+type AlarmCategory = "generator" | "communication" | "gateway";
+type AlarmSeverity = "critical" | "warning" | "informational";
+
+function derivedCategory(alarm: Doc<"alarms">): AlarmCategory {
+  if (
+    alarm.category === "generator" ||
+    alarm.category === "communication" ||
+    alarm.category === "gateway"
+  ) {
+    return alarm.category;
+  }
+  return alarm.kind === "controller" ? "generator" : "communication";
+}
+
+function derivedSeverity(alarm: Doc<"alarms">): AlarmSeverity {
+  if (
+    alarm.severity === "critical" ||
+    alarm.severity === "warning" ||
+    alarm.severity === "informational"
+  ) {
+    return alarm.severity;
+  }
+  return "warning";
+}
+
+async function presentAlarm(ctx: QueryCtx | MutationCtx, alarm: Doc<"alarms">) {
+  const site = await ctx.db.get(alarm.siteId);
+  const generator = alarm.generatorId ? await ctx.db.get(alarm.generatorId) : null;
+  const actor = alarm.acknowledgedBy ? await ctx.db.get(alarm.acknowledgedBy) : null;
+  const siteName = site && site.organizationId === alarm.organizationId ? site.name : "—";
+  const generatorName =
+    generator && generator.organizationId === alarm.organizationId ? generator.name : "—";
+  return {
+    ...alarm,
+    category: derivedCategory(alarm),
+    severity: derivedSeverity(alarm),
+    source: alarm.source ?? "operator",
+    code: alarm.code ?? null,
+    occurrenceCount: alarm.occurrenceCount ?? 1,
+    firstOccurredAt: alarm.firstOccurredAt ?? alarm.raisedAt,
+    lastOccurredAt: alarm.lastOccurredAt ?? alarm.raisedAt,
+    siteName,
+    generatorName,
+    acknowledgedByName: actor?.name ?? actor?.email ?? null,
+  };
+}
+
 async function writeEvent(
   ctx: MutationCtx,
   alarm: { _id: Id<"alarms">; organizationId: Id<"organizations">; state: string },
   action: string,
   note: string | null,
   toState: AlarmState | null,
+  actorToken?: string,
 ) {
   const identity = await ctx.auth.getUserIdentity();
+  const actor = actorToken ?? identity?.tokenIdentifier ?? "unknown";
   await ctx.db.insert("alarmEvents", {
     organizationId: alarm.organizationId,
     alarmId: alarm._id,
     action,
-    actorToken: identity?.tokenIdentifier ?? "unknown",
+    actorToken: actor,
     note,
     fromState: alarm.state,
     toState,
     at: Date.now(),
   });
-  await writeAudit(ctx, alarm.organizationId, `alarm.${action}`, alarm._id);
+  await writeAudit(ctx, alarm.organizationId, `alarm.${action}`, alarm._id, actorToken);
 }
 
 export const list = query({
@@ -71,6 +127,24 @@ export const list = query({
     kind: v.union(v.literal("all"), kind),
     deviceId: v.union(v.id("devices"), v.null()),
     search: v.string(),
+    severity: v.optional(
+      v.union(
+        v.literal("all"),
+        v.literal("critical"),
+        v.literal("warning"),
+        v.literal("informational"),
+      ),
+    ),
+    category: v.optional(
+      v.union(
+        v.literal("all"),
+        v.literal("generator"),
+        v.literal("communication"),
+        v.literal("gateway"),
+      ),
+    ),
+    siteId: v.optional(v.union(v.id("sites"), v.null())),
+    generatorId: v.optional(v.union(v.id("generators"), v.null())),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
@@ -79,14 +153,57 @@ export const list = query({
       await requireDevice(ctx, args.organizationId, args.deviceId);
     }
     const search = cleanSearch(args.search);
-    const filtered = args.state !== "all" || args.kind !== "all" || args.deviceId !== null || search !== "";
+    const severity = args.severity ?? "all";
+    const category = args.category ?? "all";
+    const siteId = args.siteId ?? null;
+    const generatorId = args.generatorId ?? null;
+    if (siteId) {
+      await requireSite(ctx, args.organizationId, siteId);
+    }
+    if (generatorId) {
+      const generator = await ctx.db.get(generatorId);
+      if (!generator || generator.organizationId !== args.organizationId) {
+        throw new Error("Forbidden");
+      }
+      if (siteId && generator.siteId !== siteId) {
+        throw new Error("Forbidden");
+      }
+    }
+    const filtered =
+      args.state !== "all" ||
+      args.kind !== "all" ||
+      args.deviceId !== null ||
+      search !== "" ||
+      severity !== "all" ||
+      category !== "all" ||
+      generatorId !== null;
+    if (!filtered && siteId) {
+      const page = await ctx.db
+        .query("alarms")
+        .withIndex("by_org_site_raised", (q) =>
+          q.eq("organizationId", args.organizationId).eq("siteId", siteId),
+        )
+        .order("desc")
+        .paginate(boundedPage(args.paginationOpts));
+      return {
+        rows: await Promise.all(page.page.map((alarm) => presentAlarm(ctx, alarm))),
+        capped: false,
+        isDone: page.isDone,
+        continueCursor: page.continueCursor,
+      };
+    }
     const indexed = ctx.db
       .query("alarms")
       .withIndex("by_org_raised", (q) => q.eq("organizationId", args.organizationId))
       .order("desc");
     if (!filtered) {
       const page = await indexed.paginate(boundedPage(args.paginationOpts));
-      return { rows: page.page, capped: false, isDone: page.isDone, continueCursor: page.continueCursor };
+      return {
+        rows: await Promise.all(page.page.map((alarm) => presentAlarm(ctx, alarm))),
+        capped: false,
+        isDone: page.isDone,
+        continueCursor: page.continueCursor,
+      };
     }
     const batch = await indexed.take(200);
     const rows = batch
@@ -100,13 +217,32 @@ export const list = query({
         if (args.deviceId && alarm.deviceId !== args.deviceId) {
           return false;
         }
+        if (siteId && alarm.siteId !== siteId) {
+          return false;
+        }
+        if (generatorId && alarm.generatorId !== generatorId) {
+          return false;
+        }
+        if (severity !== "all" && derivedSeverity(alarm) !== severity) {
+          return false;
+        }
+        if (category !== "all" && derivedCategory(alarm) !== category) {
+          return false;
+        }
         if (!search) {
           return true;
         }
-        return `${alarm.summary} ${alarm.detail} ${alarm.kind} ${alarm.state}`.toLowerCase().includes(search);
+        return `${alarm.summary} ${alarm.detail} ${alarm.kind} ${alarm.state} ${alarm.code ?? ""} ${alarm.category ?? ""}`
+          .toLowerCase()
+          .includes(search);
       })
       .slice(0, MAX_PAGE);
-    return { rows, capped: batch.length === 200, isDone: true, continueCursor: null };
+    return {
+      rows: await Promise.all(rows.map((alarm) => presentAlarm(ctx, alarm))),
+      capped: batch.length === 200,
+      isDone: true,
+      continueCursor: null,
+    };
   },
 });
 
@@ -129,7 +265,87 @@ export const detail = query({
     ) {
       throw new Error("Forbidden");
     }
-    return { alarm, comments, events };
+    return { alarm: await presentAlarm(ctx, alarm), comments, events };
+  },
+});
+
+/** Latest alarm records for one site. Not an organization total. */
+export const forSite = query({
+  args: {
+    organizationId: v.id("organizations"),
+    siteId: v.id("sites"),
+  },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "view.alarms");
+    await requireSite(ctx, args.organizationId, args.siteId);
+    const batch = await ctx.db
+      .query("alarms")
+      .withIndex("by_org_site_raised", (q) =>
+        q.eq("organizationId", args.organizationId).eq("siteId", args.siteId),
+      )
+      .order("desc")
+      .take(MAX_PAGE + 1);
+    const capped = batch.length > MAX_PAGE;
+    const rows = await Promise.all(batch.slice(0, MAX_PAGE).map((alarm) => presentAlarm(ctx, alarm)));
+    return { rows, capped };
+  },
+});
+
+/** Latest alarm records for one generator. */
+export const forGenerator = query({
+  args: { generatorId: v.id("generators") },
+  handler: async (ctx, args) => {
+    const generator = await ctx.db.get(args.generatorId);
+    if (!generator) {
+      throw new Error("Not found");
+    }
+    await requirePermission(ctx, generator.organizationId, "view.alarms");
+    const batch = await ctx.db
+      .query("alarms")
+      .withIndex("by_generator_raised", (q) => q.eq("generatorId", generator._id))
+      .order("desc")
+      .take(MAX_PAGE + 1);
+    if (batch.some((alarm) => alarm.organizationId !== generator.organizationId)) {
+      throw new Error("Forbidden");
+    }
+    const capped = batch.length > MAX_PAGE;
+    const rows = await Promise.all(batch.slice(0, MAX_PAGE).map((alarm) => presentAlarm(ctx, alarm)));
+    return { rows, capped };
+  },
+});
+
+/** Site and generator names for the alarm filters. Bounded. Requires view.alarms. */
+export const scope = query({
+  args: {
+    organizationId: v.id("organizations"),
+    siteId: v.union(v.id("sites"), v.null()),
+  },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "view.alarms");
+    const sites = await ctx.db
+      .query("sites")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .take(MAX_PAGE + 1);
+    let generators: Doc<"generators">[] = [];
+    const selectedSite = args.siteId;
+    if (selectedSite) {
+      await requireSite(ctx, args.organizationId, selectedSite);
+      generators = await ctx.db
+        .query("generators")
+        .withIndex("by_org_site", (q) =>
+          q.eq("organizationId", args.organizationId).eq("siteId", selectedSite),
+        )
+        .take(MAX_PAGE + 1);
+    }
+    return {
+      sites: sites.slice(0, MAX_PAGE).map((site) => ({ id: site._id, name: site.name })),
+      sitesCapped: sites.length > MAX_PAGE,
+      generators: generators.slice(0, MAX_PAGE).map((generator) => ({
+        id: generator._id,
+        name: generator.name,
+      })),
+      generatorsCapped: generators.length > MAX_PAGE,
+    };
   },
 });
 
@@ -187,6 +403,7 @@ export const raise = mutation({
     if (args.sourceTime !== null && !Number.isFinite(args.sourceTime)) {
       throw new Error("Invalid sample");
     }
+    const now = Date.now();
     const alarmId = await ctx.db.insert("alarms", {
       organizationId: args.organizationId,
       siteId: args.siteId,
@@ -196,7 +413,7 @@ export const raise = mutation({
       state: "active",
       summary: cleanText(args.summary, "Summary", 160),
       detail: cleanText(args.detail, "Detail", 500),
-      raisedAt: Date.now(),
+      raisedAt: now,
       sourceTime: args.sourceTime,
       acknowledgedAt: null,
       acknowledgedBy: null,
@@ -204,6 +421,12 @@ export const raise = mutation({
       clearedAt: null,
       resolvedAt: null,
       resolvedBy: null,
+      category: args.kind === "controller" ? "generator" : "communication",
+      severity: "informational",
+      source: "operator",
+      occurrenceCount: 1,
+      firstOccurredAt: now,
+      lastOccurredAt: now,
     });
     const alarm = await ctx.db.get(alarmId);
     if (!alarm) {
@@ -218,7 +441,10 @@ export const acknowledge = mutation({
   args: { alarmId: v.id("alarms") },
   handler: async (ctx, args) => {
     const alarm = await loadAlarm(ctx, args.alarmId);
-    const { user } = await requirePermission(ctx, alarm.organizationId, "manage.alarms");
+    const { user } = await requireAnyPermission(ctx, alarm.organizationId, [
+      "acknowledge.alarms",
+      "manage.alarms",
+    ]);
     if (alarm.state !== "active") {
       throw new Error("Invalid transition");
     }
@@ -316,3 +542,102 @@ export const resolve = mutation({
     return alarm._id;
   },
 });
+
+async function openCommunication(ctx: MutationCtx, generatorId: Id<"generators">) {
+  const rows = await ctx.db
+    .query("alarms")
+    .withIndex("by_generator_code_raised", (q) =>
+      q.eq("generatorId", generatorId).eq("code", COMM_LINK_FAIL),
+    )
+    .order("desc")
+    .take(16);
+  return (
+    rows.find((alarm) => alarm.state === "active" || alarm.state === "acknowledged") ?? null
+  );
+}
+
+/**
+ * Communication alarms follow an ordered link transition on one boot.
+ * Boot ids are random, so a different boot neither raises nor clears.
+ * A repeated fail updates the open alarm. It does not create another row
+ * and it does not increment the occurrence count. Recovery is fail then ok
+ * on the boot that opened the alarm. unknown, degraded, and missing values
+ * do not raise or clear. alarmCount is ignored. No notification is sent.
+ */
+export async function observeCommunicationLink(
+  ctx: MutationCtx,
+  args: {
+    organizationId: Id<"organizations">;
+    siteId: Id<"sites">;
+    deviceId: Id<"devices">;
+    generatorId: Id<"generators">;
+    previousLink: string | null;
+    link: string;
+    boot: number;
+    seq: number;
+    ordered: boolean;
+    at: number;
+  },
+) {
+  if (!args.ordered) {
+    return "unordered" as const;
+  }
+  const open = await openCommunication(ctx, args.generatorId);
+  const sameEvidence =
+    open !== null && open.evidenceBoot === args.boot && (open.evidenceSeq ?? 0) <= args.seq;
+  if (args.previousLink === "ok" && args.link === "fail") {
+    if (open) {
+      if (sameEvidence) {
+        await ctx.db.patch(open._id, { lastOccurredAt: args.at, evidenceSeq: args.seq });
+      }
+      return "open" as const;
+    }
+    const alarmId = await ctx.db.insert("alarms", {
+      organizationId: args.organizationId,
+      siteId: args.siteId,
+      deviceId: args.deviceId,
+      generatorId: args.generatorId,
+      kind: "transport",
+      state: "active",
+      summary: COMM_SUMMARY,
+      detail: COMM_DETAIL,
+      raisedAt: args.at,
+      sourceTime: null,
+      acknowledgedAt: null,
+      acknowledgedBy: null,
+      assignedTo: null,
+      clearedAt: null,
+      resolvedAt: null,
+      resolvedBy: null,
+      category: "communication",
+      code: COMM_LINK_FAIL,
+      severity: "warning",
+      source: "telemetry.link",
+      occurrenceCount: 1,
+      firstOccurredAt: args.at,
+      lastOccurredAt: args.at,
+      evidenceBoot: args.boot,
+      evidenceSeq: args.seq,
+    });
+    const alarm = await ctx.db.get(alarmId);
+    if (!alarm) {
+      throw new Error("Not found");
+    }
+    await writeEvent(ctx, alarm, "raise", null, "active", "ingest");
+    return "raised" as const;
+  }
+  if (args.previousLink === "fail" && args.link === "fail" && open && sameEvidence) {
+    await ctx.db.patch(open._id, { lastOccurredAt: args.at, evidenceSeq: args.seq });
+    return "repeated" as const;
+  }
+  if (args.previousLink === "fail" && args.link === "ok" && open && sameEvidence) {
+    await ctx.db.patch(open._id, {
+      state: "cleared",
+      clearedAt: args.at,
+      lastOccurredAt: args.at,
+    });
+    await writeEvent(ctx, open, "clear", null, "cleared", "ingest");
+    return "cleared" as const;
+  }
+  return "ignored" as const;
+}

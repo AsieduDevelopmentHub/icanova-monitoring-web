@@ -77,6 +77,9 @@ export function auditActor(actorToken: string): string {
   if (!actorToken || actorToken === "unknown") {
     return "Not recorded";
   }
+  if (actorToken === "ingest") {
+    return "Ingest";
+  }
   const pipe = actorToken.lastIndexOf("|");
   if (pipe >= 0 && pipe < actorToken.length - 1) {
     return actorToken.slice(pipe + 1);
