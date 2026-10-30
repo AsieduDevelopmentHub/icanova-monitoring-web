@@ -45,3 +45,14 @@ describe("delivery providers", () => {
     expect(providerDecision("sms", { resend: false, arkesel: true })).toBe("send");
   });
 });
+
+describe("export failure presentation", () => {
+  test("accessMessage maps forbidden export without leaking secrets", async () => {
+    const { accessMessage } = await import("../fleet/access");
+    expect(accessMessage(new Error("Forbidden: export.reports"))).toBe(
+      "This organization did not grant that permission.",
+    );
+    expect(accessMessage(new Error("INGEST_SECRET=abc Bearer xyz"))).toBe("The request was refused.");
+    expect(accessMessage(new Error("INGEST_SECRET=abc Bearer xyz"))).not.toContain("INGEST_SECRET");
+  });
+});

@@ -53,6 +53,9 @@ describe("fleet snapshot", () => {
   test("unavailable power is not zero and a negative measurement is kept", () => {
     expect(formatReading(storedReading(null, "unavailable", "kW"))).toBe("unavailable");
     expect(formatReading(storedReading(-0.45, "measured", "kW"))).toBe("-0.45 kW");
+    expect(formatReading(storedReading(-0.98, "measured", "PF"))).toBe("-0.98 PF");
+    expect(formatReading(storedReading(null, "unavailable", "rpm"))).not.toBe("0 rpm");
+    expect(formatReading(storedReading(null, "unavailable", "V"))).not.toBe("0 V");
   });
 
   test("a capped site snapshot is not described as an organization total", () => {

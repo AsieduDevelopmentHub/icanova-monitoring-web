@@ -3,6 +3,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { FleetBoundary } from "../fleet/boundary";
+import { unsignedNotice } from "../fleet/sessionGates";
 import { useBearerToken } from "../fleet/useBearer";
 import { FilterSelect } from "../ui/FilterBar";
 
@@ -43,9 +44,10 @@ function Signed({
 }) {
   const token = useBearerToken();
   if (!token) {
+    const notice = unsignedNotice(offline);
     return (
       <div className="notice" role="note">
-        <strong>Not signed in.</strong> {offline}
+        <strong>{notice.title}</strong> {notice.detail}
       </div>
     );
   }

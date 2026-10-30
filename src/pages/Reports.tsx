@@ -26,17 +26,24 @@ function ExportForm({ organizationId }: { organizationId: Id<"organizations"> })
   const [reportId, setReportId] = useState<Id<"reports"> | null>(null);
   const [capped, setCapped] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
   const file = useQuery(api.reports.file, reportId ? { reportId } : "skip");
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    if (pending) {
+      return;
+    }
     setError(null);
+    setPending(true);
     try {
       const result = await build({ organizationId, kind, format });
       setReportId(result.reportId);
       setCapped(result.capped);
     } catch (caught) {
       setError(accessMessage(caught));
+    } finally {
+      setPending(false);
     }
   }
 
@@ -61,7 +68,9 @@ function ExportForm({ organizationId }: { organizationId: Id<"organizations"> })
             <option value="pdf">PDF</option>
           </select>
         </label>
-        <button type="submit">Build report</button>
+        <button type="submit" disabled={pending}>
+          {pending ? "Building…" : "Build report"}
+        </button>
       </form>
       {capped ? <p className="notice">This file stopped at 200 rows.</p> : null}
       {file ? (

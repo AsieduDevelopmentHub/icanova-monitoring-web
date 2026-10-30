@@ -107,6 +107,36 @@ describe("ops overview and health independence", () => {
     await expect(asStranger.query(api.ops.overview, { organizationId })).rejects.toThrow();
   });
 
+  test("role lacking diagnostics audit and manage.devices is denied ops overview", async () => {
+    const { t, asOwner, organizationId } = await seeded();
+    const limited = {
+      subject: "viewer",
+      issuer: "https://issuer.test",
+      tokenIdentifier: "https://issuer.test|viewer",
+    };
+    const asViewer = t.withIdentity(limited);
+    await asViewer.mutation(api.organizations.create, { name: "ViewerOrg" });
+    const viewerOrgs = await asViewer.query(api.organizations.mine, {});
+    const viewerOrgId = viewerOrgs[0]!.organizationId;
+    // Seed a membership on the owner's org with a narrow role.
+    const readerRole = await asOwner.mutation(api.organizations.createRole, {
+      organizationId,
+      name: "Alarms only",
+      permissions: ["view.alarms", "view.dashboard"],
+    });
+    const me = await asViewer.query(api.users.me, {});
+    expect(me).not.toBeNull();
+    await asOwner.mutation(api.organizations.grant, {
+      organizationId,
+      userId: me!._id,
+      roleId: readerRole,
+    });
+    await expect(asViewer.query(api.ops.overview, { organizationId })).rejects.toThrow();
+    // Control: owner still allowed.
+    await expect(asOwner.query(api.ops.overview, { organizationId })).resolves.toBeTruthy();
+    void viewerOrgId;
+  });
+
   test("10k fleet tallies remain incremental without a scan", async () => {
     const { shiftHealthTallies, EMPTY_HEALTH_TALLIES } = await import(
       "../../convex/deviceHealthLogic"

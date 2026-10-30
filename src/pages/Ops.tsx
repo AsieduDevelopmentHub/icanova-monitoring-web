@@ -2,6 +2,11 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { id } from "../fleet/access";
 import { FleetBoundary } from "../fleet/boundary";
+import {
+  canViewOpsOverview,
+  permissionDeniedNotice,
+  unsignedNotice,
+} from "../fleet/sessionGates";
 import { useBearerToken } from "../fleet/useBearer";
 import { Metric } from "../ui/Metric";
 import { StatusMark } from "../ui/StatusMark";
@@ -16,7 +21,11 @@ export function Ops() {
           stay separate. Missing is not zero.
         </p>
       </header>
-      {import.meta.env.VITE_CONVEX_URL ? <SignedOps /> : <p className="empty">Convex is not configured.</p>}
+      {import.meta.env.VITE_CONVEX_URL ? (
+        <SignedOps />
+      ) : (
+        <p className="empty">Convex is not configured.</p>
+      )}
     </section>
   );
 }
@@ -24,9 +33,10 @@ export function Ops() {
 function SignedOps() {
   const token = useBearerToken();
   if (!token) {
+    const notice = unsignedNotice("No operational query is running.");
     return (
       <div className="notice" role="note">
-        <strong>Not signed in.</strong> No operational query is running.
+        <strong>{notice.title}</strong> {notice.detail}
       </div>
     );
   }
@@ -45,10 +55,18 @@ function OpsBoard() {
   if (!Array.isArray(orgs) || orgs.length === 0) {
     return <p className="empty">This account has no organization membership.</p>;
   }
-  const organizationId = orgs[0].organizationId;
+  const org = orgs[0];
+  if (!canViewOpsOverview(org.permissions)) {
+    const notice = permissionDeniedNotice("Operational overview");
+    return (
+      <div className="notice" role="note">
+        <strong>{notice.title}</strong> {notice.detail}
+      </div>
+    );
+  }
   return (
-    <FleetBoundary key={organizationId}>
-      <Overview organizationId={organizationId} orgName={orgs[0].name} />
+    <FleetBoundary key={org.organizationId}>
+      <Overview organizationId={org.organizationId} orgName={org.name} />
     </FleetBoundary>
   );
 }
@@ -75,7 +93,9 @@ function Overview({ organizationId, orgName }: { organizationId: string; orgName
 
       <h2>Fleet health</h2>
       {!fleet.ready ? (
-        <p className="empty">No fleet health summary yet. It appears after the first heartbeat or ingest.</p>
+        <p className="empty">
+          No fleet health summary yet. It appears after the first heartbeat or ingest.
+        </p>
       ) : (
         <div className="metric-grid">
           <Metric label="Tracked devices" value={String(fleet.devicesTracked)} />
@@ -131,7 +151,9 @@ function Overview({ organizationId, orgName }: { organizationId: string; orgName
         <Metric label="Stale hint" value={String(jobsStale)} note="No recent attempt while pending" />
       </div>
       {data.jobs.length === 0 ? (
-        <p className="empty">No job runs recorded yet. Cron ticks populate this after the first interval.</p>
+        <p className="empty">
+          No job runs recorded yet. Cron ticks populate this after the first interval.
+        </p>
       ) : (
         <ul>
           {data.jobs.map((job) => (

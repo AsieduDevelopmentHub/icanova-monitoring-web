@@ -78,8 +78,8 @@ Tenancy is resolved from the registered device `identity` (12 hex chars of efuse
 
 | Variable | Status |
 |---|---|
-| `TEST_NOTIFY_EMAIL` | Referenced in Phase 7 plan; **not present** in `.env.example` yet |
-| `TEST_NOTIFY_PHONE` | Same |
+| `TEST_NOTIFY_EMAIL` | Documented in `.env.example` — staging/lab only |
+| `TEST_NOTIFY_PHONE` | Documented in `.env.example` — staging/lab only |
 
 ### 2.3 Hardcoded development URLs
 
@@ -165,8 +165,8 @@ Cloud dashboard + ingest + health do **not** require the USB CLI once gateways a
 | Sequence / epoch ordering | Implemented in ingest |
 | Heartbeat without opening alarms | Implemented (`kind=heartbeat`) |
 | HTTPS to Convex | Convex `.site` is HTTPS; firmware must use TLS client for direct 443 |
-| Rate limiting | **Not found** — Phase 7E gap |
-| Deactivated devices | **Not found** — Phase 7D/E gap |
+| Rate limiting | **COMPLETE** (Phase 7.2) — per-device / per-IP windows |
+| Deactivated devices | **COMPLETE** (Phase 7.2) — `devices.lifecycle` |
 | Shared ingest secret | Adequate for early fleet; document rotation + future per-device credentials |
 | Cross-tenant queries | Enforced via org membership/permissions (preserve in tests) |
 
@@ -199,9 +199,9 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 - [ ] Production `INGEST_SECRET` set on Convex and collector only
 - [ ] Frontend built with production `VITE_CONVEX_URL` only (no server secrets in build env)
 - [ ] At least one registered device identity matches a physical or simulated gateway
-- [ ] Staging E2E path in Phase 7L documented with simulated traffic
-- [ ] `pnpm test`, `pnpm exec tsc --noEmit`, `pnpm build` green on the release commit
-- [ ] No production deploy forced while any auth/ingest secret is missing
+- [x] Staging E2E path in Phase 7L documented with simulated traffic (`docs/staging-e2e-report.md`) — **separate staging deploy still operator**
+- [x] `pnpm test`, `pnpm exec tsc --noEmit`, `pnpm build` green on the Phase 7.5 verification pass
+- [x] No production deploy forced while any auth/ingest secret is missing
 
 ### Should-fix before calling production “ready”
 
@@ -212,8 +212,12 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 - [x] Backup/RPO/RTO documented from Convex product reality (7G) — see `docs/backup-and-disaster-recovery.md` (**restore drill still operator**)
 - [x] Scheduled job inventory + run visibility (7H) — `docs/scheduled-jobs-audit.md`, `jobRunState`
 - [x] Observability / ops overview (7I) — `docs/observability-audit.md`, `/admin/ops`, ingest op windows
+- [x] Frontend production readiness (7J) — `docs/frontend-production-readiness.md`
+- [x] Deployment runbook (7K) — `docs/deployment-runbook.md`
 - [ ] Separate Resend/Arkesel production credentials
 - [ ] Confirm gateway does not print uplink bearer/key on serial
+- [ ] Isolated staging Convex + real IdP browser E2E
+- [ ] Dashboard backup + isolated restore drill
 
 ### Explicit non-goals this phase
 
@@ -226,14 +230,11 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 
 ## 6. Recommended implementation order (next)
 
-1. **7C** — Expand `.env.example` + env inventory; keep secrets out of `VITE_`.
-2. **7B** — Auth validation helpers + tests; document operator IdP values (no invented issuer).
-3. **7D/7E** — Device active flag + ingest reject; assess rate limit; provisioning doc.
-4. **7H/7F** — Cron/capacity notes already partly known; add tests and sweep safety checks.
-5. **7G** — Backup procedure from Convex docs / dashboard (operator-verified).
-6. **7I/7J** — Observability + frontend prod config checks.
-7. **7K/7L/7M** — Deploy runbook, simulated E2E, full test/build matrix.
-8. Final report in `gpt.md` Definition of Done format — deploy only after blockers cleared.
+1. ~~7A–7I~~ — Complete on development (see §§9–11).
+2. ~~7J / 7K / 7L~~ — Complete on development (see §12); staging IdP still operator.
+3. **Operator** — Provision staging + production Convex; real IdP; backup restore drill; HTTPS host.
+4. **Hardware** — Physical ESP32 / RS485 / DSE validation (not software-completable).
+5. Final production deploy only after §5 blockers are operator-complete.
 
 ---
 
@@ -325,3 +326,37 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 | Health event prune (14d) | Cron every 15 min |
 | External APM | Not introduced |
 | Live DSE validation | Not claimed |
+
+---
+
+## 12. Phase 7.5 delivery notes (7J / 7K / 7L)
+
+| Area | Status |
+|---|---|
+| 7J Frontend production readiness | **COMPLETE** (software) — `docs/frontend-production-readiness.md` |
+| 7J Hosted IdP login UI | **OPERATOR ACTION REQUIRED / DEFERRED** |
+| 7K Deployment runbook | **COMPLETE** — `docs/deployment-runbook.md` |
+| 7K productionConfig expansion | **COMPLETE** — notify-when-enabled + app URL profile |
+| 7K Production deploy | **Not done** |
+| 7L Staging environment | **OPERATOR ACTION REQUIRED** — not provisioned |
+| 7L Software E2E (Vitest / convex-test) | **COMPLETE** — `docs/staging-e2e-report.md` |
+| 7L Browser IdP E2E | **BLOCKED** |
+| 7L Scale simulation | **COMPLETE** (simulation — not production load) |
+| Backup restore drill | **OPERATOR ACTION REQUIRED** |
+| Shared `INGEST_SECRET` | Known risk — future per-device credentials |
+| Hardware / live DSE | **BLOCKED** — not claimed |
+
+### Phase 7 overall
+
+**Partially complete.** Software gates 7A–7L are implemented and verified on development. Production readiness remains blocked on operator IdP, secrets, staging/production infrastructure, backup restore, and hardware validation.
+
+### Files added/updated in 7.5
+
+- `docs/frontend-production-readiness.md`
+- `docs/deployment-runbook.md`
+- `docs/staging-e2e-report.md`
+- `docs/phase7-production-readiness.md` (this section)
+- `src/fleet/sessionGates.ts`, `src/ui/AppErrorBoundary.tsx`
+- Ops / Settings / Shell / form pending guards
+- `convex/productionConfig.ts` + tests
+- `src/fleet/sessionGates.test.ts`, `scaleSimulation.test.ts`, observability ACL test

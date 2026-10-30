@@ -9,11 +9,13 @@ import { useBearerToken } from "../fleet/useBearer";
 import { NAV, NAV_GROUPS, crumbsFor } from "./nav";
 
 function UnreadBadge() {
-  const orgs = useQuery(api.organizations.mine, {});
+  const token = useBearerToken();
+  const live = Boolean(import.meta.env.VITE_CONVEX_URL) && Boolean(token);
+  const orgs = useQuery(api.organizations.mine, live ? {} : "skip");
   const organizationId = orgs?.[0]?.organizationId;
   const unread = useQuery(
     api.notifications.unreadCount,
-    organizationId ? { organizationId } : "skip",
+    live && organizationId ? { organizationId } : "skip",
   );
   if (!unread) {
     return null;

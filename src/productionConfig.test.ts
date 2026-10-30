@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   authProviderReady,
   isHttpsUrl,
+  productionProfileReady,
   productionReady,
   testNotifyDestinations,
+  validateAppUrlEnv,
   validateAuthEnv,
   validateIngestEnv,
+  validateNotifyEnv,
 } from "../convex/productionConfig";
 
 describe("productionConfig", () => {
@@ -13,9 +16,9 @@ describe("productionConfig", () => {
     expect(authProviderReady("disabled", "disabled")).toBe(false);
     expect(authProviderReady(undefined, "https://login.auth0.com/.well-known/jwks.json")).toBe(false);
     expect(authProviderReady("https://login.auth0.com/", undefined)).toBe(false);
-    expect(authProviderReady("http://login.auth0.com/", "https://login.auth0.com/.well-known/jwks.json")).toBe(
-      false,
-    );
+    expect(
+      authProviderReady("http://login.auth0.com/", "https://login.auth0.com/.well-known/jwks.json"),
+    ).toBe(false);
     expect(
       authProviderReady("https://login.auth0.com/", "https://login.auth0.com/.well-known/jwks.json"),
     ).toBe(true);
@@ -52,11 +55,14 @@ describe("productionConfig", () => {
     ]);
   });
 
-  it("requires a sufficiently long ingest secret", () => {
+  it("requires a sufficiently long non-placeholder ingest secret", () => {
     expect(validateIngestEnv({}).map((i) => i.code)).toEqual(["ingest.secret_missing"]);
     expect(validateIngestEnv({ INGEST_SECRET: "short" }).map((i) => i.code)).toEqual([
       "ingest.secret_short",
     ]);
+    expect(
+      validateIngestEnv({ INGEST_SECRET: "changeme" + "a".repeat(30) }).map((i) => i.code),
+    ).toEqual(["ingest.secret_placeholder"]);
     expect(validateIngestEnv({ INGEST_SECRET: "a".repeat(32) })).toEqual([]);
   });
 
@@ -70,6 +76,34 @@ describe("productionConfig", () => {
     ).toEqual({ email: "lab@example.com", phone: "+233000000000" });
   });
 
+  it("fails closed when email or SMS alerts are enabled without real credentials", () => {
+    expect(validateNotifyEnv({})).toEqual([]);
+    expect(
+      validateNotifyEnv({
+        EMAIL_ALERTS_ENABLED: "true",
+        RESEND_API_KEY: "re_placeholder",
+        RESEND_FROM: "alerts@example.com",
+      }).map((i) => i.code),
+    ).toContain("notify.email_key");
+    expect(
+      validateNotifyEnv({
+        SMS_ALERTS_ENABLED: "1",
+        ARKESEL_API_KEY: "real-key-value-here",
+        ARKESEL_SENDER: "DSE",
+      }),
+    ).toEqual([]);
+  });
+
+  it("requires https app Convex URL for production profile", () => {
+    expect(validateAppUrlEnv({}).map((i) => i.code)).toEqual(["app.url_missing"]);
+    expect(validateAppUrlEnv({ VITE_CONVEX_URL: "http://localhost:3000" }).map((i) => i.code)).toEqual([
+      "app.url_not_https",
+    ]);
+    expect(
+      validateAppUrlEnv({ VITE_CONVEX_URL: "https://effervescent-kangaroo-10.convex.cloud" }),
+    ).toEqual([]);
+  });
+
   it("productionReady needs auth and ingest together", () => {
     expect(productionReady({}).ok).toBe(false);
     expect(
@@ -78,6 +112,26 @@ describe("productionConfig", () => {
         AUTH_JWKS_URL: "https://login.auth0.com/.well-known/jwks.json",
         AUTH_JWT_AUDIENCE: "dse-gateway",
         INGEST_SECRET: "a".repeat(32),
+      }).ok,
+    ).toBe(true);
+  });
+
+  it("productionProfileReady also requires app URL and still is not full approval", () => {
+    expect(
+      productionProfileReady({
+        AUTH_JWT_ISSUER: "https://login.auth0.com/",
+        AUTH_JWKS_URL: "https://login.auth0.com/.well-known/jwks.json",
+        AUTH_JWT_AUDIENCE: "dse-gateway",
+        INGEST_SECRET: "a".repeat(32),
+      }).ok,
+    ).toBe(false);
+    expect(
+      productionProfileReady({
+        AUTH_JWT_ISSUER: "https://login.auth0.com/",
+        AUTH_JWKS_URL: "https://login.auth0.com/.well-known/jwks.json",
+        AUTH_JWT_AUDIENCE: "dse-gateway",
+        INGEST_SECRET: "a".repeat(32),
+        VITE_CONVEX_URL: "https://my-prod.convex.cloud",
       }).ok,
     ).toBe(true);
   });

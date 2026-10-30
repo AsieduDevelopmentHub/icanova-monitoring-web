@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 import { FilterBar, FilterSelect } from "../ui/FilterBar";
 import { setBearerToken } from "../platform/bearer";
 import { sessionView } from "./session";
+import { rejectedSessionNotice, unsignedNotice } from "./sessionGates";
 import { FleetBoundary } from "./boundary";
 import { id } from "./access";
 import { useBearerToken } from "./useBearer";
@@ -21,9 +22,10 @@ export function LiveGate({ children }: { children: (org: OrgRow) => ReactNode })
     );
   }
   if (!token) {
+    const notice = unsignedNotice("No organization query is running.");
     return (
       <div className="notice" role="note">
-        <strong>Not signed in.</strong> No organization query is running.
+        <strong>{notice.title}</strong> {notice.detail}
       </div>
     );
   }
@@ -43,10 +45,10 @@ function OrgBody({ children }: { children: (org: OrgRow) => ReactNode }) {
     return <p className="empty">Loading organizations.</p>;
   }
   if (gate === "rejected") {
+    const notice = rejectedSessionNotice();
     return (
       <div className="notice" role="note">
-        <strong>Session was not accepted.</strong> Protected organization data is not loaded. The
-        token is missing a user record, or the deployment did not accept it.
+        <strong>{notice.title}</strong> {notice.detail}{" "}
         <button type="button" onClick={() => setBearerToken(null)}>
           Clear session
         </button>

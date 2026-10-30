@@ -24,6 +24,7 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
   const [userId, setUserId] = useState("");
   const [roleId, setRoleId] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
   if (roster === undefined || roles === undefined) {
     return <p className="empty">Loading members.</p>;
   }
@@ -32,7 +33,11 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    if (pending) {
+      return;
+    }
     setError(null);
+    setPending(true);
     try {
       await grant({
         organizationId,
@@ -41,6 +46,8 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
       });
     } catch (caught) {
       setError(accessMessage(caught));
+    } finally {
+      setPending(false);
     }
   }
 
@@ -75,7 +82,9 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
             ))}
           </select>
         </label>
-        <button type="submit">Grant role</button>
+        <button type="submit" disabled={pending}>
+          {pending ? "Granting…" : "Grant role"}
+        </button>
       </form>
       {error ? <p className="err">{error}</p> : null}
       <p className="meta">Grant checks manage.users and refuses a role from another organization.</p>

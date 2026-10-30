@@ -26,6 +26,7 @@ function RoleEditor({ organizationId }: { organizationId: Id<"organizations"> })
   const [name, setName] = useState("");
   const [selected, setSelected] = useState<string[]>(["view.dashboard"]);
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
   if (roles === undefined) {
     return <p className="empty">Loading roles.</p>;
   }
@@ -50,7 +51,11 @@ function RoleEditor({ organizationId }: { organizationId: Id<"organizations"> })
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    if (pending) {
+      return;
+    }
     setError(null);
+    setPending(true);
     try {
       if (current) {
         await updateRole({ organizationId, roleId: current.roleId, name, permissions: selected });
@@ -60,6 +65,8 @@ function RoleEditor({ organizationId }: { organizationId: Id<"organizations"> })
       }
     } catch (caught) {
       setError(accessMessage(caught));
+    } finally {
+      setPending(false);
     }
   }
 
@@ -93,7 +100,9 @@ function RoleEditor({ organizationId }: { organizationId: Id<"organizations"> })
           </label>
         ))}
       </fieldset>
-      <button type="submit">{current ? "Update role" : "Create role"}</button>
+      <button type="submit" disabled={pending}>
+        {pending ? "Saving…" : current ? "Update role" : "Create role"}
+      </button>
       {error ? <p className="err">{error}</p> : null}
       <p className="meta">Saving checks manage.roles. A hidden checkbox is not the authorization.</p>
     </form>

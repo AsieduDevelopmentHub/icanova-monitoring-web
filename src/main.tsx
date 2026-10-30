@@ -24,6 +24,7 @@ import { Unavailable } from "./pages/Unavailable";
 import { UsersAdmin } from "./pages/UsersAdmin";
 import { Platform } from "./platform/Platform";
 import { Shell } from "./shell/Shell";
+import { AppErrorBoundary } from "./ui/AppErrorBoundary";
 import "./styles.css";
 
 function ConfigurePage() {
@@ -44,30 +45,32 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Platform>
       <BrowserRouter>
-        <Routes>
-          <Route element={<Shell />}>
-            <Route index element={<Dashboard />} />
-            <Route path="local" element={<Monitor />} />
-            <Route path="local/configure" element={<ConfigurePage />} />
-            <Route path="alarms" element={<Alarms />} />
-            <Route path="alarms/:id" element={<AlarmDetail />} />
-            <Route path="sites" element={<Sites />} />
-            <Route path="generators" element={<Generators />} />
-            <Route path="generators/:id" element={<GeneratorDetail />} />
-            <Route path="generators/:id/:section" element={<GeneratorDetail />} />
-            <Route path="gateways" element={<Gateways />} />
-            <Route path="gateways/:id" element={<GatewayDetail />} />
-            <Route path="events" element={<Events />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="maintenance" element={<Maintenance />} />
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="admin/ops" element={<Ops />} />
-            <Route path="admin/users" element={<UsersAdmin />} />
-            <Route path="admin/roles" element={<RolesAdmin />} />
-            <Route path="admin/settings" element={<Settings />} />
-            <Route path="*" element={<Unavailable />} />
-          </Route>
-        </Routes>
+        <AppErrorBoundary>
+          <Routes>
+            <Route element={<Shell />}>
+              <Route index element={<Dashboard />} />
+              <Route path="local" element={<Monitor />} />
+              <Route path="local/configure" element={<ConfigurePage />} />
+              <Route path="alarms" element={<Alarms />} />
+              <Route path="alarms/:id" element={<AlarmDetail />} />
+              <Route path="sites" element={<Sites />} />
+              <Route path="generators" element={<Generators />} />
+              <Route path="generators/:id" element={<GeneratorDetail />} />
+              <Route path="generators/:id/:section" element={<GeneratorDetail />} />
+              <Route path="gateways" element={<Gateways />} />
+              <Route path="gateways/:id" element={<GatewayDetail />} />
+              <Route path="events" element={<Events />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="maintenance" element={<Maintenance />} />
+              <Route path="notifications" element={<Notifications />} />
+              <Route path="admin/ops" element={<Ops />} />
+              <Route path="admin/users" element={<UsersAdmin />} />
+              <Route path="admin/roles" element={<RolesAdmin />} />
+              <Route path="admin/settings" element={<Settings />} />
+              <Route path="*" element={<Unavailable />} />
+            </Route>
+          </Routes>
+        </AppErrorBoundary>
       </BrowserRouter>
     </Platform>
   </StrictMode>,

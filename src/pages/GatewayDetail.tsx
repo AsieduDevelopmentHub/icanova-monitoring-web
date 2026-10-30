@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { FleetBoundary } from "../fleet/boundary";
-import { id } from "../fleet/access";
+import { accessMessage, id } from "../fleet/access";
 import { demoFrames, demoSamples } from "../telemetry/demoLog";
 import { demoDiagnostics } from "../telemetry/diagnosticsView";
 import { DEMO_GENERATOR_ID, DEMO_SOURCE } from "../telemetry/logModel";
@@ -74,6 +75,8 @@ function DemoGateway() {
 function StoredGateway({ deviceId }: { deviceId: string }) {
   const detail = useQuery(api.devices.detail, { deviceId: id<"devices">(deviceId) });
   const setLifecycle = useMutation(api.devices.setLifecycle);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   if (detail === undefined) {
     return (
       <section className="page">
@@ -89,6 +92,25 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
   const fresh = freshnessView(health?.telemetryFreshness);
   const overall = overallView(health?.overallStatus);
   const active = detail.device.lifecycle !== "inactive";
+
+  async function onLifecycle() {
+    if (pending) {
+      return;
+    }
+    setError(null);
+    setPending(true);
+    try {
+      await setLifecycle({
+        deviceId: id<"devices">(deviceId),
+        lifecycle: active ? "inactive" : "active",
+      });
+    } catch (caught) {
+      setError(accessMessage(caught));
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
     <section className="page">
       <header className="page-head">
@@ -115,21 +137,13 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
         {contactAgeLabel(health?.lastTelemetryAt, now)}.
       </p>
       <p>
-        <button
-          type="button"
-          className="text-btn"
-          onClick={() =>
-            void setLifecycle({
-              deviceId: id<"devices">(deviceId),
-              lifecycle: active ? "inactive" : "active",
-            })
-          }
-        >
-          {active ? "Deactivate device" : "Reactivate device"}
+        <button type="button" className="text-btn" disabled={pending} onClick={() => void onLifecycle()}>
+          {pending ? "Updating…" : active ? "Deactivate device" : "Reactivate device"}
         </button>
         {" · "}
         Deactivation stops ingest and heartbeat writes. Historical telemetry is kept.
       </p>
+      {error ? <p className="err">{error}</p> : null}
       <p>
         {poll
           ? `Last successful poll: ${poll.label}. Source time ${poll.at == null ? "—" : String(poll.at)}.`
