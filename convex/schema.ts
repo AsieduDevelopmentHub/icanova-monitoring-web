@@ -285,10 +285,24 @@ export default defineSchema({
     idempotencyKey: v.optional(v.string()),
     lastAttemptAt: v.optional(v.number()),
     nextAttemptAt: v.optional(v.number()),
+    /** Increments on every claim. Completions must match or they are ignored. */
+    claimGeneration: v.optional(v.number()),
+    leaseExpiresAt: v.optional(v.number()),
+    failureCategory: v.optional(
+      v.union(
+        v.literal("rejected"),
+        v.literal("uncertain"),
+        v.literal("not_configured"),
+        v.literal("cancelled"),
+        v.literal("suppressed"),
+      ),
+    ),
+    parentMessageId: v.optional(v.id("messages")),
   })
     .index("by_org_created", ["organizationId", "createdAt"])
     .index("by_channel", ["channel"])
-    .index("by_org_idempotency", ["organizationId", "idempotencyKey"]),
+    .index("by_org_idempotency", ["organizationId", "idempotencyKey"])
+    .index("by_status_lease", ["status", "leaseExpiresAt"]),
 
   /** One row per org event key so raise/ack/clear emit once. */
   notificationDispatches: defineTable({

@@ -12,6 +12,9 @@ export const MAX_EXPORT_BYTES = 700_000;
 /** Delivery attempts for one message, including the first. */
 export const MAX_ATTEMPTS = 3;
 
+/** A processing claim older than this may be reclaimed by another worker. */
+export const DELIVERY_LEASE_MS = 60_000;
+
 /**
  * History is one 15-minute aggregate per generator, not one document per poll.
  * telemetryCurrent is the live document and is not pruned.

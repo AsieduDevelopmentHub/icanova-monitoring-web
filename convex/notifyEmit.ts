@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, type MutationCtx } from "./_generated/server";
+import { DELIVERY_LEASE_MS, MAX_ATTEMPTS } from "./limits";
 import { isPermission, type Permission } from "./permissions";
 import {
   alarmEmailHtml,
@@ -296,11 +297,14 @@ export async function emitNotificationEvent(
     Number.isFinite(settings.escalateAfterMinutes) &&
     settings.escalateAfterMinutes > 0
   ) {
-    await ctx.scheduler.runAfter(
-      Math.floor(settings.escalateAfterMinutes * 60_000),
-      internal.notifyEmit.checkEscalation,
-      { alarmId: args.alarmId },
-    );
+    const alarm = await ctx.db.get(args.alarmId);
+    const raisedAt = alarm?.raisedAt ?? Date.now();
+    const dueAt = raisedAt + Math.floor(settings.escalateAfterMinutes * 60_000);
+    const delay = Math.max(0, dueAt - Date.now());
+    await ctx.scheduler.runAfter(delay, internal.notifyEmit.checkEscalation, {
+      alarmId: args.alarmId,
+      dueAt,
+    });
   }
   return { created: true, messageIds };
 }
@@ -432,7 +436,10 @@ export async function emitDeviceRegistered(
 }
 
 export const checkEscalation = internalMutation({
-  args: { alarmId: v.id("alarms") },
+  args: {
+    alarmId: v.id("alarms"),
+    dueAt: v.optional(v.number()),
+  },
   handler: async (ctx, args) => {
     const alarm = await ctx.db.get(args.alarmId);
     if (!alarm) {
@@ -441,12 +448,38 @@ export const checkEscalation = internalMutation({
     if (alarm.state !== "active" || alarm.acknowledgedAt !== null) {
       return { status: "stopped" as const };
     }
+    const settings = await orgSettings(ctx, alarm.organizationId);
+    if (
+      settings.escalateAfterMinutes === null ||
+      !Number.isFinite(settings.escalateAfterMinutes) ||
+      settings.escalateAfterMinutes <= 0
+    ) {
+      return { status: "disabled" as const };
+    }
+    const dueAt =
+      args.dueAt ?? alarm.raisedAt + Math.floor(settings.escalateAfterMinutes * 60_000);
+    const remaining = dueAt - Date.now();
+    if (remaining > 0) {
+      await ctx.scheduler.runAfter(remaining, internal.notifyEmit.checkEscalation, {
+        alarmId: args.alarmId,
+        dueAt,
+      });
+      return { status: "rescheduled" as const, remaining };
+    }
     return {
       status: "escalated" as const,
       ...(await emitForAlarm(ctx, alarm, "alarm.raised", `alarm:${alarm._id}:escalation:1`, true)),
     };
   },
 });
+
+function leaseExpired(message: Doc<"messages">, now: number): boolean {
+  if (message.status !== "processing") {
+    return false;
+  }
+  const expires = message.leaseExpiresAt ?? (message.lastAttemptAt ?? 0) + DELIVERY_LEASE_MS;
+  return expires <= now;
+}
 
 export const claimMessage = internalMutation({
   args: { messageId: v.id("messages") },
@@ -455,60 +488,145 @@ export const claimMessage = internalMutation({
     if (!message) {
       return null;
     }
-    if (message.status === "sent" || message.status === "cancelled" || message.status === "suppressed") {
-      return null;
-    }
-    if (message.status === "processing") {
+    if (
+      message.status === "sent" ||
+      message.status === "cancelled" ||
+      message.status === "suppressed" ||
+      message.status === "uncertain"
+    ) {
       return null;
     }
     if (message.status === "not_configured") {
       return null;
     }
+    const now = Date.now();
+    if (message.status === "processing" && !leaseExpired(message, now)) {
+      return null;
+    }
     if (message.alarmId && message.event?.startsWith("alarm.")) {
       const alarm = await ctx.db.get(message.alarmId);
       if (!alarm) {
-        await ctx.db.patch(message._id, { status: "cancelled", error: "Alarm missing" });
+        await ctx.db.patch(message._id, {
+          status: "cancelled",
+          failureCategory: "cancelled",
+          error: "Alarm missing",
+        });
         return null;
       }
       if (message.event === "alarm.raised" && (alarm.state === "cleared" || alarm.state === "resolved")) {
-        await ctx.db.patch(message._id, { status: "cancelled", error: "Alarm no longer active" });
+        await ctx.db.patch(message._id, {
+          status: "cancelled",
+          failureCategory: "cancelled",
+          error: "Alarm no longer active",
+        });
         return null;
       }
     }
-    const attempt = message.attempt + 1;
+    const reclaiming = message.status === "processing";
+    const attempt = reclaiming ? message.attempt : message.attempt + 1;
+    const claimGeneration = (message.claimGeneration ?? 0) + 1;
+    const leaseExpiresAt = now + DELIVERY_LEASE_MS;
     await ctx.db.patch(message._id, {
       status: "processing",
       attempt,
-      lastAttemptAt: Date.now(),
+      claimGeneration,
+      leaseExpiresAt,
+      lastAttemptAt: now,
+      failureCategory: undefined,
+      error: reclaiming ? "Reclaimed expired processing lease" : undefined,
+    });
+    await ctx.scheduler.runAfter(DELIVERY_LEASE_MS + 1_000, internal.notifyEmit.reclaimIfStale, {
+      messageId: message._id,
+      claimGeneration,
     });
     return {
-      ...message,
+      messageId: message._id,
+      organizationId: message.organizationId,
+      channel: message.channel,
+      to: message.to,
+      subject: message.subject,
+      body: message.body,
       attempt,
+      claimGeneration,
+      idempotencyKey: message.idempotencyKey ?? `message:${message._id}`,
       status: "processing" as const,
     };
+  },
+});
+
+export const reclaimIfStale = internalMutation({
+  args: {
+    messageId: v.id("messages"),
+    claimGeneration: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const message = await ctx.db.get(args.messageId);
+    if (!message) {
+      return { status: "missing" as const };
+    }
+    if (message.status !== "processing" || (message.claimGeneration ?? 0) !== args.claimGeneration) {
+      return { status: "ignored" as const };
+    }
+    if (!leaseExpired(message, Date.now())) {
+      return { status: "leased" as const };
+    }
+    await ctx.db.patch(message._id, {
+      status: "pending",
+      leaseExpiresAt: undefined,
+      nextAttemptAt: Date.now(),
+      error: "Processing lease expired",
+      failureCategory: "uncertain",
+    });
+    await ctx.scheduler.runAfter(0, internal.notify.deliverMessage, { messageId: message._id });
+    return { status: "reclaimed" as const };
   },
 });
 
 export const completeMessage = internalMutation({
   args: {
     messageId: v.id("messages"),
+    claimGeneration: v.number(),
     status: v.string(),
     providerId: v.optional(v.string()),
     error: v.optional(v.string()),
+    failureCategory: v.optional(
+      v.union(
+        v.literal("rejected"),
+        v.literal("uncertain"),
+        v.literal("not_configured"),
+        v.literal("cancelled"),
+        v.literal("suppressed"),
+      ),
+    ),
     scheduleRetry: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const message = await ctx.db.get(args.messageId);
     if (!message) {
-      return null;
+      return { status: "missing" as const };
+    }
+    if ((message.claimGeneration ?? 0) !== args.claimGeneration) {
+      return { status: "stale" as const };
+    }
+    if (message.status !== "processing") {
+      return { status: "ignored" as const };
     }
     await ctx.db.patch(message._id, {
       status: args.status,
       providerId: args.providerId,
       error: args.error?.slice(0, 300),
+      failureCategory: args.failureCategory,
       lastAttemptAt: Date.now(),
+      leaseExpiresAt: undefined,
     });
-    if (args.scheduleRetry && args.status === "failed" && message.attempt < 3) {
+    // Uncertain outcomes may already have been accepted by the provider.
+    // Automatic retry is only safe for definite rejections.
+    if (
+      args.scheduleRetry &&
+      args.status === "failed" &&
+      args.failureCategory === "rejected" &&
+      message.attempt < MAX_ATTEMPTS
+    ) {
       const delay = BACKOFF_MS[Math.min(message.attempt - 1, BACKOFF_MS.length - 1)] ?? 180_000;
       await ctx.db.patch(message._id, {
         status: "pending",
@@ -518,6 +636,6 @@ export const completeMessage = internalMutation({
         messageId: message._id,
       });
     }
-    return message._id;
+    return { status: "completed" as const, messageId: message._id };
   },
 });

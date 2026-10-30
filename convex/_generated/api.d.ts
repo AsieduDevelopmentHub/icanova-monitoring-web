@@ -28,6 +28,7 @@ import type * as messages from "../messages.js";
 import type * as metrics from "../metrics.js";
 import type * as notifications from "../notifications.js";
 import type * as notify from "../notify.js";
+import type * as notifyDelivery from "../notifyDelivery.js";
 import type * as notifyEmit from "../notifyEmit.js";
 import type * as notifyTemplates from "../notifyTemplates.js";
 import type * as order from "../order.js";
@@ -68,6 +69,7 @@ declare const fullApi: ApiFromModules<{
   metrics: typeof metrics;
   notifications: typeof notifications;
   notify: typeof notify;
+  notifyDelivery: typeof notifyDelivery;
   notifyEmit: typeof notifyEmit;
   notifyTemplates: typeof notifyTemplates;
   order: typeof order;

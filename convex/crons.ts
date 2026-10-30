@@ -11,3 +11,6 @@ crons.interval(
 );
 
 export default crons;
+
+// Delivery lease reclaim is scheduled per claim (reclaimIfStale). A global
+// scan cron is intentionally omitted so the hot path stays indexed and bounded.

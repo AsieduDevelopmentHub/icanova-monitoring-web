@@ -355,10 +355,14 @@ export const listDeliveries = query({
         attempt: row.attempt,
         createdAt: row.createdAt,
         lastAttemptAt: row.lastAttemptAt ?? null,
+        nextAttemptAt: row.nextAttemptAt ?? null,
+        leaseExpiresAt: row.leaseExpiresAt ?? null,
+        failureCategory: row.failureCategory ?? null,
         providerId: row.providerId ?? null,
         error: row.error ?? null,
         alarmId: row.alarmId ?? null,
-        // Never return bodies that might include secrets beyond the template text already stored.
+        parentMessageId: row.parentMessageId ?? null,
+        idempotencyKey: row.idempotencyKey ?? null,
       })),
     };
   },
@@ -433,31 +437,86 @@ export const retryDelivery = mutation({
       throw new Error("Not found");
     }
     await requirePermission(ctx, previous.organizationId, "configure.notifications");
-    if (previous.status === "sent" || previous.status === "processing" || previous.status === "pending") {
+    if (
+      previous.status === "sent" ||
+      previous.status === "processing" ||
+      previous.status === "pending" ||
+      previous.status === "cancelled" ||
+      previous.status === "suppressed"
+    ) {
       throw new Error("Invalid transition");
     }
     if (previous.attempt >= MAX_ATTEMPTS) {
       throw new Error("Attempt limit");
     }
-    if (previous.alarmId && previous.event === "alarm.raised") {
-      const alarm = await ctx.db.get(previous.alarmId);
-      if (!alarm || alarm.state === "cleared" || alarm.state === "resolved") {
-        throw new Error("Alarm no longer active");
+    if (!previous.userId) {
+      throw new Error("Message has no recipient");
+    }
+    const membership = await ctx.db
+      .query("memberships")
+      .withIndex("by_org_user", (q) =>
+        q.eq("organizationId", previous.organizationId).eq("userId", previous.userId!),
+      )
+      .unique();
+    if (!membership) {
+      throw new Error("Recipient is no longer a member");
+    }
+    const preference = await ctx.db
+      .query("notificationPreferences")
+      .withIndex("by_org_user", (q) =>
+        q.eq("organizationId", previous.organizationId).eq("userId", previous.userId!),
+      )
+      .unique();
+    const destination = destinationFor(previous.channel, preference);
+    if (!destination.allowed) {
+      throw new Error("Recipient preference disables this channel");
+    }
+    if (previous.event) {
+      const policies = await ctx.db
+        .query("notificationPolicies")
+        .withIndex("by_org_event", (q) =>
+          q.eq("organizationId", previous.organizationId).eq("event", previous.event as never),
+        )
+        .take(20);
+      const policy = policies.find((row) => row.channel === previous.channel && row.enabled);
+      if (!policy) {
+        throw new Error("Event policy disables this channel");
       }
     }
+    if (previous.siteId && preference?.subscribedSiteIds && preference.subscribedSiteIds.length > 0) {
+      if (!preference.subscribedSiteIds.some((siteId) => siteId === previous.siteId)) {
+        throw new Error("Recipient is not subscribed to this site");
+      }
+    }
+    if (previous.alarmId) {
+      const alarm = await ctx.db.get(previous.alarmId);
+      if (!alarm) {
+        throw new Error("Alarm missing");
+      }
+      if (
+        previous.event === "alarm.raised" &&
+        (alarm.state === "cleared" || alarm.state === "resolved" || alarm.state === "acknowledged")
+      ) {
+        throw new Error("Alarm no longer eligible for raised delivery");
+      }
+    }
+    // Preserve the original event idempotency base so Resend can dedupe; attempt suffix distinguishes history rows.
+    const baseKey = previous.idempotencyKey?.replace(/:retry:\d+$/, "") ?? `message:${previous._id}`;
     const id = await insertAttempt(ctx, {
       organizationId: previous.organizationId,
       channel: previous.channel,
-      to: previous.to,
+      to: destination.to,
       userId: previous.userId,
       event: previous.event,
       attempt: previous.attempt + 1,
       body: previous.body,
       subject: previous.subject,
       alarmId: previous.alarmId,
-      idempotencyKey: previous.idempotencyKey
-        ? `${previous.idempotencyKey}:retry:${previous.attempt + 1}`
-        : undefined,
+      siteId: previous.siteId,
+      generatorId: previous.generatorId,
+      deviceId: previous.deviceId,
+      idempotencyKey: `${baseKey}:retry:${previous.attempt + 1}`,
+      parentMessageId: previous.parentMessageId ?? previous._id,
     });
     const row = await ctx.db.get(id);
     if (row?.status === "pending") {
@@ -515,7 +574,11 @@ async function insertAttempt(
     body: string;
     subject?: string;
     alarmId?: Id<"alarms">;
+    siteId?: Id<"sites">;
+    generatorId?: Id<"generators">;
+    deviceId?: Id<"devices">;
     idempotencyKey?: string;
+    parentMessageId?: Id<"messages">;
   },
 ) {
   const decision = currentDecision(args.channel);
@@ -529,10 +592,15 @@ async function insertAttempt(
     status,
     attempt: args.attempt,
     error: status === "not_configured" ? notConfiguredError(args.channel) : undefined,
+    failureCategory: status === "not_configured" ? "not_configured" : undefined,
     event: args.event,
     createdAt: Date.now(),
     userId: args.userId,
     alarmId: args.alarmId,
+    siteId: args.siteId,
+    generatorId: args.generatorId,
+    deviceId: args.deviceId,
     idempotencyKey: args.idempotencyKey,
+    parentMessageId: args.parentMessageId,
   });
 }

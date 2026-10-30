@@ -328,6 +328,11 @@ function Delivery({ organizationId }: { organizationId: Id<"organizations"> }) {
           { key: "event", header: "Event", render: (row) => row.event ?? "—" },
           { key: "to", header: "Recipient", render: (row) => row.to },
           { key: "status", header: "Status", render: (row) => row.status },
+          {
+            key: "category",
+            header: "Failure category",
+            render: (row) => row.failureCategory ?? "—",
+          },
           { key: "attempt", header: "Attempts", align: "right", render: (row) => row.attempt },
           {
             key: "created",
@@ -339,7 +344,13 @@ function Delivery({ organizationId }: { organizationId: Id<"organizations"> }) {
             header: "Last attempt",
             render: (row) => (row.lastAttemptAt ? new Date(row.lastAttemptAt).toISOString() : "—"),
           },
+          {
+            key: "next",
+            header: "Next retry",
+            render: (row) => (row.nextAttemptAt ? new Date(row.nextAttemptAt).toISOString() : "—"),
+          },
           { key: "provider", header: "Provider id", render: (row) => row.providerId ?? "—" },
+          { key: "parent", header: "Parent", render: (row) => row.parentMessageId ?? "—" },
           { key: "error", header: "Failure", render: (row) => row.error ?? "—" },
           {
             key: "retry",

@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { Resend } from "resend";
 import { internal } from "./_generated/api";
 import { action, internalAction } from "./_generated/server";
+import { type DeliveryOutcome, isTimeoutError } from "./notifyDelivery";
 
 function providerId(data: unknown): string | undefined {
   if (Array.isArray(data)) {
@@ -24,50 +25,136 @@ function providerId(data: unknown): string | undefined {
   return undefined;
 }
 
-async function sendResend(to: string, subject: string, html: string) {
+async function sendResend(
+  to: string,
+  subject: string,
+  html: string,
+  idempotencyKey: string,
+): Promise<DeliveryOutcome> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM;
   if (!apiKey || !from) {
-    return { ok: false as const, error: "Resend is not configured" };
+    return { kind: "not_configured", error: "Resend is not configured" };
   }
-  const resend = new Resend(apiKey);
-  const result = await resend.emails.send({ from, to, subject, html });
-  if (result.error) {
-    return { ok: false as const, error: result.error.message.slice(0, 300) };
+  try {
+    const resend = new Resend(apiKey);
+    const result = await resend.emails.send({
+      from,
+      to,
+      subject,
+      html,
+      headers: { "Idempotency-Key": idempotencyKey.slice(0, 256) },
+    });
+    if (result.error) {
+      return { kind: "rejected", error: result.error.message.slice(0, 300) };
+    }
+    return { kind: "sent", id: result.data?.id ?? null };
+  } catch (error) {
+    if (isTimeoutError(error)) {
+      return {
+        kind: "uncertain",
+        error: error instanceof Error ? error.message.slice(0, 300) : "Provider timeout",
+      };
+    }
+    return {
+      kind: "rejected",
+      error: error instanceof Error ? error.message.slice(0, 300) : "Email send failed",
+    };
   }
-  return { ok: true as const, id: result.data?.id ?? null };
 }
 
-async function sendArkesel(to: string, message: string) {
+async function sendArkesel(to: string, message: string): Promise<DeliveryOutcome> {
   const apiKey = process.env.ARKESEL_API_KEY;
   const sender = process.env.ARKESEL_SENDER;
   if (!apiKey || !sender) {
-    return { ok: false as const, error: "Arkesel is not configured" };
+    return { kind: "not_configured", error: "Arkesel is not configured" };
   }
-  const response = await fetch("https://sms.arkesel.com/api/v2/sms/send", {
-    method: "POST",
-    headers: {
-      "api-key": apiKey,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      sender,
-      message,
-      recipients: [to],
-    }),
-  });
-  const payload = (await response.json()) as {
-    status?: string;
-    message?: string;
-    data?: unknown;
-  };
-  if (!response.ok || payload.status === "error") {
-    return {
-      ok: false as const,
-      error: (payload.message ?? `Arkesel SMS failed (${response.status})`).slice(0, 300),
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20_000);
+  try {
+    const response = await fetch("https://sms.arkesel.com/api/v2/sms/send", {
+      method: "POST",
+      headers: {
+        "api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sender,
+        message,
+        recipients: [to],
+      }),
+      signal: controller.signal,
+    });
+    const payload = (await response.json()) as {
+      status?: string;
+      message?: string;
+      data?: unknown;
     };
+    if (!response.ok || payload.status === "error") {
+      return {
+        kind: "rejected",
+        error: (payload.message ?? `Arkesel SMS failed (${response.status})`).slice(0, 300),
+      };
+    }
+    return { kind: "sent", id: providerId(payload.data) ?? null };
+  } catch (error) {
+    if (isTimeoutError(error) || (error instanceof Error && error.name === "AbortError")) {
+      return {
+        kind: "uncertain",
+        error:
+          "SMS provider timed out or the network failed. Delivery is uncertain; Arkesel has no idempotency key so a retry may duplicate.",
+      };
+    }
+    return {
+      kind: "rejected",
+      error: error instanceof Error ? error.message.slice(0, 300) : "SMS send failed",
+    };
+  } finally {
+    clearTimeout(timer);
   }
-  return { ok: true as const, id: providerId(payload.data) ?? null };
+}
+
+async function finish(
+  ctx: { runMutation: Function },
+  messageId: unknown,
+  claimGeneration: number,
+  outcome: DeliveryOutcome,
+) {
+  if (outcome.kind === "sent") {
+    return await ctx.runMutation(internal.notifyEmit.completeMessage, {
+      messageId,
+      claimGeneration,
+      status: "sent",
+      providerId: outcome.id ?? undefined,
+    });
+  }
+  if (outcome.kind === "not_configured") {
+    return await ctx.runMutation(internal.notifyEmit.completeMessage, {
+      messageId,
+      claimGeneration,
+      status: "not_configured",
+      error: outcome.error,
+      failureCategory: "not_configured",
+    });
+  }
+  if (outcome.kind === "uncertain") {
+    return await ctx.runMutation(internal.notifyEmit.completeMessage, {
+      messageId,
+      claimGeneration,
+      status: "uncertain",
+      error: outcome.error,
+      failureCategory: "uncertain",
+      scheduleRetry: false,
+    });
+  }
+  return await ctx.runMutation(internal.notifyEmit.completeMessage, {
+    messageId,
+    claimGeneration,
+    status: "failed",
+    error: outcome.error,
+    failureCategory: "rejected",
+    scheduleRetry: true,
+  });
 }
 
 /** Async outbox worker. Never called from telemetry ingest synchronously. */
@@ -82,56 +169,32 @@ export const deliverMessage = internalAction({
     }
     try {
       if (claimed.channel === "email") {
-        const result = await sendResend(claimed.to, claimed.subject ?? "DSE notification", claimed.body);
-        if (!result.ok) {
-          await ctx.runMutation(internal.notifyEmit.completeMessage, {
-            messageId: args.messageId,
-            status: "failed",
-            error: result.error,
-            scheduleRetry: true,
-          });
-          return { status: "failed" as const };
-        }
-        await ctx.runMutation(internal.notifyEmit.completeMessage, {
-          messageId: args.messageId,
-          status: "sent",
-          providerId: result.id ?? undefined,
-        });
-        return { status: "sent" as const };
+        const outcome = await sendResend(
+          claimed.to,
+          claimed.subject ?? "DSE notification",
+          claimed.body,
+          claimed.idempotencyKey,
+        );
+        await finish(ctx, args.messageId, claimed.claimGeneration, outcome);
+        return { status: outcome.kind };
       }
       if (claimed.channel === "sms") {
-        const result = await sendArkesel(claimed.to, claimed.body);
-        if (!result.ok) {
-          await ctx.runMutation(internal.notifyEmit.completeMessage, {
-            messageId: args.messageId,
-            status: "failed",
-            error: result.error,
-            scheduleRetry: true,
-          });
-          return { status: "failed" as const };
-        }
-        await ctx.runMutation(internal.notifyEmit.completeMessage, {
-          messageId: args.messageId,
-          status: "sent",
-          providerId: result.id ?? undefined,
-        });
-        return { status: "sent" as const };
+        const outcome = await sendArkesel(claimed.to, claimed.body);
+        await finish(ctx, args.messageId, claimed.claimGeneration, outcome);
+        return { status: outcome.kind };
       }
-      await ctx.runMutation(internal.notifyEmit.completeMessage, {
-        messageId: args.messageId,
-        status: "not_configured",
+      await finish(ctx, args.messageId, claimed.claimGeneration, {
+        kind: "not_configured",
         error: "Channel is not deliverable",
       });
       return { status: "not_configured" as const };
     } catch (error) {
-      const message = error instanceof Error ? error.message.slice(0, 300) : "Delivery failed";
-      await ctx.runMutation(internal.notifyEmit.completeMessage, {
-        messageId: args.messageId,
-        status: "failed",
-        error: message,
-        scheduleRetry: true,
+      const uncertain = isTimeoutError(error);
+      await finish(ctx, args.messageId, claimed.claimGeneration, {
+        kind: uncertain ? "uncertain" : "rejected",
+        error: error instanceof Error ? error.message.slice(0, 300) : "Delivery failed",
       });
-      return { status: "failed" as const };
+      return { status: uncertain ? "uncertain" : "failed" };
     }
   },
 });
@@ -148,19 +211,19 @@ export const sendEmail = action({
       organizationId: args.organizationId,
       permission: "configure.notifications",
     });
-    const result = await sendResend(args.to, args.subject, args.html);
-    if (!result.ok) {
+    const outcome = await sendResend(args.to, args.subject, args.html, `manual:${args.organizationId}:${args.to}:${args.subject}`);
+    if (outcome.kind !== "sent") {
       await ctx.runMutation(internal.messages.record, {
         organizationId: args.organizationId,
         channel: "email",
         to: args.to,
         subject: args.subject,
         body: args.html,
-        status: result.error.includes("not configured") ? "not_configured" : "failed",
+        status: outcome.kind === "not_configured" ? "not_configured" : outcome.kind === "uncertain" ? "uncertain" : "failed",
         attempt: 1,
-        error: result.error,
+        error: outcome.error,
       });
-      throw new Error(result.error);
+      throw new Error(outcome.error);
     }
     await ctx.runMutation(internal.messages.record, {
       organizationId: args.organizationId,
@@ -168,11 +231,11 @@ export const sendEmail = action({
       to: args.to,
       subject: args.subject,
       body: args.html,
-      providerId: result.id ?? undefined,
+      providerId: outcome.id ?? undefined,
       status: "sent",
       attempt: 1,
     });
-    return { id: result.id };
+    return { id: outcome.id };
   },
 });
 
@@ -187,28 +250,28 @@ export const sendSms = action({
       organizationId: args.organizationId,
       permission: "configure.notifications",
     });
-    const result = await sendArkesel(args.to, args.message);
-    if (!result.ok) {
+    const outcome = await sendArkesel(args.to, args.message);
+    if (outcome.kind !== "sent") {
       await ctx.runMutation(internal.messages.record, {
         organizationId: args.organizationId,
         channel: "sms",
         to: args.to,
         body: args.message,
-        status: result.error.includes("not configured") ? "not_configured" : "failed",
+        status: outcome.kind === "not_configured" ? "not_configured" : outcome.kind === "uncertain" ? "uncertain" : "failed",
         attempt: 1,
-        error: result.error,
+        error: outcome.error,
       });
-      throw new Error(result.error);
+      throw new Error(outcome.error);
     }
     await ctx.runMutation(internal.messages.record, {
       organizationId: args.organizationId,
       channel: "sms",
       to: args.to,
       body: args.message,
-      providerId: result.id ?? undefined,
+      providerId: outcome.id ?? undefined,
       status: "sent",
       attempt: 1,
     });
-    return { id: result.id };
+    return { id: outcome.id };
   },
 });
