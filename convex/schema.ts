@@ -7,7 +7,10 @@ import { v } from "convex/values";
  * telemetryBuckets is history: one per generator per 15-minute window, overwritten.
  * Fleet subscriptions read telemetryCurrent for a single site and stop at 50.
  * They do not read telemetryBuckets.
- * ingestCursors stores the last accepted boot id and sequence for one device.
+ * ingestCursors stores the last accepted session. epoch is the persistent
+ * boot counter. A random boot id is not an ordering key.
+ * extra holds measurements the cloud JSON added after the original seven.
+ * A null extra value is unavailable. It is not zero.
  */
 const quality = v.union(
   v.literal("measured"),
@@ -34,6 +37,9 @@ const sampleFields = {
   powerQuality: quality,
   voltageL1: v.union(v.number(), v.null()),
   voltageQuality: quality,
+  extra: v.optional(v.record(v.string(), v.union(v.number(), v.null()))),
+  extraQuality: v.optional(v.record(v.string(), quality)),
+  unmapped: v.optional(v.record(v.string(), v.union(v.number(), v.null()))),
 };
 
 export default defineSchema({
@@ -66,6 +72,8 @@ export default defineSchema({
   sites: defineTable({
     organizationId: v.id("organizations"),
     name: v.string(),
+    generatorCount: v.optional(v.number()),
+    recounting: v.optional(v.boolean()),
   }).index("by_org", ["organizationId"]),
 
   devices: defineTable({
@@ -96,6 +104,7 @@ export default defineSchema({
     ...sampleFields,
     boot: v.optional(v.number()),
     seq: v.optional(v.number()),
+    epoch: v.optional(v.number()),
   })
     .index("by_generator", ["generatorId"])
     .index("by_org_site", ["organizationId", "siteId"]),
@@ -146,6 +155,7 @@ export default defineSchema({
   siteSummaries: defineTable({
     organizationId: v.id("organizations"),
     siteId: v.id("sites"),
+    /** Exact registered count. Null only while an old site is still being counted. */
     generators: v.union(v.number(), v.null()),
     reporting: v.number(),
     linkOk: v.number(),
@@ -315,7 +325,15 @@ export default defineSchema({
     deviceId: v.id("devices"),
     boot: v.number(),
     seq: v.number(),
+    epoch: v.optional(v.number()),
   }).index("by_device", ["deviceId"]),
+
+  /** One row. Prune progress, not a fleet scan. */
+  retentionState: defineTable({
+    lastDeleted: v.number(),
+    backlog: v.boolean(),
+    updatedAt: v.number(),
+  }),
 
   files: defineTable({
     organizationId: v.id("organizations"),

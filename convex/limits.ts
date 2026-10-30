@@ -15,7 +15,8 @@ export const MAX_ATTEMPTS = 3;
 /**
  * History is one 15-minute aggregate per generator, not one document per poll.
  * telemetryCurrent is the live document and is not pruned.
- * Buckets older than BUCKET_RETENTION_MS are deleted by the hourly cron.
+ * Buckets older than BUCKET_RETENTION_MS are deleted by a resumable prune.
+ * Each minute deletes up to PRUNE_ROUNDS batches. The index range is the cursor.
  * There is no raw-sample archive and no daily tier. A week is at most 672 buckets
  * per generator. NCU sample time is uptime, so buckets are keyed by server observedAt.
  */
@@ -29,6 +30,12 @@ export const SERIES_READ = 673;
 
 /** A chart combines contiguous buckets above this so the browser does not plot hundreds of points. */
 export const CHART_POINTS = 160;
+
+/** Expired buckets removed by one mutation. The index supplies the next batch. */
+export const PRUNE_BATCH = 80;
+
+/** Continuations after the per-minute cron tick. 10 * 80 * 60 = 48,000 deletes per hour. */
+export const PRUNE_ROUNDS = 10;
 
 export function boundedPage(opts: PaginationOptions): PaginationOptions {
   const requested = Number.isFinite(opts.numItems) ? Math.floor(opts.numItems) : 1;

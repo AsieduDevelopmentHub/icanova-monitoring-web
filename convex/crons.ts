@@ -5,7 +5,7 @@ const crons = cronJobs();
 
 crons.interval(
   "prune telemetry buckets",
-  { hours: 1 },
+  { minutes: 1 },
   internal.telemetry.pruneBuckets,
   {},
 );

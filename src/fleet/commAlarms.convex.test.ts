@@ -173,21 +173,21 @@ describe("communication alarms", () => {
     expect(stored[0]?.state).toBe("active");
   });
 
-  test("a different boot does not raise from the previous link or clear the open alarm", async () => {
+  test("a different boot does not raise, clear, or replace the stored link", async () => {
     const { t, asOwner, generatorId } = await registered();
     await send(t, 4, 1, [sample("ok")]);
     const unorderedFail = await send(t, 99, 1, [sample("fail")]);
-    expect(unorderedFail.status).toBe("accepted");
+    expect(unorderedFail.status).toBe("stale");
     expect(await rows(t)).toEqual([]);
     await send(t, 4, 2, [sample("ok")]);
     await send(t, 4, 3, [sample("fail")]);
     expect((await rows(t))[0]?.evidenceBoot).toBe(4);
     const recoveredOnAnotherBoot = await send(t, 80, 1, [sample("ok")]);
-    expect(recoveredOnAnotherBoot.status).toBe("accepted");
+    expect(recoveredOnAnotherBoot.status).toBe("stale");
     expect((await rows(t))[0]?.state).toBe("active");
     expect((await rows(t))[0]?.evidenceBoot).toBe(4);
     const detail = await asOwner.query(api.generators.detail, { generatorId });
-    expect(detail.current?.link).toBe("ok");
+    expect(detail.current?.link).toBe("fail");
   });
 
   test("recovery inside one ordered batch clears the alarm it just opened", async () => {

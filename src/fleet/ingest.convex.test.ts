@@ -140,7 +140,7 @@ describe("NCU ingest", () => {
     expect(detail.current).toMatchObject({ rpm: 1500 });
   });
 
-  test("a different boot id cannot be ordered and still replaces current", async () => {
+  test("a different boot id cannot replace current telemetry", async () => {
     const { t, asOwner, generatorId } = await registered();
     await t.mutation(internal.ingest.acceptBatch, {
       identity: "aabbccddeeff",
@@ -154,9 +154,9 @@ describe("NCU ingest", () => {
       seq: 1,
       samples: [sample({ rpm: 2, t: 1000 })],
     });
-    expect(otherBoot.status).toBe("accepted");
+    expect(otherBoot.status).toBe("stale");
     const detail = await asOwner.query(api.generators.detail, { generatorId });
-    expect(detail.current).toMatchObject({ rpm: 2, sourceTime: null });
+    expect(detail.current).toMatchObject({ rpm: 1500, sourceTime: null });
   });
 
   test("a sample Convex rejects does not advance the cursor", async () => {

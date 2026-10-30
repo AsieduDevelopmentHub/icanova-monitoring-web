@@ -1,6 +1,5 @@
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { MAX_PAGE } from "./limits";
 import { shiftLink } from "./rollup";
 
 async function ensureSummary(
@@ -18,14 +17,14 @@ async function ensureSummary(
     }
     return { summary: existing, created: false as const };
   }
-  const generators = await ctx.db
-    .query("generators")
-    .withIndex("by_org_site", (q) => q.eq("organizationId", organizationId).eq("siteId", siteId))
-    .take(MAX_PAGE + 1);
+  const site = await ctx.db.get(siteId);
+  if (!site || site.organizationId !== organizationId) {
+    throw new Error("Forbidden");
+  }
   const id = await ctx.db.insert("siteSummaries", {
     organizationId,
     siteId,
-    generators: generators.length > MAX_PAGE ? null : generators.length,
+    generators: typeof site.generatorCount === "number" ? site.generatorCount : null,
     reporting: 0,
     linkOk: 0,
     linkFail: 0,
@@ -40,20 +39,32 @@ async function ensureSummary(
   return { summary: created, created: true as const };
 }
 
-/** Call after the generator row is inserted. The count includes that row when the summary is new. */
+/**
+ * Call after the generator row is inserted.
+ * Returns "recount" when this site has no stored count yet. The caller schedules
+ * one paged recount. A stored count increments by one and is not scanned.
+ */
 export async function noteGenerator(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
   siteId: Id<"sites">,
-) {
+): Promise<"recount" | "counted"> {
+  const site = await ctx.db.get(siteId);
+  if (!site || site.organizationId !== organizationId) {
+    throw new Error("Forbidden");
+  }
+  if (typeof site.generatorCount !== "number") {
+    if (!site.recounting) {
+      await ctx.db.patch(site._id, { recounting: true });
+      return "recount";
+    }
+    return "counted";
+  }
+  const next = site.generatorCount + 1;
+  await ctx.db.patch(site._id, { generatorCount: next });
   const { summary } = await ensureSummary(ctx, organizationId, siteId);
-  const listed = await ctx.db
-    .query("generators")
-    .withIndex("by_org_site", (q) => q.eq("organizationId", organizationId).eq("siteId", siteId))
-    .take(MAX_PAGE + 1);
-  await ctx.db.patch(summary._id, {
-    generators: listed.length > MAX_PAGE ? null : listed.length,
-  });
+  await ctx.db.patch(summary._id, { generators: next });
+  return "counted";
 }
 
 export async function noteSample(

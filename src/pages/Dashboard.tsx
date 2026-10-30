@@ -179,8 +179,8 @@ function SiteBoard({
           note={
             siteReady
               ? summary?.generators === null
-                ? "More than 50 generators. Not a complete count."
-                : "Stored site summary."
+                ? "The stored count is not finished."
+                : "Stored site count. Not limited to this page."
               : scope.note
           }
         />

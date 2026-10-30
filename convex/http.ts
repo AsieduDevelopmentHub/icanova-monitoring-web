@@ -1,6 +1,7 @@
 import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
+import { decodeBatch } from "./ingestDecode";
 import { ingestAuthorized, isIngestHeartbeat } from "./ingestAuth";
 
 const http = httpRouter();
@@ -84,28 +85,8 @@ http.route({
       return new Response(null, { status: 204 });
     }
     try {
-      const result = await ctx.runMutation(internal.ingest.acceptBatch, {
-        identity: record.identity,
-        boot: record.boot,
-        seq: record.seq,
-        samples: record.samples,
-      } as {
-        identity: string;
-        boot: number;
-        seq: number;
-        samples: {
-          t: number;
-          age: number;
-          link: string;
-          alm: number;
-          mode: number | null;
-          rpm: number | null;
-          batt10: number | null;
-          hz10: number | null;
-          kw100: number | null;
-          van10: number | null;
-        }[];
-      });
+      const batch = decodeBatch(record);
+      const result = await ctx.runMutation(internal.ingest.acceptBatch, batch);
       if (result.status === "unknown" || result.status === "no-generator") {
         return Response.json(result, { status: 404 });
       }

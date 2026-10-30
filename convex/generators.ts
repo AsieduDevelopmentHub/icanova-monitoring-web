@@ -1,6 +1,7 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
 import { assertSameOrg, requireName, requirePermission } from "./auth";
 import { requireDevice } from "./devices";
@@ -71,8 +72,51 @@ export const create = mutation({
       deviceId: args.deviceId,
       name,
     });
-    await noteGenerator(ctx, args.organizationId, args.siteId);
+    const counted = await noteGenerator(ctx, args.organizationId, args.siteId);
+    if (counted === "recount") {
+      await ctx.scheduler.runAfter(0, internal.generators.recountGenerators, {
+        siteId: args.siteId,
+        cursor: null,
+        seen: 0,
+      });
+    }
     await writeAudit(ctx, args.organizationId, "generator.create", generatorId);
     return generatorId;
+  },
+});
+
+/** Paged absolute count for a site that predates generatorCount. Not the request path. */
+export const recountGenerators = internalMutation({
+  args: {
+    siteId: v.id("sites"),
+    cursor: v.union(v.string(), v.null()),
+    seen: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const site = await ctx.db.get(args.siteId);
+    if (!site) {
+      return;
+    }
+    const page = await ctx.db
+      .query("generators")
+      .withIndex("by_org_site", (q) => q.eq("organizationId", site.organizationId).eq("siteId", site._id))
+      .paginate({ numItems: 50, cursor: args.cursor });
+    const seen = args.seen + page.page.length;
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(0, internal.generators.recountGenerators, {
+        siteId: site._id,
+        cursor: page.continueCursor,
+        seen,
+      });
+      return;
+    }
+    await ctx.db.patch(site._id, { generatorCount: seen, recounting: false });
+    const summary = await ctx.db
+      .query("siteSummaries")
+      .withIndex("by_site", (q) => q.eq("siteId", site._id))
+      .unique();
+    if (summary && summary.organizationId === site.organizationId) {
+      await ctx.db.patch(summary._id, { generators: seen });
+    }
   },
 });

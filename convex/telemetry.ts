@@ -3,7 +3,9 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, query } from "./_generated/server";
 import { requirePermission } from "./auth";
-import { BUCKET_MS, BUCKET_RETENTION_MS, CHART_POINTS, MAX_PAGE, SERIES_READ, boundedPage } from "./limits";
+import { internal } from "./_generated/api";
+import { BUCKET_MS, BUCKET_RETENTION_MS, CHART_POINTS, MAX_PAGE, PRUNE_BATCH, PRUNE_ROUNDS, SERIES_READ, boundedPage } from "./limits";
+import { METRIC_KEYS } from "./metrics";
 import { downsample, foldMetric, type MetricFold, type SeriesPoint } from "./rollup";
 import { noteSample } from "./siteSummary";
 
@@ -32,6 +34,9 @@ const sampleArgs = {
   powerQuality: quality,
   voltageL1: v.union(v.number(), v.null()),
   voltageQuality: quality,
+  extra: v.optional(v.record(v.string(), v.union(v.number(), v.null()))),
+  extraQuality: v.optional(v.record(v.string(), quality)),
+  unmapped: v.optional(v.record(v.string(), v.union(v.number(), v.null()))),
 };
 
 type Quality =
@@ -58,6 +63,9 @@ type SampleInput = {
   powerQuality: Quality;
   voltageL1: number | null;
   voltageQuality: Quality;
+  extra?: Record<string, number | null>;
+  extraQuality?: Record<string, Quality>;
+  unmapped?: Record<string, number | null>;
 };
 
 function cleanText(value: string | null) {
@@ -110,7 +118,39 @@ function cleanSample(input: SampleInput) {
     powerQuality: input.powerQuality,
     voltageL1: cleanMetric(input.voltageL1, input.voltageQuality),
     voltageQuality: input.voltageQuality,
+    ...cleanExtra(input),
+    unmapped: cleanUnmapped(input.unmapped),
   };
+}
+
+function cleanExtra(input: SampleInput) {
+  const extra: Record<string, number | null> = {};
+  const extraQuality: Record<string, Quality> = {};
+  for (const key of METRIC_KEYS) {
+    const readingQuality = input.extraQuality?.[key] ?? "unavailable";
+    extraQuality[key] = readingQuality;
+    extra[key] = cleanMetric(input.extra?.[key] ?? null, readingQuality);
+  }
+  return { extra, extraQuality };
+}
+
+function cleanUnmapped(value: Record<string, number | null> | undefined) {
+  const unmapped: Record<string, number | null> = {};
+  if (!value) {
+    return unmapped;
+  }
+  const reserved = new Set<string>(METRIC_KEYS);
+  for (const [key, number] of Object.entries(value)) {
+    if (reserved.has(key) || !/^[a-z][a-z0-9]{0,15}$/.test(key)) {
+      continue;
+    }
+    if (number === null) {
+      unmapped[key] = null;
+    } else if (typeof number === "number" && Number.isFinite(number)) {
+      unmapped[key] = number;
+    }
+  }
+  return unmapped;
 }
 
 function emptyReading(qualityName: Quality) {
@@ -214,6 +254,7 @@ export const applySample = internalMutation({
     observedAt: v.number(),
     boot: v.optional(v.number()),
     seq: v.optional(v.number()),
+    epoch: v.optional(v.number()),
     ...sampleArgs,
   },
   handler: async (ctx, args) => {
@@ -242,6 +283,7 @@ export const applySample = internalMutation({
       ...stored,
       ...(args.boot !== undefined ? { boot: args.boot } : {}),
       ...(args.seq !== undefined ? { seq: args.seq } : {}),
+      ...(args.epoch !== undefined ? { epoch: args.epoch } : {}),
     };
     if (current) {
       if (current.organizationId !== generator.organizationId) {
@@ -485,15 +527,27 @@ export const siteSummary = query({
 });
 
 export const pruneBuckets = internalMutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { round: v.optional(v.number()) },
+  handler: async (ctx, args) => {
     const cutoff = Date.now() - BUCKET_RETENTION_MS;
     const old = await ctx.db
       .query("telemetryBuckets")
       .withIndex("by_bucket", (q) => q.lt("bucketStart", cutoff))
-      .take(100);
+      .take(PRUNE_BATCH);
     for (const bucket of old) {
       await ctx.db.delete(bucket._id);
+    }
+    const backlog = old.length === PRUNE_BATCH;
+    const round = args.round ?? 0;
+    if (backlog && round + 1 < PRUNE_ROUNDS) {
+      await ctx.scheduler.runAfter(0, internal.telemetry.pruneBuckets, { round: round + 1 });
+    }
+    const state = await ctx.db.query("retentionState").first();
+    const progress = { lastDeleted: old.length, backlog, updatedAt: Date.now() };
+    if (state) {
+      await ctx.db.patch(state._id, progress);
+    } else {
+      await ctx.db.insert("retentionState", progress);
     }
     return old.length;
   },

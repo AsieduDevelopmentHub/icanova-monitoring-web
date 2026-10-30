@@ -2,18 +2,27 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
 import { observeCommunicationLink } from "./alarms";
+import { METRIC_KEYS } from "./metrics";
+import { orderBatch } from "./order";
+
+const numberOrNull = v.union(v.number(), v.null());
 
 const ncuSample = v.object({
   t: v.number(),
   age: v.number(),
   link: v.string(),
   alm: v.number(),
-  mode: v.union(v.number(), v.null()),
-  rpm: v.union(v.number(), v.null()),
-  batt10: v.union(v.number(), v.null()),
-  hz10: v.union(v.number(), v.null()),
-  kw100: v.union(v.number(), v.null()),
-  van10: v.union(v.number(), v.null()),
+  mode: numberOrNull,
+  rpm: numberOrNull,
+  batt10: numberOrNull,
+  hz10: numberOrNull,
+  kw100: numberOrNull,
+  van10: numberOrNull,
+  extra: v.optional(v.record(v.string(), numberOrNull)),
+  extraQuality: v.optional(
+    v.record(v.string(), v.union(v.literal("measured"), v.literal("unavailable"))),
+  ),
+  unmapped: v.optional(v.record(v.string(), numberOrNull)),
 });
 
 const links = new Set(["ok", "degraded", "fail", "unknown"]);
@@ -28,6 +37,7 @@ export const acceptBatch = internalMutation({
     identity: v.string(),
     boot: v.number(),
     seq: v.number(),
+    epoch: v.optional(v.number()),
     samples: v.array(ncuSample),
   },
   handler: async (ctx, args) => {
@@ -63,14 +73,13 @@ export const acceptBatch = internalMutation({
       .query("ingestCursors")
       .withIndex("by_device", (q) => q.eq("deviceId", device._id))
       .unique();
-    // Same-boot sequence is monotonic. A different boot id is not: the device
-    // draws it with esp_random(), and sample t is uptime rather than a clock.
-    // A delayed batch from an older boot can still replace current telemetry.
-    if (cursor && cursor.boot === args.boot && args.seq < cursor.seq) {
-      return { status: "stale" as const, accepted: 0 };
-    }
-    if (cursor && cursor.boot === args.boot && args.seq === cursor.seq) {
-      return { status: "duplicate" as const, accepted: 0 };
+    const decision = orderBatch(cursor, {
+      epoch: args.epoch,
+      boot: args.boot,
+      seq: args.seq,
+    });
+    if (decision.action !== "accept") {
+      return { status: decision.action, accepted: 0 };
     }
     const observedAt = Date.now();
     const current = await ctx.db
@@ -80,7 +89,7 @@ export const acceptBatch = internalMutation({
     let previousLink = current?.link ?? null;
     // A different boot id is not ordered against the stored link. Samples
     // inside this accepted batch are ordered with each other.
-    let ordered = cursor !== null && cursor.boot === args.boot;
+    let ordered = decision.ordered;
     for (const sample of args.samples) {
       if (!Number.isFinite(sample.t) || !Number.isFinite(sample.age) || !links.has(sample.link)) {
         throw new Error("Invalid sample");
@@ -110,6 +119,10 @@ export const acceptBatch = internalMutation({
         voltageQuality: voltage.quality,
         boot: args.boot,
         seq: args.seq,
+        epoch: decision.epoch,
+        extra: sample.extra ?? blankExtra(),
+        extraQuality: sample.extraQuality ?? blankExtraQuality(),
+        unmapped: sample.unmapped ?? {},
       });
       await observeCommunicationLink(ctx, {
         organizationId: device.organizationId,
@@ -126,19 +139,39 @@ export const acceptBatch = internalMutation({
       previousLink = sample.link;
       ordered = true;
     }
+    const cursorDoc = {
+      boot: args.boot,
+      seq: args.seq,
+      ...(decision.epoch !== undefined ? { epoch: decision.epoch } : {}),
+    };
     if (cursor) {
-      await ctx.db.patch(cursor._id, { boot: args.boot, seq: args.seq });
+      await ctx.db.patch(cursor._id, cursorDoc);
     } else {
       await ctx.db.insert("ingestCursors", {
         organizationId: device.organizationId,
         deviceId: device._id,
-        boot: args.boot,
-        seq: args.seq,
+        ...cursorDoc,
       });
     }
     return { status: "accepted" as const, accepted: args.samples.length };
   },
 });
+
+function blankExtra(): Record<string, number | null> {
+  const extra: Record<string, number | null> = {};
+  for (const key of METRIC_KEYS) {
+    extra[key] = null;
+  }
+  return extra;
+}
+
+function blankExtraQuality(): Record<string, "unavailable"> {
+  const quality: Record<string, "unavailable"> = {};
+  for (const key of METRIC_KEYS) {
+    quality[key] = "unavailable";
+  }
+  return quality;
+}
 
 function scaled(value: number | null, divisor: number): {
   value: number | null;

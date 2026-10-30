@@ -92,11 +92,44 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
         <Metric label="Frequency" value={formatReading(frequency)} />
         <Metric label="Power" value={formatReading(power)} />
         <Metric label="L1 voltage" value={formatReading(voltage)} />
+        <Metric label="L2 voltage" value={formatReading(extraReading(current, "voltageL2", "V"))} />
+        <Metric label="L3 voltage" value={formatReading(extraReading(current, "voltageL3", "V"))} />
+        <Metric label="L1 current" value={formatReading(extraReading(current, "currentL1", "A"))} />
+        <Metric label="L2 current" value={formatReading(extraReading(current, "currentL2", "A"))} />
+        <Metric label="L3 current" value={formatReading(extraReading(current, "currentL3", "A"))} />
+        <Metric label="Load" value={formatReading(extraReading(current, "loadPct", "%"))} />
+        <Metric label="Oil pressure" value={formatReading(extraReading(current, "oilPressureKpa", "kPa"))} />
+        <Metric label="Coolant" value={formatReading(extraReading(current, "coolantC", "°C"))} />
+        <Metric label="Fuel" value={formatReading(extraReading(current, "fuelPct", "%"))} />
+        <Metric label="Engine status code" value={formatReading(extraReading(current, "engineStatus", ""))} />
+        <Metric label="Engine status alt" value={formatReading(extraReading(current, "engineStatusAlt", ""))} />
+        <Metric label="Control status" value={formatReading(extraReading(current, "controlStatus", ""))} />
+        <Metric label="Charger voltage" value={formatReading(extraReading(current, "chargeAltV", "V"))} />
+        <Metric label="L1 real power" value={formatReading(extraReading(current, "powerL1W", "W"))} />
+        <Metric label="L2 real power" value={formatReading(extraReading(current, "powerL2W", "W"))} />
+        <Metric label="L3 real power" value={formatReading(extraReading(current, "powerL3W", "W"))} />
+        <Metric label="L1 apparent" value={formatReading(extraReading(current, "apparentL1Va", "VA"))} />
+        <Metric label="L2 apparent" value={formatReading(extraReading(current, "apparentL2Va", "VA"))} />
+        <Metric label="L3 apparent" value={formatReading(extraReading(current, "apparentL3Va", "VA"))} />
+        <Metric label="Apparent total" value={formatReading(extraReading(current, "apparentTotVa", "VA"))} />
+        <Metric label="L1 reactive" value={formatReading(extraReading(current, "reactiveL1Var", "VAr"))} />
+        <Metric label="L2 reactive" value={formatReading(extraReading(current, "reactiveL2Var", "VAr"))} />
+        <Metric label="L3 reactive" value={formatReading(extraReading(current, "reactiveL3Var", "VAr"))} />
+        <Metric label="Reactive total" value={formatReading(extraReading(current, "reactiveTotVar", "VAr"))} />
+        <Metric label="L1 power factor" value={formatReading(extraReading(current, "pfL1", ""))} />
+        <Metric label="L2 power factor" value={formatReading(extraReading(current, "pfL2", ""))} />
+        <Metric label="L3 power factor" value={formatReading(extraReading(current, "pfL3", ""))} />
+        <Metric label="Power factor" value={formatReading(extraReading(current, "pfTot", ""))} />
         <Metric
           label="Source time"
           value={current?.sourceTime == null ? "—" : new Date(current.sourceTime).toISOString()}
         />
       </div>
+      <p className="meta">
+        Engine status and control status are controller codes. They are not running or stopped.
+        Phase power, apparent power, reactive power, power factor, charger voltage, oil, coolant,
+        and fuel stay unavailable until a sample includes them. A missing value is not zero.
+      </p>
       <p className="meta">
         Reported alarm count {current?.alarmCount == null ? "—" : String(current.alarmCount)}. This
         number is not a list of generator alarm names. Mode {current?.mode ?? "—"}. Link{" "}
@@ -161,6 +194,14 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
 
 const RANGES = ["hour", "six", "day", "week"] as const;
 type RangeName = (typeof RANGES)[number];
+
+function extraReading(
+  current: { extra?: Record<string, number | null> | undefined; extraQuality?: Record<string, string> | undefined } | null,
+  key: string,
+  unit: string,
+) {
+  return storedReading(current?.extra?.[key] ?? null, current?.extraQuality?.[key] ?? "unavailable", unit);
+}
 
 function HistoryCharts({ generatorId }: { generatorId: string }) {
   const [range, setRange] = useState<RangeName>("day");

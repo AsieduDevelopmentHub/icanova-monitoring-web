@@ -45,6 +45,7 @@ export const create = mutation({
     const siteId = await ctx.db.insert("sites", {
       organizationId: args.organizationId,
       name,
+      generatorCount: 0,
     });
     await writeAudit(ctx, args.organizationId, "site.create", siteId);
     return siteId;
