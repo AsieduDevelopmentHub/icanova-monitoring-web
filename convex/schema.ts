@@ -7,6 +7,7 @@ import { v } from "convex/values";
  * telemetryBuckets is history: one per generator per 15-minute window, overwritten.
  * Fleet subscriptions read telemetryCurrent for a single site and stop at 50.
  * They do not read telemetryBuckets.
+ * ingestCursors stores the last accepted boot id and sequence for one device.
  */
 const quality = v.union(
   v.literal("measured"),
@@ -74,7 +75,8 @@ export default defineSchema({
     identity: v.string(),
   })
     .index("by_org_site", ["organizationId", "siteId"])
-    .index("by_org_identity", ["organizationId", "identity"]),
+    .index("by_org_identity", ["organizationId", "identity"])
+    .index("by_identity", ["identity"]),
 
   generators: defineTable({
     organizationId: v.id("organizations"),
@@ -244,6 +246,13 @@ export default defineSchema({
     content: v.string(),
     createdAt: v.number(),
   }).index("by_org", ["organizationId"]),
+
+  ingestCursors: defineTable({
+    organizationId: v.id("organizations"),
+    deviceId: v.id("devices"),
+    boot: v.number(),
+    seq: v.number(),
+  }).index("by_device", ["deviceId"]),
 
   files: defineTable({
     organizationId: v.id("organizations"),
