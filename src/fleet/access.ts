@@ -1,0 +1,53 @@
+import type { Id, TableNames } from "../../convex/_generated/dataModel";
+import type { Quality, Reading } from "../telemetry/readings";
+
+export function id<Table extends TableNames>(value: string): Id<Table> {
+  return value as Id<Table>;
+}
+
+const QUALITIES: readonly Quality[] = [
+  "measured",
+  "unavailable",
+  "unsupported",
+  "under-range",
+  "over-range",
+  "stale",
+  "invalid",
+];
+
+export function isQuality(value: string): value is Quality {
+  return (QUALITIES as readonly string[]).includes(value);
+}
+
+/** A stored number is shown only when its quality is measured. */
+export function storedReading(value: number | null, quality: string, unit: string): Reading {
+  const known = isQuality(quality) ? quality : "invalid";
+  const measured = known === "measured" && value !== null && Number.isFinite(value);
+  return {
+    label: unit,
+    unit: measured ? unit : "",
+    quality: measured ? "measured" : known === "measured" ? "invalid" : known,
+    value: measured ? value : null,
+    valueText: measured ? String(value) : null,
+  };
+}
+
+export function accessMessage(error: unknown): string {
+  const text = error instanceof Error ? error.message : "";
+  if (text.includes("Unauthorized")) {
+    return "Sign in is required.";
+  }
+  if (text.includes("Forbidden")) {
+    return "This organization did not grant that permission.";
+  }
+  if (text.includes("Not found")) {
+    return "No generator is stored under that id.";
+  }
+  if (text.includes("Invalid transition")) {
+    return "That lifecycle change is not allowed from the current state.";
+  }
+  if (text.includes("Already registered")) {
+    return "That identity is already registered in this organization.";
+  }
+  return "The request was refused.";
+}

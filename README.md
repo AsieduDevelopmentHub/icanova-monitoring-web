@@ -31,3 +31,20 @@ pnpm build
 ```
 
 Static output in `dist/`. The ESP32 still serves its own embedded page.
+
+## Platform services
+
+Copy `.env.example` to `.env.local`. Each integration stays off until its variables are set, so the gateway UI still runs without them.
+
+| Service | Where | What it needs |
+|---|---|---|
+| Convex | Browser + `convex/` | `pnpm convex:dev` (needs a Convex login) writes `.env.local` and regenerates `convex/_generated`. Bearer JWT is stored with `setBearerToken` and sent by `ConvexReactClient.setAuth`. |
+| Auth | Convex | `AUTH_JWT_ISSUER`, `AUTH_JWKS_URL`, `AUTH_JWT_AUDIENCE` (`dse-gateway`). RS256 JWT with `sub`, `iss`, `aud`, `exp`. HTTP check: `GET {CONVEX_SITE_URL}/me` with `Authorization: Bearer`. |
+| Database | `convex/schema.ts` | `users`, `messages`, `files` |
+| Storage | `convex/storage.ts` | `createUploadUrl`, `saveFile`, `fileUrl` (owner only) |
+| Resend | `convex/notify.ts` `sendEmail` | `RESEND_API_KEY`, `RESEND_FROM` |
+| Arkesel SMS | `convex/notify.ts` `sendSms` | `ARKESEL_API_KEY`, `ARKESEL_SENDER`. `POST https://sms.arkesel.com/api/v2/sms/send` |
+| Sentry | `src/instrument.ts` | `VITE_SENTRY_DSN` |
+| GA4 | `src/analytics.ts` | `VITE_GA_MEASUREMENT_ID`. Skipped in `pnpm dev:mock` |
+
+Convex secrets are set with `pnpm exec convex env set NAME value`, not `VITE_` variables.
