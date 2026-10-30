@@ -66,6 +66,13 @@ export const create = mutation({
     const device = await requireDevice(ctx, args.organizationId, args.deviceId);
     assertSameOrg(device.siteId, args.siteId);
     const name = requireName(args.name, "Generator name");
+    const existing = await ctx.db
+      .query("generators")
+      .withIndex("by_device", (q) => q.eq("deviceId", args.deviceId))
+      .take(1);
+    if (existing.length > 0) {
+      throw new Error("Device already has a generator");
+    }
     const generatorId = await ctx.db.insert("generators", {
       organizationId: args.organizationId,
       siteId: args.siteId,

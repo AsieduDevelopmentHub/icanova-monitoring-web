@@ -91,4 +91,81 @@ describe("cloud payload decode", () => {
       decodeBatch({ identity: "aabbccddeeff", boot: 1, seq: 1, v: 9, samples: [] }),
     ).toThrow(/Invalid sample/);
   });
+
+  test("zero, negative, above-int16, unavailable, and 32-bit wire values stay distinct", () => {
+    const decoded = decodeBatch({
+      v: 2,
+      identity: "aabbccddeeff",
+      boot: 2,
+      epoch: 1,
+      seq: 1,
+      samples: [
+        {
+          t: 10,
+          age: 0,
+          link: "ok",
+          alm: 0,
+          mode: null,
+          rpm: 0,
+          batt10: null,
+          hz10: null,
+          kw100: null,
+          van10: null,
+          oil: 0,
+          cool: -12,
+          pa: 400000,
+          pb: -400000,
+          pf: 0,
+          pfa: null,
+          sa: 32768,
+          eng2: 0,
+          ctrl: 3,
+        },
+      ],
+    });
+    const extra = decoded.samples[0]?.extra;
+    const quality = decoded.samples[0]?.extraQuality;
+    expect(extra).toMatchObject({
+      oilPressureKpa: 0,
+      coolantC: -12,
+      powerL1W: 400000,
+      powerL2W: -400000,
+      pfTot: 0,
+      pfL1: null,
+      apparentL1Va: 32768,
+      engineStatusAlt: 0,
+      controlStatus: 3,
+    });
+    expect(quality?.oilPressureKpa).toBe("measured");
+    expect(quality?.pfL1).toBe("unavailable");
+    expect(quality?.powerL1W).toBe("measured");
+    expect(quality?.voltageL2).toBe("unavailable");
+    expect(extra?.voltageL2).toBeNull();
+  });
+
+  test("a non-finite expanded wire value is rejected", () => {
+    expect(() =>
+      decodeBatch({
+        v: 2,
+        identity: "aabbccddeeff",
+        boot: 1,
+        seq: 1,
+        samples: [
+          {
+            t: 1,
+            age: 0,
+            link: "ok",
+            alm: 0,
+            mode: null,
+            rpm: null,
+            batt10: null,
+            hz10: null,
+            kw100: null,
+            van10: null,
+            pa: Number.NaN,
+          },
+        ],
+      }),
+    ).toThrow(/Invalid sample/);
+  });
 });

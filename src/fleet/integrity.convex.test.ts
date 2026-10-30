@@ -51,7 +51,7 @@ async function registered() {
 
 describe("site generator count", () => {
   test("51 registrations stay exact and a duplicate sample does not add another", async () => {
-    const { t, asA, organizationId, siteId, deviceId, generatorId } = await registered();
+    const { t, asA, organizationId, siteId, generatorId } = await registered();
     await t.mutation(internal.ingest.acceptBatch, {
       identity: "aabbccddeeff",
       boot: 1,
@@ -84,10 +84,16 @@ describe("site generator count", () => {
     const after = await asA.query(api.generators.detail, { generatorId });
     expect(after.current?.rpm).toBe(1500);
     for (let index = 0; index < 50; index += 1) {
+      const nextDevice = await asA.mutation(api.devices.create, {
+        organizationId,
+        siteId,
+        name: `Gateway ${index}`,
+        identity: `bb${String(index).padStart(10, "0")}`,
+      });
       await asA.mutation(api.generators.create, {
         organizationId,
         siteId,
-        deviceId,
+        deviceId: nextDevice,
         name: `Set ${index}`,
       });
     }
@@ -118,6 +124,82 @@ describe("site generator count", () => {
     await t.mutation(internal.generators.recountGenerators, { siteId, cursor: null, seen: 0 });
     const site = await t.run(async (ctx) => ctx.db.get(siteId));
     expect(site?.generatorCount).toBe(2);
+  });
+});
+
+describe("generator registration", () => {
+  test("a second generator on the same device is rejected", async () => {
+    const { asA, organizationId, siteId, deviceId } = await registered();
+    await expect(
+      asA.mutation(api.generators.create, {
+        organizationId,
+        siteId,
+        deviceId,
+        name: "Second",
+      }),
+    ).rejects.toThrow(/already has a generator/i);
+  });
+});
+
+describe("expanded telemetry ingest", () => {
+  test("zero, negative, and above-int16 extras are stored without becoming zero substitutes", async () => {
+    const { t, asA, generatorId } = await registered();
+    const accepted = await t.mutation(internal.ingest.acceptBatch, {
+      identity: "aabbccddeeff",
+      boot: 4,
+      epoch: 7,
+      seq: 1,
+      samples: [
+        sample({
+          rpm: 0,
+          kw100: 0,
+          extra: {
+            oilPressureKpa: 0,
+            coolantC: -8,
+            powerL1W: 400000,
+            powerL2W: -400000,
+            apparentL1Va: 32768,
+            pfTot: 0,
+            pfL1: null,
+            engineStatusAlt: 0,
+            controlStatus: 2,
+            chargeAltV: 13.4,
+          },
+          extraQuality: {
+            oilPressureKpa: "measured",
+            coolantC: "measured",
+            powerL1W: "measured",
+            powerL2W: "measured",
+            apparentL1Va: "measured",
+            pfTot: "measured",
+            pfL1: "unavailable",
+            engineStatusAlt: "measured",
+            controlStatus: "measured",
+            chargeAltV: "measured",
+          },
+        }),
+      ],
+    });
+    expect(accepted).toEqual({ status: "accepted", accepted: 1 });
+    const detail = await asA.query(api.generators.detail, { generatorId });
+    expect(detail.current?.rpm).toBe(0);
+    expect(detail.current?.powerKw).toBe(0);
+    expect(detail.current?.extra).toMatchObject({
+      oilPressureKpa: 0,
+      coolantC: -8,
+      powerL1W: 400000,
+      powerL2W: -400000,
+      apparentL1Va: 32768,
+      pfTot: 0,
+      pfL1: null,
+      engineStatusAlt: 0,
+      controlStatus: 2,
+      chargeAltV: 13.4,
+      voltageL2: null,
+    });
+    expect(detail.current?.extraQuality?.pfL1).toBe("unavailable");
+    expect(detail.current?.extraQuality?.powerL1W).toBe("measured");
+    expect(detail.current?.extraQuality?.voltageL2).toBe("unavailable");
   });
 });
 
