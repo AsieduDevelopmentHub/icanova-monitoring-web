@@ -2,7 +2,10 @@
 
 **Date:** 2026-10-31  
 **Staging Convex:** `dapper-roadrunner-247`  
-**Live inbox delivery:** **NOT VERIFIED**  
+**Live inbox delivery:** **PENDING OPERATOR** (reset request submitted to staging mailbox; OTP completion not yet confirmed)
+
+**Setup guide:** `docs/guide/password-reset-email-setup.md`  
+**Helper:** `scripts/staging-password-reset-setup.mjs`
 
 ---
 
@@ -13,25 +16,17 @@
 | Request recovery (`flow=reset`) | COMPLETE | `Password({ reset: PasswordResetEmail })` in `convex/auth.ts` |
 | OTP generated | COMPLETE | 8-digit OTP via `@oslojs/crypto` in `passwordResetEmail.ts` |
 | Email send path | COMPLETE | Resend API when `AUTH_RESEND_KEY` ∥ `RESEND_API_KEY` present |
-| Staging provider env present | VERIFIED (names only) | `RESEND_API_KEY`, `RESEND_FROM` on roadrunner |
-| UI anti-enumeration | VERIFIED | Hosted E2E `e2e/password-reset-staging.spec.ts` |
-| Submit OTP + new password | COMPLETE (code) | `flow=reset-verification` + `newPassword` |
-| Old password rejected / new works | NOT VERIFIED live | Needs mailbox OTP |
-| Expired / reused / invalid OTP | Library-default (Convex Auth) | NOT separately instrumented in-repo |
-| OTP not logged | VERIFIED (code review) | Dev adapter explicitly avoids logging token |
-| Rate / abuse | Convex Auth rate limits | Present in `@convex-dev/auth` |
-
-## Missing evidence for VERIFIED delivery
-
-A controlled staging mailbox must receive the Resend message and complete reset. `TEST_NOTIFY_EMAIL` is configured on staging for notify tests, but this phase did **not** capture an inbox screenshot or OTP round-trip under operator observation.
-
-Do **not** treat UI success (“If an account exists…”) as delivery proof.
+| Staging provider env | VERIFIED | `RESEND_API_KEY`, `RESEND_FROM`, `AUTH_EMAIL_FROM` on roadrunner (`sikapa.auralenx.com`) |
+| `AUTH_PASSWORD_RESET_DEV` | Unset (good) | Live Resend path active |
+| UI anti-enumeration | VERIFIED | Hosted E2E + setup script |
+| Reset request to TEST_NOTIFY_EMAIL | SUBMITTED 2026-10-31 | `staging-password-reset-setup.mjs` → `reset_request=submitted` |
+| Inbox receipt + OTP complete | PENDING OPERATOR | Check Gmail for “Reset your iCanOva password” |
+| Old password rejected / new works | PENDING | After `RESET_OTP` + `RESET_NEW_PASSWORD` re-run |
 
 ## Closure criteria for VERIFIED
 
-1. Operator-owned staging inbox receives iCanOva reset email.  
-2. OTP works once; second use fails.  
-3. New password signs in; old password fails.  
-4. Logs (Convex dashboard) show no raw OTP.  
+1. Operator confirms inbox receipt (do not paste OTP into chat).  
+2. `RESET_OTP=… RESET_NEW_PASSWORD='…' node scripts/staging-password-reset-setup.mjs` prints `reset_complete=VERIFIED`.  
+3. Convex logs show no raw OTP.  
 
-Until then: **NOT VERIFIED**.
+Until step 2: **NOT VERIFIED** (delivery path configured; mailbox proof outstanding).

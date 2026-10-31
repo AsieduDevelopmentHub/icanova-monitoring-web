@@ -12,6 +12,7 @@
     "build:production": "tsc --noEmit && vite build --mode production && node scripts/assert-dist-convex-url.mjs production && node scripts/check-frontend-secrets.mjs --dist",
     "check:dist-staging": "node scripts/assert-dist-convex-url.mjs staging",
     "check:frontend-secrets": "node scripts/check-frontend-secrets.mjs --dist",
+    "staging:password-reset": "node scripts/staging-password-reset-setup.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",

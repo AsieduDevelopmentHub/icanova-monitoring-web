@@ -445,7 +445,7 @@ export function Landing() {
 
       <main className="mkt-main">
         <section className="mkt-hero" aria-labelledby="mkt-hero-title">
-          <div className="mkt-hero-copy mkt-inner" data-mkt-reveal>
+          <div className="mkt-hero-copy mkt-inner" data-mkt-reveal data-mkt-from="left">
             <p className="mkt-eyebrow">Intelligent industrial monitoring</p>
             <h1 id="mkt-hero-title">
               Connect your operations.
@@ -465,12 +465,12 @@ export function Landing() {
               </a>
             </div>
           </div>
-          <div data-mkt-reveal data-mkt-delay="1">
+          <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
             <HeroProductFrame />
           </div>
         </section>
 
-        <section className="mkt-stats" aria-label="Product facts" data-mkt-reveal>
+        <section className="mkt-stats" aria-label="Product facts" data-mkt-reveal data-mkt-from="fade">
           <div className="mkt-inner mkt-stats-row">
             <div>
               <strong>3</strong>
@@ -487,13 +487,13 @@ export function Landing() {
           </div>
         </section>
 
-        <section id="platform" className="mkt-section" data-mkt-reveal>
+        <section id="platform" className="mkt-section">
           <div className="mkt-inner mkt-split">
-            <div>
+            <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Platform</p>
               <h2>Most monitoring flattens signals. iCanOva keeps them separate.</h2>
             </div>
-            <p className="mkt-copy">
+            <p className="mkt-copy" data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
               Built for gateways, generators and site infrastructure. Cloud contact is not Modbus
               health. A stale sample is not a failed link. Operators see what is known — and what is
               not — so engineering and operations can act with confidence.
@@ -503,7 +503,7 @@ export function Landing() {
 
         <section id="capabilities" className="mkt-section mkt-band">
           <div className="mkt-inner">
-            <div data-mkt-reveal>
+            <div data-mkt-reveal data-mkt-from="up">
               <p className="mkt-eyebrow">Capabilities</p>
               <h2>What the platform actually does.</h2>
               <p className="mkt-copy mkt-copy-narrow">
@@ -512,7 +512,12 @@ export function Landing() {
             </div>
             <ul className="mkt-cap-list">
               {CAPABILITIES.map((item, index) => (
-                <li key={item.title} data-mkt-reveal data-mkt-delay={String((index % 3) + 1)}>
+                <li
+                  key={item.title}
+                  data-mkt-reveal
+                  data-mkt-from={index % 2 === 0 ? "left" : "right"}
+                  data-mkt-delay={String((index % 3) + 1)}
+                >
                   <div>
                     <h3>{item.title}</h3>
                     <p>{item.body}</p>
@@ -526,7 +531,7 @@ export function Landing() {
 
         <section id="product" className="mkt-section mkt-product-hardware" aria-labelledby="mkt-product-title">
           <div className="mkt-inner mkt-hardware-layout">
-            <div className="mkt-hardware-copy" data-mkt-reveal>
+            <div className="mkt-hardware-copy" data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Product</p>
               <h2 id="mkt-product-title">iCanOva Edge Gateway</h2>
               <p className="mkt-copy">
@@ -539,7 +544,7 @@ export function Landing() {
                 <li>Power · TX · RX indicators</li>
               </ul>
             </div>
-            <figure className="mkt-hardware-figure" data-mkt-reveal data-mkt-delay="1">
+            <figure className="mkt-hardware-figure" data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
               <div className="mkt-hardware-stage">
                 <img
                   className="mkt-hardware-img"
@@ -550,7 +555,6 @@ export function Landing() {
                   loading="lazy"
                   decoding="async"
                 />
-                <span className="mkt-hardware-ground" aria-hidden="true" />
               </div>
               <figcaption className="mkt-hardware-cap">Concept enclosure · not a retail render pack</figcaption>
             </figure>
@@ -559,7 +563,7 @@ export function Landing() {
 
         <section className="mkt-section" aria-labelledby="mkt-platform-title">
           <div className="mkt-inner">
-            <div data-mkt-reveal>
+            <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Platform</p>
               <h2 id="mkt-platform-title">The interface is the proof.</h2>
               <p className="mkt-copy mkt-copy-narrow">
@@ -567,7 +571,7 @@ export function Landing() {
                 scanning, not decorative KPI mosaics.
               </p>
             </div>
-            <div data-mkt-reveal data-mkt-delay="1">
+            <div data-mkt-reveal data-mkt-from="clip" data-mkt-delay="1">
               <ShowcaseFrames />
             </div>
           </div>
@@ -575,13 +579,18 @@ export function Landing() {
 
         <section className="mkt-section mkt-dark" aria-labelledby="mkt-truth-title">
           <div className="mkt-inner">
-            <div data-mkt-reveal>
+            <div data-mkt-reveal data-mkt-from="fade">
               <p className="mkt-eyebrow">Engineering honesty</p>
               <h2 id="mkt-truth-title">Built around how industrial links actually fail.</h2>
             </div>
             <div className="mkt-truths">
               {TRUTHS.map((item, index) => (
-                <article key={item.title} data-mkt-reveal data-mkt-delay={String(index + 1)}>
+                <article
+                  key={item.title}
+                  data-mkt-reveal
+                  data-mkt-from={index === 1 ? "up" : index === 0 ? "left" : "right"}
+                  data-mkt-delay={String(index + 1)}
+                >
                   <h3>{item.title}</h3>
                   <p>{item.body}</p>
                 </article>
@@ -592,13 +601,18 @@ export function Landing() {
 
         <section className="mkt-section">
           <div className="mkt-inner">
-            <div data-mkt-reveal>
+            <div data-mkt-reveal data-mkt-from="up">
               <p className="mkt-eyebrow">Workflow</p>
               <h2>From registration to response.</h2>
             </div>
             <ol className="mkt-steps">
               {STEPS.map((step, index) => (
-                <li key={step.n} data-mkt-reveal data-mkt-delay={String((index % 2) + 1)}>
+                <li
+                  key={step.n}
+                  data-mkt-reveal
+                  data-mkt-from={index % 2 === 0 ? "left" : "right"}
+                  data-mkt-delay={String((index % 2) + 1)}
+                >
                   <span className="mkt-step-n">{step.n}</span>
                   <div>
                     <h3>{step.title}</h3>
@@ -612,11 +626,11 @@ export function Landing() {
 
         <section id="faq" className="mkt-section mkt-band">
           <div className="mkt-inner mkt-faq-layout">
-            <div data-mkt-reveal>
+            <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Good to know</p>
               <h2>Frequently asked questions</h2>
             </div>
-            <div className="mkt-faq" data-mkt-reveal data-mkt-delay="1">
+            <div className="mkt-faq" data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
               {FAQ.map((item) => (
                 <FaqItem key={item.q} q={item.q} a={item.a} />
               ))}
@@ -624,7 +638,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="mkt-close-band" id="about" data-mkt-reveal>
+        <section className="mkt-close-band" id="about" data-mkt-reveal data-mkt-from="scale">
           <div className="mkt-inner mkt-close-card">
             <div>
               <p className="mkt-eyebrow">Next step</p>

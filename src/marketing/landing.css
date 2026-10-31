@@ -667,7 +667,6 @@
   display: grid;
   place-items: center;
   width: min(100%, 1080px);
-  isolation: isolate;
 }
 
 .mkt-hardware-img {
@@ -680,47 +679,6 @@
   object-fit: contain;
   object-position: center bottom;
   background: transparent;
-  filter:
-    drop-shadow(0 18px 22px color-mix(in srgb, var(--color-graphite) 22%, transparent))
-    drop-shadow(0 4px 8px color-mix(in srgb, var(--color-graphite) 16%, transparent));
-}
-
-/* Soft floor that blends residual ground leftovers under the keyed PNG */
-.mkt-hardware-ground {
-  position: absolute;
-  z-index: 0;
-  left: 2%;
-  right: 2%;
-  bottom: 0;
-  height: 42%;
-  border-radius: 50%;
-  background:
-    radial-gradient(
-      ellipse 72% 55% at 50% 35%,
-      color-mix(in srgb, var(--color-graphite) 42%, transparent) 0%,
-      color-mix(in srgb, var(--color-graphite) 18%, transparent) 34%,
-      transparent 72%
-    );
-  filter: blur(22px);
-  transform: scaleY(0.42);
-  pointer-events: none;
-  mix-blend-mode: multiply;
-  opacity: 0.92;
-}
-
-.mkt-hardware-ground::after {
-  content: "";
-  position: absolute;
-  inset: 18% 18% 8%;
-  border-radius: 50%;
-  background:
-    radial-gradient(
-      ellipse 60% 45% at 50% 50%,
-      color-mix(in srgb, var(--color-graphite) 28%, transparent) 0%,
-      transparent 70%
-    );
-  filter: blur(10px);
-  transform: scaleY(0.55);
 }
 
 .mkt-hardware-cap {
@@ -745,37 +703,83 @@
   }
 }
 
-/* —— Scroll reveal —— */
+/* —— Scroll reveal (directional) —— */
 [data-mkt-reveal] {
   opacity: 0;
   transform: translate3d(0, 1.35rem, 0);
+  filter: none;
+  clip-path: none;
   transition:
-    opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    clip-path 0.9s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: opacity, transform;
+}
+
+[data-mkt-reveal][data-mkt-from="up"] {
+  transform: translate3d(0, 1.75rem, 0);
+}
+
+[data-mkt-reveal][data-mkt-from="down"] {
+  transform: translate3d(0, -1.4rem, 0);
+}
+
+[data-mkt-reveal][data-mkt-from="left"] {
+  transform: translate3d(-2.75rem, 0.35rem, 0);
+}
+
+[data-mkt-reveal][data-mkt-from="right"] {
+  transform: translate3d(2.75rem, 0.35rem, 0);
+}
+
+[data-mkt-reveal][data-mkt-from="scale"] {
+  transform: scale(0.94) translate3d(0, 0.85rem, 0);
+}
+
+[data-mkt-reveal][data-mkt-from="fade"] {
+  transform: none;
+}
+
+[data-mkt-reveal][data-mkt-from="blur"] {
+  transform: translate3d(0, 0.9rem, 0);
+  filter: blur(10px);
+}
+
+[data-mkt-reveal][data-mkt-from="clip"] {
+  transform: translate3d(0, 0.6rem, 0);
+  clip-path: inset(12% 8% 12% 8%);
 }
 
 [data-mkt-reveal].is-in {
   opacity: 1;
   transform: none;
+  filter: none;
+  clip-path: inset(0 0 0 0);
 }
 
 [data-mkt-reveal][data-mkt-delay="1"] {
-  transition-delay: 0.08s;
+  transition-delay: 0.1s;
 }
 
 [data-mkt-reveal][data-mkt-delay="2"] {
-  transition-delay: 0.16s;
+  transition-delay: 0.18s;
 }
 
 [data-mkt-reveal][data-mkt-delay="3"] {
-  transition-delay: 0.24s;
+  transition-delay: 0.26s;
+}
+
+[data-mkt-reveal][data-mkt-delay="4"] {
+  transition-delay: 0.34s;
 }
 
 @media (prefers-reduced-motion: reduce) {
   [data-mkt-reveal] {
     opacity: 1;
     transform: none;
+    filter: none;
+    clip-path: none;
     transition: none;
   }
 }
