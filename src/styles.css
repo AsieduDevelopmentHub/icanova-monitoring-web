@@ -273,6 +273,29 @@ a {
   white-space: nowrap;
 }
 
+.session-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.topbar .text-btn {
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--bg-inset);
+}
+
 .canvas {
   padding: var(--space-5) var(--space-4) var(--space-6);
 }

@@ -22,7 +22,9 @@ export function OrgFleet() {
   if (!token) {
     return (
       <div className="notice" role="note">
-        <strong>Not signed in.</strong> No organization query is running. The demo log below is not a fleet.
+        <strong>Not signed in.</strong> No organization query is running. The demo log below is not a
+        fleet.{" "}
+        <Link to="/auth/login">Sign in</Link> to load organizations.
       </div>
     );
   }

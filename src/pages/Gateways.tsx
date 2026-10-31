@@ -22,7 +22,10 @@ export function Gateways() {
     <section className="page">
       <header className="page-head">
         <h1>Gateways</h1>
-        <p>Device inventory is scoped to one organization. This page does not write to a controller.</p>
+        <p>
+          iCanOva Edge device inventory is scoped to one organization. This page does not write to a
+          controller.
+        </p>
       </header>
       {import.meta.env.VITE_CONVEX_URL ? <SignedInventory /> : null}
       <DemoInventory />
@@ -61,7 +64,8 @@ function SignedInventory() {
   if (!token) {
     return (
       <div className="notice" role="note">
-        <strong>Not signed in.</strong> No device query is running.
+        <strong>Not signed in.</strong> No device query is running.{" "}
+        <Link to="/auth/login">Sign in</Link> to load devices.
       </div>
     );
   }

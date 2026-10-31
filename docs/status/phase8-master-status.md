@@ -18,7 +18,7 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree includes Phase 8 docs
 | Dev Convex kangaroo-10 | VERIFIED | Linked CLI default | Do not overwrite | Yes |
 | Prod Convex sturgeon-449 | OPERATOR CONFIGURATION REQUIRED | Exists as `--deployment production`; **0 env vars** | Configure + approve | **No** |
 | Prod Auth0 | OPERATOR CONFIGURATION REQUIRED | `docs/guide/production-auth0-and-hosting.md` | Create separate tenant/SPA/API | No |
-| Hosting | OPERATOR DECISION REQUIRED | Cloudflare Pages recommended; **not selected**; domain unknown | Operator chooses + domain | No |
+| Hosting | Cloudflare Pages live | `https://icanova.pages.dev` | Custom domain optional; set Pages `VITE_OIDC_*` | No |
 | Prod Convex secrets | BLOCKED — awaiting Auth0 + hosting | sturgeon empty | After host + domain + Auth0 verified | No |
 | Dual-auth server | VERIFIED | Staging HTTP matrix | Fleet migration deferred | Yes (tests) |
 | Fleet credential migration | PLAN ONLY | Plan docs | Authorize batches | No |
@@ -80,8 +80,6 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree includes Phase 8 docs
 
 ## Next single safest action
 
-**Select the production SPA host and production domain.**
-
-(Until then: no DNS, no Pages deploy, no Auth0 callback configuration, no Convex prod secrets.)
+**Set Cloudflare Pages build `VITE_OIDC_*` (audience `icanova`, callback `https://icanova.pages.dev/auth/callback`) and authorize that origin in Auth0**, then rebuild/redeploy the SPA. Do not set Convex prod secrets until the Auth0 access-token contract is verified.
 
 Canonical: `docs/guide/production-auth0-and-hosting.md`

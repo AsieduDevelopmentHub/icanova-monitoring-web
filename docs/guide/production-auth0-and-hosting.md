@@ -1,21 +1,22 @@
 # Production Auth0 + SPA hosting (Phase 8.5A / 8.5B)
 
 **Date:** 2026-10-31  
-**Status:** **8.5B PREFLIGHT STOP** — host and domain not selected by operator; no DNS; no Pages deploy; no production Auth0 created; no Convex prod secrets  
-**Audience:** `icanova` (same API identifier as staging unless operator approves a different value and updates Convex + SPA together)  
-**Staging Auth0 (do not reuse):** `dev-notfczud6xx8hhxf.us.auth0.com`
+**Status:** Host live on Cloudflare Pages; Auth0 SPA env for that host may still be incomplete; Convex prod secrets remain blocked until Auth0 contract is verified  
+**Audience:** `icanova`  
+**Staging Auth0 (do not reuse for prod Convex):** `dev-notfczud6xx8hhxf.us.auth0.com`
 
-### Phase 8.5B hosting checkpoint
+### Hosting checkpoint (updated)
 
 | Field | Status |
 |---|---|
-| Recommended provider | Cloudflare Pages |
-| **Selected provider** | **NOT SELECTED** — `OPERATOR DECISION REQUIRED` |
-| **Production domain** | **UNKNOWN** — do not invent |
-| Auth0 callbacks | **NOT CONFIGURED** (blocked on domain) |
-| Convex prod secrets | **BLOCKED — awaiting verified production Auth0 + hosting** |
+| Selected provider | **Cloudflare Pages** |
+| Current SPA URL | `https://icanova.pages.dev` |
+| Custom domain | Optional / operator |
+| Auth0 callbacks for Pages | **OPERATOR** — must include `https://icanova.pages.dev/auth/callback` |
+| Pages build `VITE_OIDC_*` | **REQUIRED** for Sign-in redirect; without them the app shows Sign in → “not configured” |
+| Convex prod secrets | **BLOCKED — awaiting verified production Auth0 + hosting contract** |
 
-**STOP:** Do not create DNS, deploy Pages, or set Auth0 production URLs until the operator selects host + domain.
+SPA entry-point UX (Phase 8.2G): header always shows **Sign in** when unsigned (no longer gated on `oidcConfigured()`).
 
 ---
 

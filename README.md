@@ -1,12 +1,14 @@
-# iCanOva Monitoring Platform
+# iCanOva Monitoring
 
 Web-based platform for industrial equipment monitoring, device management, operational visibility and connected system management.
 
 **Brand:** iCanOva — Imagine. Connect. Innovate.  
+**Platform:** iCanOva Monitoring  
+**Edge family / product:** iCanOva Edge / iCanOva Edge Gateway  
 **Descriptor:** Intelligent technology for connected industries.  
 A technology platform by ASIEDU DEVELOPMENT HUB (ADH).
 
-Edge firmware lives in the sibling folder `dev/hardware/icanova-edge-gateway`. Brand source of truth: that repo’s `doc/brand/`.
+Edge firmware: [`icanova-edge-gateway`](https://github.com/AsieduDevelopmentHub/icanova-edge-gateway). Product terminology: `docs/product/`. Brand tokens: gateway `doc/brand/` (mirrored in `src/styles.css`).
 
 ## What this app does
 
@@ -42,7 +44,7 @@ Do not invent production JWT issuer or JWKS values. Auth audience is fail-closed
 
 ## Repository identity
 
-| Item | Current | Target (authorized rename) |
-| ---- | ------- | -------------------------- |
-| GitHub | [AsieduDevelopmentHub/icanova-monitoring-web](https://github.com/AsieduDevelopmentHub/icanova-monitoring-web) | renamed |
-| package.json name | `icanova-monitoring-web` | same |
+| Item | Value |
+| ---- | ----- |
+| GitHub | [AsieduDevelopmentHub/icanova-monitoring-web](https://github.com/AsieduDevelopmentHub/icanova-monitoring-web) |
+| package.json name | `icanova-monitoring-web` |

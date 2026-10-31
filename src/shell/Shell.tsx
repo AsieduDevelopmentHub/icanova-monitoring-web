@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 import { Drawer } from "../ui/Overlay";
 import { Icon } from "../ui/icons";
 import { logout, oidcConfigured, readOidcConfig } from "../auth/oidc";
+import { sessionChrome } from "../auth/sessionControls";
 import { setBearerToken } from "../platform/bearer";
 import { useBearerToken } from "../fleet/useBearer";
 import { NAV, NAV_GROUPS, crumbsFor } from "./nav";
@@ -49,16 +50,57 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
+function SessionActions({ onNavigate }: { onNavigate?: () => void }) {
+  const token = useBearerToken();
+  const chrome = sessionChrome({
+    hasBearer: Boolean(token),
+    oidcReady: oidcConfigured(),
+  });
+
+  return (
+    <div className="session-actions">
+      <span className="session" aria-live="polite">
+        {chrome.label}
+      </span>
+      {chrome.showSignIn ? (
+        <NavLink
+          to="/auth/login"
+          className="text-btn"
+          aria-label="Sign in with identity provider"
+          onClick={onNavigate}
+        >
+          Sign in
+        </NavLink>
+      ) : null}
+      {chrome.showSignOut ? (
+        <button
+          type="button"
+          className="text-btn"
+          aria-label={chrome.signOutLabel}
+          onClick={() => {
+            if (chrome.oidcReady) {
+              logout(readOidcConfig());
+              return;
+            }
+            setBearerToken(null);
+            onNavigate?.();
+          }}
+        >
+          {chrome.signOutLabel}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function Shell() {
   const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const crumbs = crumbsFor(pathname);
-  const here = crumbs[crumbs.length - 1]?.label ?? "iCanOva";
-  const token = useBearerToken();
-  const session = token ? "Session token stored" : "Not signed in";
+  const here = crumbs[crumbs.length - 1]?.label ?? "iCanOva Monitoring";
 
   useEffect(() => {
-    document.title = `${here} · iCanOva`;
+    document.title = `${here} · iCanOva Monitoring`;
   }, [here]);
 
   useEffect(() => {
@@ -105,27 +147,7 @@ export function Shell() {
               })}
             </ol>
           </nav>
-          <span className="session">{session}</span>
-          {!token && oidcConfigured() ? (
-            <NavLink to="/auth/login" className="text-btn">
-              Sign in
-            </NavLink>
-          ) : null}
-          {token ? (
-            <button
-              type="button"
-              className="text-btn"
-              onClick={() => {
-                if (oidcConfigured()) {
-                  logout(readOidcConfig());
-                  return;
-                }
-                setBearerToken(null);
-              }}
-            >
-              {oidcConfigured() ? "Sign out" : "Clear session"}
-            </button>
-          ) : null}
+          <SessionActions />
         </header>
         <main id="main" className="canvas">
           <Outlet />
@@ -133,7 +155,9 @@ export function Shell() {
       </div>
       <Drawer open={menuOpen} title="Navigation" side="left" onClose={() => setMenuOpen(false)}>
         <NavList onNavigate={() => setMenuOpen(false)} />
-        <p className="session drawer-session">{session}</p>
+        <div className="drawer-session">
+          <SessionActions onNavigate={() => setMenuOpen(false)} />
+        </div>
       </Drawer>
     </div>
   );

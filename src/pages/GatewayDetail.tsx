@@ -120,9 +120,9 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
         </p>
       </header>
       <p className="meta">
-        Identity {detail.device.identity}. Site {detail.siteName ?? "—"}. Lifecycle{" "}
-        {active ? "active" : "inactive"}. Remote register writes and start/stop are not enabled on
-        this page.
+        iCanOva Edge device · Identity {detail.device.identity}. Site {detail.siteName ?? "—"}.
+        Lifecycle {active ? "active" : "inactive"}. Remote register writes and start/stop are not
+        enabled on this page.
       </p>
       <div className="status-row">
         <StatusMark tone={active ? "ok" : "alarm"}>{active ? "Active" : "Inactive"}</StatusMark>

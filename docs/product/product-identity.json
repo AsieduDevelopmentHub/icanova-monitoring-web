@@ -1,0 +1,21 @@
+{
+  "brand": "iCanOva",
+  "pronunciation": "eye-can-OH-va",
+  "tagline": "Imagine. Connect. Innovate.",
+  "corporate_descriptor": "Intelligent technology for connected industries.",
+  "product_family": "iCanOva Edge",
+  "product_name": "iCanOva Edge Gateway",
+  "product_category": "Industrial IoT Gateway",
+  "manufacturer": "iCanOva",
+  "parent_company": "ASIEDU DEVELOPMENT HUB (ADH)",
+  "platform_name": "iCanOva Monitoring",
+  "default_hostname": "icanova-edge",
+  "soft_ap_ssid_prefix": "ICANOVA-EDGE",
+  "soft_ap_password_default": "icanovaedge",
+  "soft_ap_ssid_example": "ICANOVA-EDGE-A1B2",
+  "notes": [
+    "Mirror of gateway doc/product/product-identity.json for independent builds.",
+    "Display terminology only. Do not rename Convex tables, env vars, Auth0 audiences, or API fields from these values.",
+    "Soft-AP / hostname defaults are enforced in gateway firmware; see gateway doc/product/network-identity-implementation-notes.md."
+  ]
+}
