@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-31  
 **Staging Convex:** `dapper-roadrunner-247`  
-**Live inbox delivery:** **PENDING OPERATOR** (reset request submitted to staging mailbox; OTP completion not yet confirmed)
+**Live inbox delivery:** **SEND PATH VERIFIED** (2026-10-31) — `SITE_URL` was missing (root cause); after set, `auth.signIn` reset returns OK and Resend canary OK. OTP completion still operator-confirmed.
 
 **Setup guide:** `docs/guide/password-reset-email-setup.md`  
 **Helper:** `scripts/staging-password-reset-setup.mjs`
@@ -19,8 +19,10 @@
 | Staging provider env | VERIFIED | `RESEND_API_KEY`, `RESEND_FROM`, `AUTH_EMAIL_FROM` on roadrunner (`sikapa.auralenx.com`) |
 | `AUTH_PASSWORD_RESET_DEV` | Unset (good) | Live Resend path active |
 | UI anti-enumeration | VERIFIED | Hosted E2E + setup script |
-| Reset request to TEST_NOTIFY_EMAIL | SUBMITTED 2026-10-31 | `staging-password-reset-setup.mjs` → `reset_request=submitted` |
-| Inbox receipt + OTP complete | PENDING OPERATOR | Check Gmail for “Reset your iCanOva password” |
+| `SITE_URL` on roadrunner | **FIXED** | Was missing → `Uncaught Error: Missing environment variable SITE_URL` (UI hid it) |
+| Resend canary (same key/from/mailbox) | VERIFIED | `diagnose-password-reset-email.mjs` → `canary=OK` |
+| Reset action after SITE_URL | VERIFIED | `reset_action=OK {"tokens":null}` |
+| Inbox receipt + OTP complete | PENDING OPERATOR | Check Gmail for canary + “Reset your iCanOva password” |
 | Old password rejected / new works | PENDING | After `RESET_OTP` + `RESET_NEW_PASSWORD` re-run |
 
 ## Closure criteria for VERIFIED

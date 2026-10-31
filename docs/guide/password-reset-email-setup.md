@@ -10,6 +10,7 @@
 
 | Variable | Required | Notes |
 |---|---|---|
+| `SITE_URL` | **Yes** | SPA origin (staging: `https://icanova.pages.dev`). Without it, reset throws before Resend runs. |
 | `RESEND_API_KEY` | Yes (or `AUTH_RESEND_KEY`) | Private; never `VITE_*` |
 | `RESEND_FROM` or `AUTH_EMAIL_FROM` | Yes | Must use a **verified** Resend domain |
 | `JWT_PRIVATE_KEY` / `JWKS` | Yes | Already required for Convex Auth |
