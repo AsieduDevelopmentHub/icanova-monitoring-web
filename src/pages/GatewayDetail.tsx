@@ -120,7 +120,8 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
         </p>
       </header>
       <p className="meta">
-        iCanOva Edge device · Identity {detail.device.identity}. Site {detail.siteName ?? "—"}.
+        iCanOva Edge device · Identity{" "}
+        <span className="tech">{detail.device.identity}</span>. Site {detail.siteName ?? "—"}.
         Lifecycle {active ? "active" : "inactive"}. Remote register writes and start/stop are not
         enabled on this page.
       </p>

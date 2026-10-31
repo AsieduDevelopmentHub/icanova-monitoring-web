@@ -26,21 +26,25 @@ export function AuthCallback() {
   }, []);
 
   return (
-    <section className="page">
-      <header className="page-head">
-        <h1>Sign in</h1>
-        <p role="status">{message}</p>
-        {failed ? (
-          <div className="btn-row">
-            <Link to="/auth/login" className="text-btn">
-              Try sign-in again
-            </Link>
-            <Link to="/" className="text-btn">
-              Back to dashboard
-            </Link>
-          </div>
-        ) : null}
-      </header>
-    </section>
+    <div className="auth-screen">
+      <section className="auth-panel" aria-labelledby="auth-callback-title">
+        <header className="page-head">
+          <p className="brand-mark">iCanOva</p>
+          <p className="brand-name">iCanOva Monitoring</p>
+          <h1 id="auth-callback-title">Sign in</h1>
+          <p role="status">{message}</p>
+          {failed ? (
+            <div className="btn-row">
+              <Link to="/auth/login" className="btn btn-primary">
+                Try sign-in again
+              </Link>
+              <Link to="/" className="btn btn-secondary">
+                Back to dashboard
+              </Link>
+            </div>
+          ) : null}
+        </header>
+      </section>
+    </div>
   );
 }

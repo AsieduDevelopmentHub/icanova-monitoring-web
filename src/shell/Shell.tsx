@@ -8,6 +8,7 @@ import { logout, oidcConfigured, readOidcConfig } from "../auth/oidc";
 import { sessionChrome } from "../auth/sessionControls";
 import { setBearerToken } from "../platform/bearer";
 import { useBearerToken } from "../fleet/useBearer";
+import { applyTheme, persistTheme, resolveTheme, type ThemeMode } from "../theme/theme";
 import { NAV, NAV_GROUPS, crumbsFor } from "./nav";
 
 function UnreadBadge() {
@@ -93,11 +94,31 @@ function SessionActions({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
+function ThemeToggle({ mode, onToggle }: { mode: ThemeMode; onToggle: () => void }) {
+  const next = mode === "light" ? "dark" : "light";
+  return (
+    <button
+      type="button"
+      className="theme-toggle"
+      aria-label={`Switch to ${next} theme`}
+      title={`Switch to ${next} theme`}
+      onClick={onToggle}
+    >
+      <Icon name={mode === "light" ? "moon" : "sun"} />
+    </button>
+  );
+}
+
 export function Shell() {
   const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<ThemeMode>(() => resolveTheme());
   const crumbs = crumbsFor(pathname);
   const here = crumbs[crumbs.length - 1]?.label ?? "iCanOva Monitoring";
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
     document.title = `${here} · iCanOva Monitoring`;
@@ -106,6 +127,12 @@ export function Shell() {
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
+
+  function cycleTheme() {
+    const next: ThemeMode = theme === "light" ? "dark" : "light";
+    persistTheme(next);
+    setTheme(next);
+  }
 
   return (
     <div className="shell">
@@ -116,8 +143,10 @@ export function Shell() {
         <div className="brand-lockup">
           <span className="brand-mark">iCanOva</span>
           <span className="brand-name">Monitoring</span>
+          <p className="brand-tag">Industrial operations visibility</p>
         </div>
         <NavList />
+        <p className="sidebar-foot">ASIEDU DEVELOPMENT HUB (ADH)</p>
       </aside>
       <div className="shell-main">
         <header className="topbar">
@@ -147,6 +176,7 @@ export function Shell() {
               })}
             </ol>
           </nav>
+          <ThemeToggle mode={theme} onToggle={cycleTheme} />
           <SessionActions />
         </header>
         <main id="main" className="canvas">
@@ -156,6 +186,7 @@ export function Shell() {
       <Drawer open={menuOpen} title="Navigation" side="left" onClose={() => setMenuOpen(false)}>
         <NavList onNavigate={() => setMenuOpen(false)} />
         <div className="drawer-session">
+          <ThemeToggle mode={theme} onToggle={cycleTheme} />
           <SessionActions onNavigate={() => setMenuOpen(false)} />
         </div>
       </Drawer>

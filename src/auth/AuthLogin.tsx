@@ -36,47 +36,51 @@ export function AuthLogin() {
   }, []);
 
   return (
-    <section className="page">
-      <header className="page-head">
-        <p className="brand-mark">iCanOva</p>
-        <h1>Sign in</h1>
-        <p>iCanOva Monitoring</p>
-        <p>Imagine. Connect. Innovate.</p>
-        {phase === "checking" || phase === "redirecting" ? (
-          <p role="status">Redirecting to the identity provider…</p>
-        ) : null}
-        {phase === "not_configured" ? (
-          <div className="notice" role="alert">
-            <strong>Sign-in is not configured for this build.</strong>
-            <p>
-              Public OIDC variables are missing or incomplete (
-              <code>VITE_OIDC_ISSUER</code>, <code>VITE_OIDC_CLIENT_ID</code>,{" "}
-              <code>VITE_OIDC_AUDIENCE</code>, <code>VITE_OIDC_REDIRECT_URI</code>
-              ). Rebuild the SPA after they are set. Audience must be{" "}
-              <code>icanova</code> (no lab fallback).
+    <div className="auth-screen">
+      <section className="auth-panel" aria-labelledby="auth-login-title">
+        <header className="page-head">
+          <p className="brand-mark">iCanOva</p>
+          <p className="brand-name">iCanOva Monitoring</p>
+          <h1 id="auth-login-title">Sign in</h1>
+          <p>Imagine. Connect. Innovate.</p>
+          {phase === "checking" || phase === "redirecting" ? (
+            <p role="status">Redirecting to the identity provider…</p>
+          ) : null}
+          {phase === "not_configured" ? (
+            <div className="notice" role="alert">
+              <strong>Sign-in is not configured for this build.</strong>
+              <p>
+                Public OIDC variables are missing or incomplete (
+                <code className="tech">VITE_OIDC_ISSUER</code>,{" "}
+                <code className="tech">VITE_OIDC_CLIENT_ID</code>,{" "}
+                <code className="tech">VITE_OIDC_AUDIENCE</code>,{" "}
+                <code className="tech">VITE_OIDC_REDIRECT_URI</code>
+                ). Rebuild the SPA after they are set. Audience must be{" "}
+                <code className="tech">icanova</code> (no lab fallback).
+              </p>
+            </div>
+          ) : null}
+          {error && phase === "error" ? (
+            <p className="notice" role="alert">
+              {error}
             </p>
+          ) : null}
+          <div className="btn-row">
+            {phase === "not_configured" || phase === "error" ? (
+              <button type="button" className="btn btn-primary" onClick={() => void startLogin()}>
+                Try sign-in again
+              </button>
+            ) : (
+              <button type="button" className="btn btn-primary" onClick={() => void startLogin()}>
+                Continue to sign-in
+              </button>
+            )}
+            <Link to="/" className="btn btn-secondary">
+              Back to dashboard
+            </Link>
           </div>
-        ) : null}
-        {error && phase === "error" ? (
-          <p className="notice" role="alert">
-            {error}
-          </p>
-        ) : null}
-        <div className="btn-row">
-          {phase === "not_configured" || phase === "error" ? (
-            <button type="button" className="text-btn" onClick={() => void startLogin()}>
-              Try sign-in again
-            </button>
-          ) : (
-            <button type="button" className="text-btn" onClick={() => void startLogin()}>
-              Continue to sign-in
-            </button>
-          )}
-          <Link to="/" className="text-btn">
-            Back to dashboard
-          </Link>
-        </div>
-      </header>
-    </section>
+        </header>
+      </section>
+    </div>
   );
 }

@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>iCanOva Monitoring</title>
     <meta name="description" content="iCanOva Monitoring — industrial equipment monitoring for iCanOva Edge gateways. Imagine. Connect. Innovate." />
+    <meta name="theme-color" content="#F2F1ED" />
+    <meta property="og:title" content="iCanOva Monitoring" />
+    <meta property="og:description" content="Industrial monitoring platform by ASIEDU DEVELOPMENT HUB (ADH). Imagine. Connect. Innovate." />
+    <meta property="og:type" content="website" />
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("icanova-theme");
+          var mode = stored === "dark" ? "dark" : "light";
+          document.documentElement.dataset.theme = mode;
+          document.documentElement.style.colorScheme = mode;
+        } catch (e) {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
