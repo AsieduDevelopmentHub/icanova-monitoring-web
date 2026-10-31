@@ -2679,7 +2679,7 @@ html[data-theme="dark"] .field-hint {
 
 .auth-tech {
   position: absolute;
-  inset: 0 0 clamp(7rem, 18vh, 10rem);
+  inset: 0 0 clamp(5.5rem, 14vh, 8.5rem);
   z-index: 1;
   display: grid;
   place-items: center;
@@ -2687,10 +2687,12 @@ html[data-theme="dark"] .field-hint {
 }
 
 .auth-tech-svg {
-  width: min(100%, 560px);
+  width: min(108%, 680px);
   height: auto;
   max-height: 100%;
   opacity: 0.95;
+  transform: scale(1.08);
+  transform-origin: center 42%;
 }
 
 .auth-tech-grid {
@@ -2742,7 +2744,7 @@ html[data-theme="dark"] .field-hint {
 .auth-tech-label {
   fill: var(--color-titanium);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.12em;
 }
 
@@ -2754,7 +2756,7 @@ html[data-theme="dark"] .field-hint {
 
 .auth-tech-chip-text {
   fill: var(--color-titanium);
-  font-size: 11px;
+  font-size: 12.5px;
   letter-spacing: 0.08em;
 }
 

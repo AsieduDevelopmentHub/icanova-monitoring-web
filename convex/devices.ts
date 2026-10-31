@@ -2,7 +2,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
 import { assertSameOrg, requireName, requirePermission } from "./identity";
 import { lifecycleLabel } from "./deviceLifecycle";
@@ -417,6 +417,57 @@ export const verifyDeviceIngestCredential = internalMutation({
       return { ok: false as const, reason: "no_credential" as const };
     }
     return { ok: false as const, reason: "mismatch" as const };
+  },
+});
+
+/** Ops helper: inspect every org/site/generator/member for one identity. */
+export const inspectIdentity = internalQuery({
+  args: { identity: v.string() },
+  handler: async (ctx, args) => {
+    const identity = args.identity.trim().toLowerCase();
+    if (!/^[0-9a-f]{12}$/.test(identity)) {
+      throw new Error("Invalid identity");
+    }
+    const matches = await ctx.db
+      .query("devices")
+      .withIndex("by_identity", (q) => q.eq("identity", identity))
+      .take(16);
+    const rows = [];
+    for (const device of matches) {
+      const org = await ctx.db.get(device.organizationId);
+      const site = await ctx.db.get(device.siteId);
+      const generators = await ctx.db
+        .query("generators")
+        .withIndex("by_device", (q) => q.eq("deviceId", device._id))
+        .take(8);
+      const memberships = await ctx.db.query("memberships").take(200);
+      const members = [];
+      for (const membership of memberships) {
+        if (membership.organizationId !== device.organizationId) {
+          continue;
+        }
+        const user = await ctx.db.get(membership.userId);
+        members.push({
+          email: user?.email ?? null,
+          name: user?.name ?? null,
+        });
+      }
+      rows.push({
+        deviceId: device._id,
+        name: device.name,
+        lifecycle: lifecycleLabel(device),
+        organizationId: device.organizationId,
+        organizationName: org?.name ?? null,
+        siteId: device.siteId,
+        siteName: site?.name ?? null,
+        generators: generators.map((generator) => ({
+          id: generator._id,
+          name: generator.name,
+        })),
+        members,
+      });
+    }
+    return { identity, rows };
   },
 });
 
