@@ -11,7 +11,7 @@ Convex custom JWT auth (`convex/auth.config.ts`) enables only when both are set 
 |---|---|
 | `AUTH_JWT_ISSUER` | Exact JWT `iss` claim from your identity provider |
 | `AUTH_JWKS_URL` | HTTPS JWKS document that validates RS256 tokens |
-| `AUTH_JWT_AUDIENCE` | Expected `aud` (default `dse-gateway` if omitted in code; **set explicitly in production**) |
+| `AUTH_JWT_AUDIENCE` | Expected `aud` (use `icanova` unless operator-approved otherwise). **Required** — missing audience leaves providers empty (fail closed) |
 
 Optional (only if this deployment **hosts** JWKS itself):
 

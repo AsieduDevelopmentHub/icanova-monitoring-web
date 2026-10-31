@@ -1,7 +1,7 @@
 # Production / staging operations runbook (Phase 8.2E)
 
 **Date:** 2026-10-31  
-**Scope:** Operator response for software/cloud issues. Hardware bench procedures: `docs/hardware-acceptance-test-plan.md`.  
+**Scope:** Operator response for software/cloud issues. Hardware bench procedures: `docs/guide/hardware-acceptance-test-plan.md`.  
 **Authority:** Backend `requirePermission` is authoritative — UI hiding is not access control.
 
 Never paste secrets into tickets. Prefer Ops ACL sections the caller is entitled to see.
@@ -40,6 +40,16 @@ Unavailable telemetry must never be rendered or stored as zero.
 2. If heartbeat OK + stale readings → Modbus/controller path.  
 3. If both stale → treat as connectivity first.
 
+### 3b. Telemetry unavailable / null quality
+1. Treat as **no trustworthy sample** — never coerce to zero in UI or storage.  
+2. Confirm decoder/quality flags; distinguish unavailable vs zero reading.  
+3. Do not raise “generator stopped” from null alone.
+
+### 3c. Generator stopped / running / unknown
+1. Use DSE operating-mode / engine fields when present and fresh.  
+2. **Unknown** when fields missing, stale, or quality bad — show unknown, do not invent.  
+3. Never infer generator state from gateway online/offline or network alone.
+
 ### 4. Ingestion authentication failure
 1. Ops ingest counters: `auth_failed` spike.  
 2. Confirm environment (`INGEST_URL` + secret) matches Convex deployment.  
@@ -55,7 +65,7 @@ Unavailable telemetry must never be rendered or stored as zero.
 1. `hasIngestCredential` true?  
 2. Shared secret still works? (fallback)  
 3. Re-provision or `clearIngestCredential` + shared path.  
-4. See `docs/device-credential-migration-plan.md`.
+4. See `docs/guide/device-credential-migration-plan.md`.
 
 ### 7. Notification provider outage
 1. Outbox / dispatch status in notifications Ops section.  
@@ -65,7 +75,7 @@ Unavailable telemetry must never be rendered or stored as zero.
 
 ### 8. Convex deployment issue
 1. Dashboard status; recent deploy revision.  
-2. Rollback functions per `docs/production-deployment-runbook.md`.  
+2. Rollback functions per `docs/guide/production-deployment-runbook.md`.  
 3. Schema writes are not rolled back by function rollback.
 
 ### 9. Auth0 login issue
@@ -82,13 +92,22 @@ Unavailable telemetry must never be rendered or stored as zero.
 ### 11. Backup failure
 1. Retry Backup Now; check plan limits.  
 2. Off-platform copy of last good ZIP.  
-3. Escalate — DR depends on viable backups (`docs/production-backup-recovery-plan.md`).
+3. Escalate — DR depends on viable backups (`docs/guide/production-backup-recovery-plan.md`).
 
 ### 12. Suspected tenant access violation
 1. Preserve audit logs.  
 2. Confirm membership/role for subject.  
 3. Revoke sessions (Auth0) / remove membership.  
 4. Do not weaken ACL to “unblock” the user.
+
+### 13. Rate limiting (ops view)
+See §5. Confirm which bucket (device vs IP) before raising limits.
+
+### 14. Notification failure
+See §7. Prefer email for critical paths; SMS may duplicate under timeout.
+
+### 15. Backup failure
+See §11. Quarantined recovery (`vivid-mosquito-28`) is evidence only — not a live failover target for writers.
 
 ---
 

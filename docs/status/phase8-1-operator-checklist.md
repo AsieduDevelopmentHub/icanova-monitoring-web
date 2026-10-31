@@ -37,7 +37,7 @@ Auth0 login → `/me`, org seed, and `E2E_OIDC=1` Playwright were verified in Ph
 
 ### Restore drill — COMPLETED 2026-10-31
 
-Evidence: `docs/backup-restore-verification.md` §6  
+Evidence: `docs/guide/backup-restore-verification.md` §6  
 Recovery: `vivid-mosquito-28` (quarantined; no notify/fleet)  
 Source: staging `dapper-roadrunner-247` (untouched)  
 
@@ -45,4 +45,4 @@ Source: staging `dapper-roadrunner-247` (untouched)
 node scripts/restore-drill-check.mjs
 ```
 
-Full notes: `docs/phase8-1-closure.md` · Master: `docs/phase8-master-status.md`
+Full notes: `docs/status/phase8-1-closure.md` · Master: `docs/status/phase8-master-status.md`

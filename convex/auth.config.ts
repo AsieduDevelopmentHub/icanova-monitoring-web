@@ -16,12 +16,13 @@ export function authProviderReady(issuer: string | undefined, jwks: string | und
 
 const issuer = configured(process.env.AUTH_JWT_ISSUER);
 const jwks = configured(process.env.AUTH_JWKS_URL);
-const applicationID = configured(process.env.AUTH_JWT_AUDIENCE) ?? "dse-gateway";
+/** Fail closed: never fall back to a lab/default audience (e.g. dse-gateway). */
+const applicationID = configured(process.env.AUTH_JWT_AUDIENCE);
 
 const providers: AuthConfig["providers"] = [];
 
-// Production must set real AUTH_JWT_ISSUER + AUTH_JWKS_URL. Do not invent them.
-if (issuer && jwks && ready(issuer, jwks)) {
+// Require issuer + JWKS + audience. Do not invent auth endpoints or audiences.
+if (issuer && jwks && applicationID && ready(issuer, jwks)) {
   providers.push({
     type: "customJwt",
     applicationID,

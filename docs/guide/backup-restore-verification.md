@@ -68,9 +68,9 @@ pnpm exec convex import --deployment recovery --replace-all path/to/staging-snap
 
 ## 4. Related docs
 
-- `docs/backup-and-disaster-recovery.md`
-- `docs/production-backup-recovery-plan.md`
-- `docs/phase8-1-operator-checklist.md`
+- `docs/guide/backup-and-disaster-recovery.md`
+- `docs/guide/production-backup-recovery-plan.md`
+- `docs/status/phase8-1-operator-checklist.md`
 - `scripts/restore-drill-check.mjs`
 
 ---

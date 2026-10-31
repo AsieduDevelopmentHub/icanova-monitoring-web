@@ -114,7 +114,7 @@ Only with explicit target deployment flags and approval.
 | Path/manifest integrity helpers | Implemented + unit tested |
 | Dashboard backup taken in this phase | Staging ZIP export **VERIFIED** 2026-10-31; Pro periodic still **OPERATOR** |
 | Periodic backups enabled on Pro | **NOT TESTED — OPERATOR ACTION REQUIRED** |
-| Restore into isolated deployment | **VERIFIED** — `vivid-mosquito-28` (see `docs/backup-restore-verification.md`) |
+| Restore into isolated deployment | **VERIFIED** — `vivid-mosquito-28` (see `docs/guide/backup-restore-verification.md`) |
 | End-to-end DR drill with collectors | **NOT TESTED — OPERATOR ACTION REQUIRED** |
 
 `RESTORE_TEST_STATUS` in code: `VERIFIED — isolated recovery 2026-10-31 (vivid-mosquito-28)`

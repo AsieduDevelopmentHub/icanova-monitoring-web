@@ -5,7 +5,7 @@
 **Separate staging Convex:** **Not provisioned — OPERATOR ACTION REQUIRED**  
 **Production:** Not used. Not claimed ready.
 
-Provisioning steps: `docs/staging-environment-setup.md`. Browser Playwright: `docs/browser-e2e-report.md`.
+Provisioning steps: `docs/guide/staging-environment-setup.md`. Browser Playwright: `docs/status/browser-e2e-report.md`.
 
 This report maps 7L checklist items to PASS / BLOCKED statuses. Browser IdP login E2E and live hardware validation remain blocked.
 

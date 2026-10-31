@@ -63,7 +63,7 @@ console.log("4. Confirm recovery name allowed.");
 console.log("5. Restore ZIP into recovery ONLY.");
 console.log("6. Deploy matching functions with recovery-only deploy key; reconstruct env from vault.");
 console.log("7. Validate orgs/sites/devices/auth; record RPO/RTO.");
-console.log("8. Quarantine recovery. See docs/backup-restore-verification.md");
+console.log("8. Quarantine recovery. See docs/guide/backup-restore-verification.md");
 console.log("");
 
 const pathsIdx = process.argv.indexOf("--paths-file");

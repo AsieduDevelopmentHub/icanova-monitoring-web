@@ -1,0 +1,3 @@
+# SPA fallback for Cloudflare Pages / Netlify (copied into dist/ by Vite).
+# All non-file routes serve index.html with 200 so React Router paths work.
+/*    /index.html   200

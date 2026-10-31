@@ -1,6 +1,6 @@
 # Browser E2E operator guide (Phase 8.1)
 
-**Related evidence:** `docs/browser-e2e-report.md`  
+**Related evidence:** `docs/status/browser-e2e-report.md`  
 **Specs:** `e2e/unsigned.spec.ts`, `e2e/authenticated.spec.ts`  
 **Config:** `playwright.config.ts` — default `E2E_BASE_URL=http://127.0.0.1:4173`
 

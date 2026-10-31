@@ -199,7 +199,7 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 - [ ] Production `INGEST_SECRET` set on Convex and collector only
 - [ ] Frontend built with production `VITE_CONVEX_URL` only (no server secrets in build env)
 - [ ] At least one registered device identity matches a physical or simulated gateway
-- [x] Staging E2E path in Phase 7L documented with simulated traffic (`docs/staging-e2e-report.md`) — **separate staging deploy still operator**
+- [x] Staging E2E path in Phase 7L documented with simulated traffic (`docs/status/staging-e2e-report.md`) — **separate staging deploy still operator**
 - [x] `pnpm test`, `pnpm exec tsc --noEmit`, `pnpm build` green on the Phase 7.5 verification pass
 - [x] No production deploy forced while any auth/ingest secret is missing
 
@@ -208,12 +208,12 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 - [x] Device deactivate/reject path (Phase 7.2 — `devices.setLifecycle`)
 - [x] Bounded ingest rate limit that preserves legitimate retries (Phase 7.2)
 - [x] Env inventory + validation helpers (7C / 7.2)
-- [x] Production auth setup guide (`docs/production-auth-setup.md`) — **operator must still supply real IdP values**
-- [x] Backup/RPO/RTO documented from Convex product reality (7G) — see `docs/backup-and-disaster-recovery.md` (**staging restore drill VERIFIED 2026-10-31**)
-- [x] Scheduled job inventory + run visibility (7H) — `docs/scheduled-jobs-audit.md`, `jobRunState`
-- [x] Observability / ops overview (7I) — `docs/observability-audit.md`, `/admin/ops`, ingest op windows
-- [x] Frontend production readiness (7J) — `docs/frontend-production-readiness.md`
-- [x] Deployment runbook (7K) — `docs/deployment-runbook.md`
+- [x] Production auth setup guide (`docs/guide/production-auth-setup.md`) — **operator must still supply real IdP values**
+- [x] Backup/RPO/RTO documented from Convex product reality (7G) — see `docs/guide/backup-and-disaster-recovery.md` (**staging restore drill VERIFIED 2026-10-31**)
+- [x] Scheduled job inventory + run visibility (7H) — `docs/status/scheduled-jobs-audit.md`, `jobRunState`
+- [x] Observability / ops overview (7I) — `docs/status/observability-audit.md`, `/admin/ops`, ingest op windows
+- [x] Frontend production readiness (7J) — `docs/guide/frontend-production-readiness.md`
+- [x] Deployment runbook (7K) — `docs/guide/deployment-runbook.md`
 - [ ] Separate Resend/Arkesel production credentials
 - [ ] Confirm gateway does not print uplink bearer/key on serial
 - [ ] Isolated staging Convex + real IdP browser E2E
@@ -256,7 +256,7 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 
 ### Authentication (7B)
 
-- Guide: `docs/production-auth-setup.md`
+- Guide: `docs/guide/production-auth-setup.md`
 - `productionConfig` rejects placeholder hosts and non-https issuers/JWKS
 - Providers still empty until the operator sets real values
 
@@ -294,7 +294,7 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 
 - Inactive device: Gateway detail → Reactivate (or `devices.setLifecycle` active).
 - Rate limit: wait for `Retry-After` / window; raise `INGEST_RATE_LIMIT_*` on Convex if duty cycle requires it.
-- Auth: follow `docs/production-auth-setup.md`; never paste secrets into `VITE_*`.
+- Auth: follow `docs/guide/production-auth-setup.md`; never paste secrets into `VITE_*`.
 
 ---
 
@@ -302,10 +302,10 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 
 | Area | Status |
 |---|---|
-| Database safety audit | `docs/database-safety-audit.md` |
+| Database safety audit | `docs/status/database-safety-audit.md` |
 | Migration framework | `convex/migrations.ts` — additive, dry-run default, not cron |
-| Backup/DR docs | `docs/backup-and-disaster-recovery.md` |
-| Scheduled jobs audit | `docs/scheduled-jobs-audit.md` |
+| Backup/DR docs | `docs/guide/backup-and-disaster-recovery.md` |
+| Scheduled jobs audit | `docs/status/scheduled-jobs-audit.md` |
 | Job visibility | `jobRunState` + `api.jobStatus.list` |
 | Backup path/manifest guards | `src/ops/backupArtifact.ts` |
 | Real dashboard backup | **NOT TESTED — OPERATOR ACTION REQUIRED** |
@@ -319,8 +319,8 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 
 | Item | Status |
 |---|---|
-| Observability audit | `docs/observability-audit.md` |
-| Retention policy | `docs/observability-retention.md` |
+| Observability audit | `docs/status/observability-audit.md` |
+| Retention policy | `docs/guide/observability-retention.md` |
 | Ingest hourly counters | `ingestOpWindows` + HTTP wiring |
 | Ops overview API/UI | `api.ops.overview`, `/admin/ops` |
 | Health event prune (14d) | Cron every 15 min |
@@ -333,13 +333,13 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 
 | Area | Status |
 |---|---|
-| 7J Frontend production readiness | **COMPLETE** (software) — `docs/frontend-production-readiness.md` |
+| 7J Frontend production readiness | **COMPLETE** (software) — `docs/guide/frontend-production-readiness.md` |
 | 7J Hosted IdP login UI | **OPERATOR ACTION REQUIRED / DEFERRED** |
-| 7K Deployment runbook | **COMPLETE** — `docs/deployment-runbook.md` |
+| 7K Deployment runbook | **COMPLETE** — `docs/guide/deployment-runbook.md` |
 | 7K productionConfig expansion | **COMPLETE** — notify-when-enabled + app URL profile |
 | 7K Production deploy | **Not done** |
 | 7L Staging environment | **OPERATOR ACTION REQUIRED** — not provisioned |
-| 7L Software E2E (Vitest / convex-test) | **COMPLETE** — `docs/staging-e2e-report.md` |
+| 7L Software E2E (Vitest / convex-test) | **COMPLETE** — `docs/status/staging-e2e-report.md` |
 | 7L Browser IdP E2E | **BLOCKED** |
 | 7L Scale simulation | **COMPLETE** (simulation — not production load) |
 | Backup restore drill | **VERIFIED** (staging isolated; prod DR still separate) |
@@ -354,16 +354,16 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 
 ## 13. Phase 8.0 pointer
 
-See `docs/phase8-production-acceptance.md` for staging, OIDC foundations, Playwright, backup restore verification, device credential migration foundations, production environment readiness, and hardware acceptance planning.
+See `docs/status/phase8-production-acceptance.md` for staging, OIDC foundations, Playwright, backup restore verification, device credential migration foundations, production environment readiness, and hardware acceptance planning.
 
 **Phase 8.0 does not declare production readiness.**
 
 ### Files added/updated in 7.5
 
-- `docs/frontend-production-readiness.md`
-- `docs/deployment-runbook.md`
-- `docs/staging-e2e-report.md`
-- `docs/phase7-production-readiness.md` (this section)
+- `docs/guide/frontend-production-readiness.md`
+- `docs/guide/deployment-runbook.md`
+- `docs/status/staging-e2e-report.md`
+- `docs/status/phase7-production-readiness.md` (this section)
 - `src/fleet/sessionGates.ts`, `src/ui/AppErrorBoundary.tsx`
 - Ops / Settings / Shell / form pending guards
 - `convex/productionConfig.ts` + tests

@@ -33,7 +33,7 @@ Admin: `devices.setIngestCredential` / `devices.clearIngestCredential` require `
 
 ## 3. Cutover plan
 
-Detailed fleet batches, monitoring, and approval gates: **`docs/device-credential-migration-plan.md`** (Phase 8.2A).
+Detailed fleet batches, monitoring, and approval gates: **`docs/guide/device-credential-migration-plan.md`** (Phase 8.2A).
 
 Summary:
 

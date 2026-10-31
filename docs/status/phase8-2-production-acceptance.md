@@ -3,7 +3,8 @@
 **Date:** 2026-10-31  
 **Status:** **AUDIT COMPLETE — NO PRODUCTION DEPLOYMENT**  
 **Phase 8.1 dependency:** Staging restore drill **VERIFIED** (`vivid-mosquito-28`); prod-sourced DR still open  
-**Proposed prod Convex:** `tremendous-sturgeon-449` — **env empty** as of audit
+**Proposed prod Convex:** `tremendous-sturgeon-449` — **env empty** as of 2026-10-31 (re-verified as `--deployment production`)  
+**Remediation:** Audience fail-closed (S8 closed); env validator covers recovery; residual MEDIUM risks accepted in audit
 
 Classifications: VERIFIED IN STAGING | READY FOR PRODUCTION | OPERATOR CONFIGURATION REQUIRED | IMPLEMENTATION REQUIRED | BLOCKED | NOT APPLICABLE | NOT VERIFIED
 
@@ -13,11 +14,11 @@ Classifications: VERIFIED IN STAGING | READY FOR PRODUCTION | OPERATOR CONFIGURA
 
 | Doc | Purpose |
 |---|---|
-| `docs/production-environment-setup.md` | Three-env design + variable split |
-| `docs/production-security-audit.md` | Findings by severity |
-| `docs/production-deployment-runbook.md` | Deploy / smoke / rollback (do not execute) |
-| `docs/device-credential-migration-plan.md` | Controlled fleet migration |
-| `docs/production-backup-recovery-plan.md` | Prod DR requirements |
+| `docs/guide/production-environment-setup.md` | Three-env design + variable split |
+| `docs/status/production-security-audit.md` | Findings by severity |
+| `docs/guide/production-deployment-runbook.md` | Deploy / smoke / rollback (do not execute) |
+| `docs/guide/device-credential-migration-plan.md` | Controlled fleet migration |
+| `docs/guide/production-backup-recovery-plan.md` | Prod DR requirements |
 | This file | Acceptance matrix |
 
 ---
@@ -92,13 +93,13 @@ Classifications: VERIFIED IN STAGING | READY FOR PRODUCTION | OPERATOR CONFIGURA
 
 ## 8. Security findings summary
 
-See `docs/production-security-audit.md`.
+See `docs/status/production-security-audit.md`.
 
 | Severity | Count (this audit) |
 |---|---|
-| CRITICAL | 1 (empty prod env) |
+| CRITICAL | 1 (empty prod env — expected pre-provision) |
 | HIGH | 1 (shared ingest) |
-| MEDIUM | 5 (includes prod-sourced DR open) |
+| MEDIUM | 1 open (prod-sourced DR) + 4 accepted residual (CI, sessionStorage, SMS, IP header) |
 | LOW | 2 |
 | INFORMATIONAL | 3 |
 
@@ -116,7 +117,7 @@ See `docs/production-security-audit.md`.
 3. Create production Auth0 SPA + API; set callbacks.  
 4. Set Convex prod env on approved deployment (never clone staging values).  
 5. Build SPA with prod `VITE_*`; smoke Auth + ingest.  
-6. Written approval → follow `docs/production-deployment-runbook.md`.  
+6. Written approval → follow `docs/guide/production-deployment-runbook.md`.  
 7. Plan device credential batches per migration plan (no mass cutover yet).  
 
 ## 11. Hardware boundary

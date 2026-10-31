@@ -36,9 +36,9 @@ pnpm test
 
 ## Platform services
 
-Copy `.env.example` to `.env.local`. Integrations stay off until configured. See `docs/env-inventory.md` and `docs/phase7-production-readiness.md`.
+Copy `.env.example` to `.env.local`. Integrations stay off until configured. See `docs/guide/env-inventory.md` and `docs/status/phase7-production-readiness.md`.
 
-Do not invent production JWT issuer or JWKS values. Staging Auth0 audience may already be `icanova` via env; code fallbacks that still say `dse-gateway` are left for compatibility until operators rotate Auth0 deliberately.
+Do not invent production JWT issuer or JWKS values. Auth audience is fail-closed: missing `AUTH_JWT_AUDIENCE` / `VITE_OIDC_AUDIENCE` disables providers / OIDC config (no `dse-gateway` fallback). Staging uses `icanova`.
 
 ## Repository identity
 

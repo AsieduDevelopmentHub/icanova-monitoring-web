@@ -4,7 +4,7 @@
 **Status:** OPERATOR PROCESS REQUIRED  
 **Phase 8.1 restore drill:** **VERIFIED** on empty recovery `vivid-mosquito-28` (staging snapshot). Do **not** claim production DR verified until a prod-sourced drill (or written residual-risk acceptance).
 
-Platform facts (Convex docs) and product recommendations: also see `docs/backup-and-disaster-recovery.md` and `docs/backup-restore-verification.md`.
+Platform facts (Convex docs) and product recommendations: also see `docs/guide/backup-and-disaster-recovery.md` and `docs/guide/backup-restore-verification.md`.
 
 ---
 
@@ -19,7 +19,7 @@ Platform facts (Convex docs) and product recommendations: also see `docs/backup-
 | Collector/firmware secrets | Operator / device NVS |
 | Auth0 tenant config | Auth0 + operator |
 | Static SPA hosting config | Operator |
-| Proven restore RTO/RPO | **Staging drill measured** (see `backup-restore-verification.md`); prod drill still open |
+| Proven restore RTO/RPO | **Staging drill measured** (see `docs/guide/backup-restore-verification.md`); prod drill still open |
 
 ---
 

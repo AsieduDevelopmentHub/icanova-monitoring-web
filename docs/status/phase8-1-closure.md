@@ -22,7 +22,7 @@ Software + Auth0 staging integration **accepted with evidence**. Isolated **back
 | Shared `INGEST_SECRET` retained | VERIFIED | Matrix |
 | Unit/build regression | VERIFIED | 155 tests; `pnpm build` |
 | Staging snapshot export + path validation | **VERIFIED** | Export 2026-10-31; `restore-drill-check` PASS |
-| Restore into empty recovery | **VERIFIED** | `vivid-mosquito-28`; see `docs/backup-restore-verification.md` §6 |
+| Restore into empty recovery | **VERIFIED** | `vivid-mosquito-28`; see `docs/guide/backup-restore-verification.md` §6 |
 
 ---
 
@@ -32,6 +32,6 @@ Software + Auth0 staging integration **accepted with evidence**. Isolated **back
 node scripts/restore-drill-check.mjs
 ```
 
-Never restore over kangaroo, roadrunner, or sturgeon. Empty recovery only. See `docs/backup-restore-verification.md`.
+Never restore over kangaroo, roadrunner, or sturgeon. Empty recovery only. See `docs/guide/backup-restore-verification.md`.
 
-Master programme: `docs/phase8-master-status.md`.
+Master programme: `docs/status/phase8-master-status.md`.

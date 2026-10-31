@@ -46,7 +46,8 @@ test.describe("authenticated staging E2E", () => {
   test("session: dashboard loads when signed in", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /sign out/i })).toBeVisible();
+    // OIDC-built SPA: "Sign out"; bearer-only / non-OIDC build: "Clear session"
+    await expect(page.getByRole("button", { name: /sign out|clear session/i })).toBeVisible();
   });
 
   test("me endpoint accepts Auth0 access token", async ({ request }) => {
@@ -74,13 +75,13 @@ test.describe("authenticated staging E2E", () => {
 
   test("logout clears local application bearer", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("button", { name: /sign out/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /sign out|clear session/i })).toBeVisible();
     await page.evaluate(() => {
       sessionStorage.removeItem("dse.bearer");
       window.dispatchEvent(new Event("dse-bearer"));
     });
     await expect(page.getByRole("link", { name: /sign in/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /sign out/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /sign out|clear session/i })).toHaveCount(0);
   });
 
   test("session protection: /me fails without bearer", async ({ request }) => {

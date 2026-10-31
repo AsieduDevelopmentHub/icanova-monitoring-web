@@ -45,4 +45,4 @@ Mocked Vitest OIDC claim tests are **not** browser IdP proof (`src/auth/oidc.tes
 | Staging Convex | `dapper-roadrunner-247` (backend ready) |
 | Staging SPA host | OPERATOR — local preview or future host; Vercel absent |
 | Production | Forbidden as E2E target |
-| Guide | `docs/browser-e2e.md` |
+| Guide | `docs/guide/browser-e2e.md` |

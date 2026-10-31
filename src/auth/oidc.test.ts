@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   createPkceChallenge,
   decodeJwtPayload,
+  readOidcConfig,
   selectConvexBearer,
   validateIdTokenClaims,
 } from "./oidc";
@@ -21,6 +22,17 @@ function fakeJwt(payload: object): string {
 }
 
 describe("OIDC helpers (mocked)", () => {
+  test("readOidcConfig fails closed without audience (no dse-gateway fallback)", () => {
+    const base = {
+      VITE_OIDC_ISSUER: "https://idp.example/",
+      VITE_OIDC_CLIENT_ID: "spa",
+      VITE_OIDC_REDIRECT_URI: "https://app.example/auth/callback",
+    } as ImportMetaEnv;
+    expect(readOidcConfig({ ...base, VITE_OIDC_AUDIENCE: undefined })).toBeNull();
+    expect(readOidcConfig({ ...base, VITE_OIDC_AUDIENCE: "" })).toBeNull();
+    expect(readOidcConfig({ ...base, VITE_OIDC_AUDIENCE: "icanova" })?.audience).toBe("icanova");
+  });
+
   test("PKCE challenge is stable for a verifier", async () => {
     const a = await createPkceChallenge("verifier-one");
     const b = await createPkceChallenge("verifier-one");

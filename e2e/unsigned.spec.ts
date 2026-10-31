@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 /**
  * Browser smoke without IdP. Real authentication scenarios are blocked until
- * operator configures staging OIDC (see docs/browser-e2e-report.md).
+ * operator configures staging OIDC (see docs/status/browser-e2e-report.md).
  */
 
 test.describe("unsigned SPA smoke", () => {

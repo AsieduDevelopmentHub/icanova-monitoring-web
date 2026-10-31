@@ -19,7 +19,7 @@
 | Lab JWT keys | `.jwt/staging/` (gitignored); mint with `python scripts/issue-operator-token.py --staging` |
 | `convex.json` in repo | Absent |
 | Vercel / CI | Absent — no Vercel project in this repo; SPA may use local preview |
-| Operator checklist | `docs/phase8-1-operator-checklist.md` |
+| Operator checklist | `docs/status/phase8-1-operator-checklist.md` |
 | Device cred HTTP script | `node scripts/staging-device-cred-http.mjs` |
 
 **Never** overwrite development (`effervescent-kangaroo-10`) when working on staging. Deploy with `--env-file .env.staging.local` (uses `CONVEX_DEPLOY_KEY`).
@@ -110,4 +110,4 @@ pnpm exec convex env set AUTH_JWT_JWKS --from-file .jwt/staging/jwks.json --depl
 | Device credential HTTP matrix | **VERIFIED** — `node scripts/staging-device-cred-http.mjs` PASSED |
 | Database separation | **VERIFIED** — separate deployment from kangaroo |
 
-See `docs/phase8-1-staging-acceptance.md`.
+See `docs/status/phase8-1-staging-acceptance.md`.

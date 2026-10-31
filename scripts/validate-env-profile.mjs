@@ -2,34 +2,83 @@
  * Non-destructive environment profile validation.
  * Checks required *names* and public URL shapes. Never prints secret values.
  *
+ *   node scripts/validate-env-profile.mjs development
  *   node scripts/validate-env-profile.mjs staging
+ *   node scripts/validate-env-profile.mjs recovery
  *   node scripts/validate-env-profile.mjs production
  *   node scripts/validate-env-profile.mjs staging --env-file .env.staging.local
  */
 import { readFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
+const PROFILES = ["development", "staging", "recovery", "production"];
 const profile = process.argv[2];
 const envFileFlag = process.argv.indexOf("--env-file");
 const envFile = envFileFlag >= 0 ? process.argv[envFileFlag + 1] : null;
 
-if (!profile || !["staging", "production", "development"].includes(profile)) {
-  console.error("usage: node scripts/validate-env-profile.mjs <development|staging|production> [--env-file path]");
+if (!profile || !PROFILES.includes(profile)) {
+  console.error(
+    `usage: node scripts/validate-env-profile.mjs <${PROFILES.join("|")}> [--env-file path]`,
+  );
   process.exit(2);
 }
+
+/** Convex deployment CLI arg and expected cloud host fragment. */
+const DEPLOYMENT = {
+  development: { arg: "dev", cloud: "effervescent-kangaroo-10.convex.cloud", ref: "effervescent-kangaroo-10" },
+  staging: { arg: "staging", cloud: "dapper-roadrunner-247.convex.cloud", ref: "dapper-roadrunner-247" },
+  recovery: { arg: "recovery", cloud: "vivid-mosquito-28.convex.cloud", ref: "vivid-mosquito-28" },
+  production: { arg: "production", cloud: "tremendous-sturgeon-449.convex.cloud", ref: "tremendous-sturgeon-449" },
+};
 
 const REQUIRED_CONVEX = {
   development: ["AUTH_JWT_ISSUER", "AUTH_JWKS_URL", "AUTH_JWT_AUDIENCE", "INGEST_SECRET"],
   staging: ["AUTH_JWT_ISSUER", "AUTH_JWKS_URL", "AUTH_JWT_AUDIENCE", "INGEST_SECRET"],
+  recovery: ["AUTH_JWT_ISSUER", "AUTH_JWKS_URL", "AUTH_JWT_AUDIENCE", "INGEST_SECRET"],
   production: ["AUTH_JWT_ISSUER", "AUTH_JWKS_URL", "AUTH_JWT_AUDIENCE", "INGEST_SECRET"],
 };
 
-const FORBIDDEN_PROD = ["TEST_NOTIFY_EMAIL", "TEST_NOTIFY_PHONE"];
-
 const REQUIRED_VITE = {
   development: ["VITE_CONVEX_URL"],
-  staging: ["VITE_CONVEX_URL", "VITE_OIDC_ISSUER", "VITE_OIDC_CLIENT_ID", "VITE_OIDC_AUDIENCE", "VITE_OIDC_REDIRECT_URI"],
-  production: ["VITE_CONVEX_URL", "VITE_OIDC_ISSUER", "VITE_OIDC_CLIENT_ID", "VITE_OIDC_AUDIENCE", "VITE_OIDC_REDIRECT_URI"],
+  staging: [
+    "VITE_CONVEX_URL",
+    "VITE_OIDC_ISSUER",
+    "VITE_OIDC_CLIENT_ID",
+    "VITE_OIDC_AUDIENCE",
+    "VITE_OIDC_REDIRECT_URI",
+  ],
+  recovery: ["VITE_CONVEX_URL"],
+  production: [
+    "VITE_CONVEX_URL",
+    "VITE_OIDC_ISSUER",
+    "VITE_OIDC_CLIENT_ID",
+    "VITE_OIDC_AUDIENCE",
+    "VITE_OIDC_REDIRECT_URI",
+  ],
+};
+
+/** Lab-only destinations — never on recovery or production. */
+const FORBIDDEN_TEST_NOTIFY = ["TEST_NOTIFY_EMAIL", "TEST_NOTIFY_PHONE"];
+
+/** Recovery quarantine: no provider notify at all. Production may add Resend/Arkesel later. */
+const FORBIDDEN_RECOVERY_NOTIFY = [
+  ...FORBIDDEN_TEST_NOTIFY,
+  "RESEND_API_KEY",
+  "RESEND_FROM",
+  "ARKESEL_API_KEY",
+  "ARKESEL_SENDER",
+  "EMAIL_ALERTS_ENABLED",
+  "SMS_ALERTS_ENABLED",
+];
+
+/** Staging Auth0 host fragment — production must not reuse it. */
+const STAGING_AUTH0_HOST = "dev-notfczud6xx8hhxf.us.auth0.com";
+
+const CROSS_ENV_HOSTS = {
+  development: ["dapper-roadrunner-247", "tremendous-sturgeon-449", "vivid-mosquito-28"],
+  staging: ["effervescent-kangaroo-10", "tremendous-sturgeon-449", "vivid-mosquito-28"],
+  recovery: ["effervescent-kangaroo-10", "dapper-roadrunner-247", "tremendous-sturgeon-449"],
+  production: ["effervescent-kangaroo-10", "dapper-roadrunner-247", "vivid-mosquito-28"],
 };
 
 function loadDotEnv(path) {
@@ -46,17 +95,27 @@ function loadDotEnv(path) {
 }
 
 function listConvexEnvNames(deploymentArg) {
+  // Prefer local binary; avoid CONVEX_DEPLOY_KEY + --deployment conflict.
+  const env = { ...process.env };
+  delete env.CONVEX_DEPLOY_KEY;
+  delete env.CONVEX_DEPLOYMENT;
+  const convexBin = process.platform === "win32"
+    ? "node_modules/convex/bin/main.js"
+    : "node_modules/convex/bin/main.js";
   const r = spawnSync(
-    process.platform === "win32" ? "pnpm.cmd" : "pnpm",
-    ["exec", "convex", "env", "list", "--deployment", deploymentArg],
-    { encoding: "utf8", shell: false },
+    process.execPath,
+    [convexBin, "env", "list", "--deployment", deploymentArg],
+    { encoding: "utf8", env, shell: false, cwd: process.cwd() },
   );
   const text = `${r.stdout || ""}\n${r.stderr || ""}`;
+  if (/cannot be used with CONVEX_DEPLOY_KEY/i.test(text)) {
+    return { ok: false, names: [], rawTail: "deploy-key-conflict" };
+  }
   const names = text
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter((l) => /^[A-Z][A-Z0-9_]+$/.test(l));
-  return { ok: r.status === 0 || names.length > 0, names, rawTail: text.slice(0, 200) };
+  return { ok: names.length > 0 || /No environment variables set/i.test(text), names, rawTail: text.slice(0, 240) };
 }
 
 function assert(name, ok, detail = "") {
@@ -64,61 +123,121 @@ function assert(name, ok, detail = "") {
   if (!ok) process.exitCode = 1;
 }
 
-const deploymentArg = profile === "production" ? "production" : profile === "staging" ? "staging" : "dev";
-const expectedCloud =
-  profile === "staging"
-    ? "dapper-roadrunner-247.convex.cloud"
-    : profile === "production"
-      ? "tremendous-sturgeon-449.convex.cloud"
-      : "effervescent-kangaroo-10.convex.cloud";
+function defaultEnvFile(p) {
+  if (p === "staging") return ".env.staging.local";
+  if (p === "production") return ".env.production.local";
+  if (p === "recovery") return ".env.recovery.local";
+  return ".env.local";
+}
 
-const local = loadDotEnv(
-  envFile ||
-    (profile === "staging"
-      ? ".env.staging.local"
-      : profile === "production"
-        ? ".env.production.local"
-        : ".env.local"),
-);
+const meta = DEPLOYMENT[profile];
+const local = loadDotEnv(envFile || defaultEnvFile(profile));
 
 console.log(`profile=${profile}`);
-console.log(`deploymentArg=${deploymentArg}`);
+console.log(`deploymentArg=${meta.arg}`);
+console.log(`expectedCloud=${meta.cloud}`);
+console.log(`expectedRef=${meta.ref}`);
 
-const convex = listConvexEnvNames(deploymentArg);
+const convex = listConvexEnvNames(meta.arg);
 assert("convex-env-list", convex.ok || convex.names.length >= 0, `names=${convex.names.length}`);
 
 for (const name of REQUIRED_CONVEX[profile]) {
   assert(`convex-has-${name}`, convex.names.includes(name));
 }
 
-if (profile === "production") {
-  for (const name of FORBIDDEN_PROD) {
-    assert(`convex-forbids-${name}`, !convex.names.includes(name));
+if (profile === "recovery") {
+  for (const name of FORBIDDEN_RECOVERY_NOTIFY) {
+    assert(`forbids-${name}`, !convex.names.includes(name));
   }
+}
+if (profile === "production") {
+  for (const name of FORBIDDEN_TEST_NOTIFY) {
+    assert(`forbids-${name}`, !convex.names.includes(name));
+  }
+}
+
+if (profile === "production") {
   assert(
-    "production-env-not-empty",
+    "production-env-provisioned",
     convex.names.length > 0,
-    "tremendous-sturgeon-449 currently expected empty until operator configures",
+    "tremendous-sturgeon-449 empty until operator configures — expected FAIL pre-provision",
   );
+  // Production Vite file must not point at staging Auth0 when present
+  const iss = local.VITE_OIDC_ISSUER?.trim() ?? "";
+  if (iss) {
+    assert(
+      "production-not-staging-issuer",
+      !iss.includes(STAGING_AUTH0_HOST),
+      "staging Auth0 host rejected",
+    );
+  }
+  const aud = local.VITE_OIDC_AUDIENCE?.trim() ?? "";
+  if (aud) {
+    assert("production-audience-set", Boolean(aud), "set");
+    assert("production-audience-not-lab-default", aud !== "dse-gateway");
+  }
 }
 
 for (const name of REQUIRED_VITE[profile]) {
   const val = local[name]?.trim() ?? "";
-  assert(`vite-has-${name}`, Boolean(val), val ? "set" : "missing-in-env-file");
-  if (name === "VITE_CONVEX_URL" && val) {
-    assert(`vite-convex-host`, val.includes(expectedCloud.split(".")[0]) || val.includes(expectedCloud), "host-check");
-    assert(`vite-convex-https`, val.startsWith("https://"));
+  const present = Boolean(val);
+  // Recovery may validate Convex URL from env file; missing Vite OIDC is OK (quarantine).
+  if (profile === "production" && !present) {
+    assert(`vite-has-${name}`, false, "missing-in-env-file");
+  } else if (profile === "staging") {
+    assert(`vite-has-${name}`, present, present ? "set" : "missing-in-env-file");
+  } else if (profile === "development" || profile === "recovery") {
+    if (name === "VITE_CONVEX_URL") {
+      assert(`vite-has-${name}`, present, present ? "set" : "missing-in-env-file");
+    }
   }
-  if (name.startsWith("VITE_OIDC_ISSUER") && val) {
+
+  if (name === "VITE_CONVEX_URL" && val) {
+    assert(`vite-convex-https`, val.startsWith("https://"));
+    assert(
+      `vite-convex-host`,
+      val.includes(meta.ref) || val.includes(meta.cloud),
+      "host-check",
+    );
+    for (const foreign of CROSS_ENV_HOSTS[profile]) {
+      assert(`vite-not-${foreign}`, !val.includes(foreign));
+    }
+  }
+  if (name === "VITE_OIDC_ISSUER" && val) {
     assert(`vite-oidc-https`, val.startsWith("https://"));
+  }
+  if (name === "VITE_OIDC_AUDIENCE" && val) {
+    if (profile === "staging") {
+      assert("staging-aud-icanova", val === "icanova");
+    }
+    assert("audience-not-empty-fallback", val.length > 0);
+    assert("audience-not-disabled", val !== "disabled");
+  }
+  if (name === "VITE_OIDC_REDIRECT_URI" && val && profile === "production") {
+    assert(
+      "production-redirect-https",
+      val.startsWith("https://"),
+      "prod callback must be https",
+    );
+    assert(
+      "production-redirect-not-localhost",
+      !/localhost|127\.0\.0\.1/i.test(val),
+    );
   }
 }
 
-const secretLeak = Object.keys(local).filter((k) => k.startsWith("VITE_") && /SECRET|PASSWORD|PRIVATE|API_KEY/i.test(k));
+const secretLeak = Object.keys(local).filter(
+  (k) => k.startsWith("VITE_") && /SECRET|PASSWORD|PRIVATE|API_KEY/i.test(k),
+);
 assert("no-secret-shaped-vite-keys", secretLeak.length === 0, secretLeak.join(",") || "ok");
 
-if (profile === "staging" && local.VITE_OIDC_AUDIENCE) {
-  assert("staging-aud-icanova", local.VITE_OIDC_AUDIENCE.trim() === "icanova");
+// Cross-env Convex URL in recovery/prod env files
+if (local.CONVEX_DEPLOYMENT) {
+  const dep = local.CONVEX_DEPLOYMENT;
+  assert(`deploy-key-ref-${meta.ref}`, dep.includes(meta.ref), "deployment identity");
+  for (const foreign of CROSS_ENV_HOSTS[profile]) {
+    assert(`deploy-not-${foreign}`, !dep.includes(foreign));
+  }
 }
 
 console.log(process.exitCode ? "profile=FAILED" : "profile=PASSED");

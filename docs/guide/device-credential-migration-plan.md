@@ -3,7 +3,7 @@
 **Date:** 2026-10-31  
 **Status:** PLAN ONLY — **no devices migrated**  
 **Backend:** Dual-auth **VERIFIED IN STAGING** (`scripts/staging-device-cred-http.mjs`)  
-**Companion:** `docs/device-credential-migration.md` (model + current behavior)
+**Companion:** `docs/guide/device-credential-migration.md` (model + current behavior)
 
 Shared `INGEST_SECRET` **must remain enabled** until an explicitly approved cutover completes.
 

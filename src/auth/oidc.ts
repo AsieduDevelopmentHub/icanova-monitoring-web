@@ -33,10 +33,11 @@ export type IdTokenClaims = {
 export function readOidcConfig(env: ImportMetaEnv = import.meta.env): OidcPublicConfig | null {
   const issuer = env.VITE_OIDC_ISSUER?.trim() ?? "";
   const clientId = env.VITE_OIDC_CLIENT_ID?.trim() ?? "";
-  const audience = env.VITE_OIDC_AUDIENCE?.trim() || "dse-gateway";
+  const audience = env.VITE_OIDC_AUDIENCE?.trim() ?? "";
   const redirectUri = env.VITE_OIDC_REDIRECT_URI?.trim() ?? "";
   const logoutRedirectUri = env.VITE_OIDC_LOGOUT_REDIRECT_URI?.trim() || redirectUri;
-  if (!issuer || !clientId || !redirectUri) {
+  // Fail closed: missing audience must not silently become a lab default (dse-gateway).
+  if (!issuer || !clientId || !redirectUri || !audience) {
     return null;
   }
   if (!issuer.startsWith("https://")) {

@@ -32,7 +32,7 @@ Routes: Dashboard, local monitor/configure, alarms, sites, generators, gateways,
 - Unauthorized/Forbidden Convex errors map through `FleetBoundary` / `accessMessage` — no stack traces or raw tokens in UI.
 - Cross-tenant: organization ids come from `organizations.mine`; server membership checks deny foreign org ids (covered by Convex tests).
 
-**Production IdP wiring is OPERATOR ACTION REQUIRED** — see `docs/production-auth-setup.md`.
+**Production IdP wiring is OPERATOR ACTION REQUIRED** — see `docs/guide/production-auth-setup.md`.
 
 ---
 

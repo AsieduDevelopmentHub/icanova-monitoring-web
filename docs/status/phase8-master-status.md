@@ -2,9 +2,9 @@
 
 **Date:** 2026-10-31  
 **Overall programme status:** **NOT READY** (for production launch)  
-**Closest accurate review label:** **READY FOR OPERATOR REVIEW** on software/docs (8.1 restore drill closed); launch remains **NOT READY** until prod env + Auth0 + hosting + authorization.
+**Closest accurate review label:** **READY FOR OPERATOR REVIEW** (8.5B preflight STOP — host/domain not selected). Convex prod secrets **BLOCKED — awaiting verified production Auth0 + hosting**.
 
-Git: `master` @ `c552261` (iCanOva branding). Working tree may include uncommitted Phase 8 docs/scripts from this programme.
+Git: `master` @ `c552261` (iCanOva branding). Working tree includes Phase 8 docs/scripts from this programme.
 
 ---
 
@@ -13,19 +13,20 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree may include uncommitt
 | Item | Classification | Evidence | Remaining | Auto-safe? |
 |---|---|---|---|---|
 | Staging Convex `dapper-roadrunner-247` | VERIFIED | Deploy + Auth0 + E2E + device matrix | Keep isolated | Yes (read-only checks) |
-| Staging Auth0 `aud=icanova` | VERIFIED | `/me`, Playwright 13/13 | — | Yes |
-| Phase 8.1 restore drill | VERIFIED | Empty recovery `vivid-mosquito-28`; RPO/RTO recorded | Quarantine recovery; prod DR still separate | Yes (read-only) |
+| Staging Auth0 `aud=icanova` | VERIFIED | `/me`, Playwright | — | Yes |
+| Phase 8.1 restore drill | VERIFIED | `vivid-mosquito-28`; RPO/RTO recorded | Keep quarantined | Yes (read-only) |
 | Dev Convex kangaroo-10 | VERIFIED | Linked CLI default | Do not overwrite | Yes |
-| Prod Convex sturgeon-449 | READY FOR OPERATOR ACTION | Exists; **0 env vars** | Configure + approve | **No** (config is operator) |
-| Prod Auth0 | READY FOR OPERATOR ACTION | Not provisioned in-repo | Create tenant/app | No |
-| Hosting | READY FOR OPERATOR ACTION | No Vercel/CI | Choose host | No |
+| Prod Convex sturgeon-449 | OPERATOR CONFIGURATION REQUIRED | Exists as `--deployment production`; **0 env vars** | Configure + approve | **No** |
+| Prod Auth0 | OPERATOR CONFIGURATION REQUIRED | `docs/guide/production-auth0-and-hosting.md` | Create separate tenant/SPA/API | No |
+| Hosting | OPERATOR DECISION REQUIRED | Cloudflare Pages recommended; **not selected**; domain unknown | Operator chooses + domain | No |
+| Prod Convex secrets | BLOCKED — awaiting Auth0 + hosting | sturgeon empty | After host + domain + Auth0 verified | No |
 | Dual-auth server | VERIFIED | Staging HTTP matrix | Fleet migration deferred | Yes (tests) |
-| Fleet credential migration | IMPLEMENTATION REQUIRED (ops) | Plan only | Authorize batches | No |
-| Notify prod providers | READY FOR OPERATOR ACTION | Code ready | Creds + auth to send | No |
-| CI workflows | NOT APPLICABLE / IMPLEMENTATION REQUIRED | None present | Optional | Yes (add later) |
-| Hardware ATP | BLOCKED | No DSE on bench | Physical equipment | No |
-| Ops ACL | VERIFIED | convex-test + staging surface | — | Yes |
-| Docs consistency | IMPLEMENTED BUT NOT VERIFIED continuously | This master + 8.2A set | Keep aligned | Yes |
+| Fleet credential migration | PLAN ONLY | Plan docs | Authorize batches | No |
+| Notify prod providers | OPERATOR CONFIGURATION REQUIRED | Controlled test procedure documented | Creds + auth to send | No |
+| Audience fail-closed | VERIFIED (code) | No `dse-gateway` fallback | — | Yes |
+| Env profile validator | VERIFIED (tooling) | 4 profiles | Empty prod must FAIL | Yes |
+| Hardware ATP | BLOCKED | Physical | Equipment | No |
+| Ops ACL | VERIFIED | Tests + staging | — | Yes |
 
 ---
 
@@ -34,15 +35,17 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree may include uncommitt
 | Workstream | Status |
 |---|---|
 | 8.1 Staging activation | COMPLETED |
-| 8.2A Security/architecture audit | COMPLETE (audit) |
-| 8.2B Production env blueprint | COMPLETE (docs + validate script) |
-| 8.2C Deploy/rollback engineering | COMPLETE (runbook + validate script) — not executed |
-| 8.2D Backup/BCP | DOCUMENTED — staging restore drill VERIFIED; prod DR still operator |
-| 8.2E Operations readiness | COMPLETE (ops runbook) |
-| 8.2F Automated acceptance | VERIFIED this run: `pnpm test` 155; `pnpm build`; `E2E_OIDC=1` Playwright **13 passed** |
-| 8.3 Device migration prep | COMPLETE (plan) — not executed |
-| 8.4 Hardware ATP prep | COMPLETE (plan) — physical BLOCKED |
-| 8.5 Launch readiness | NOT READY |
+| 8.2A Security/architecture audit | COMPLETE + remediation pass (S8 closed; residual MEDIUM accepted) |
+| 8.2B Production env blueprint | COMPLETE (docs + 4-profile validator) |
+| 8.2C Deploy/rollback engineering | COMPLETE (runbook sequence) — **not executed** |
+| 8.2D Backup/BCP | Staging restore VERIFIED; prod DR still operator |
+| 8.2E Operations readiness | COMPLETE (ops runbook expanded) |
+| 8.2F Automated acceptance | See latest test run in programme report |
+| 8.3 Device migration prep | PLAN ONLY — not executed |
+| 8.4 Hardware ATP prep | Plan COMPLETE — physical BLOCKED |
+| 8.5 Launch readiness | **NOT READY** |
+| 8.5A Auth0 + hosting readiness | **COMPLETE** (docs/templates) |
+| 8.5B Host + Auth0 preflight | **STOP** — waiting on operator host/domain selection |
 
 ---
 
@@ -50,25 +53,26 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree may include uncommitt
 
 | Doc |
 |---|
-| `docs/phase8-1-closure.md` |
-| `docs/phase8-1-operator-checklist.md` |
-| `docs/phase8-2-production-acceptance.md` |
-| `docs/phase8-2-production-security-audit.md` |
-| `docs/production-environment-setup.md` |
-| `docs/production-deployment-runbook.md` |
-| `docs/device-credential-migration-plan.md` |
-| `docs/production-backup-recovery-plan.md` |
-| `docs/production-operations-runbook.md` |
-| `docs/hardware-acceptance-test-plan.md` |
-| `docs/phase8-5-launch-readiness.md` |
+| `docs/status/phase8-1-closure.md` |
+| `docs/status/phase8-1-operator-checklist.md` |
+| `docs/status/phase8-2-production-acceptance.md` |
+| `docs/status/phase8-2-production-security-audit.md` |
+| `docs/guide/production-environment-setup.md` |
+| `docs/guide/production-deployment-runbook.md` |
+| `docs/guide/device-credential-migration-plan.md` |
+| `docs/guide/production-backup-recovery-plan.md` |
+| `docs/guide/production-operations-runbook.md` |
+| `docs/guide/hardware-acceptance-test-plan.md` |
+| `docs/status/phase8-5-launch-readiness.md` |
+| `docs/guide/production-auth0-and-hosting.md` |
 | This file |
 
-## Tooling added this programme
+## Tooling
 
 | Script | Purpose |
 |---|---|
-| `scripts/validate-env-profile.mjs` | Non-destructive env name/URL checks |
-| `scripts/restore-drill-check.mjs` | Restore boundary + optional path validation |
+| `scripts/validate-env-profile.mjs` | Non-destructive env checks (development/staging/recovery/production) |
+| `scripts/restore-drill-check.mjs` | Restore boundary + path validation |
 | `scripts/verify-auth0-staging.mjs` | Auth0 → Convex staging verify |
 | `scripts/staging-device-cred-http.mjs` | Dual-auth HTTP matrix |
 
@@ -76,4 +80,8 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree may include uncommitt
 
 ## Next single safest action
 
-**Provision / verify production Auth0 + Convex env on `tremendous-sturgeon-449` only after written authorization** — do not push secrets until hosting + launch gates are reviewed (`docs/phase8-5-launch-readiness.md`). Keep recovery `vivid-mosquito-28` quarantined (no notify / no fleet).
+**Select the production SPA host and production domain.**
+
+(Until then: no DNS, no Pages deploy, no Auth0 callback configuration, no Convex prod secrets.)
+
+Canonical: `docs/guide/production-auth0-and-hosting.md`

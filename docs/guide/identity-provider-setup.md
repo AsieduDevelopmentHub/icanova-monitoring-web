@@ -15,14 +15,15 @@ Backend accepts RS256 JWTs via Convex `customJwt` when `AUTH_JWT_ISSUER` + `AUTH
 | Token | Typical `aud` | Use for Convex? |
 |---|---|---|
 | `id_token` | SPA client id | **No** (wrong audience for API) |
-| API `access_token` | API identifier (e.g. `dse-gateway`) | **Yes**, when iss/aud/JWKS match Convex env |
+| API `access_token` | API identifier (staging/prod: `icanova`) | **Yes**, when iss/aud/JWKS match Convex env |
 
 Required architecture (no insecure token-exchange in this product yet):
 
 1. Configure the IdP to issue an **API / application JWT** whose `iss`, `aud`, and JWKS match Convex `AUTH_JWT_*`.
-2. Auth0 pattern: create an API with identifier `dse-gateway`; SPA requests that audience; Convex `AUTH_JWT_AUDIENCE=dse-gateway`.
+2. Auth0 pattern: create an API with identifier `icanova`; SPA requests that audience; Convex `AUTH_JWT_AUDIENCE=icanova`.
 3. SPA stores **that access token** as the Convex bearer after client-side iss/aud/exp checks (`selectConvexBearer` in `src/auth/oidc.ts`).
-4. Convex verifies signature via JWKS.
+4. Convex verifies signature via JWKS.  
+5. Production Auth0 must be a **separate** tenant/app from staging — see `docs/guide/production-auth0-and-hosting.md`.
 
 Alternatives (token-exchange service or custom minting backend) are **not implemented**. Do not add a hardcoded signing secret in the SPA.
 
@@ -36,11 +37,11 @@ Refresh tokens / silent renew: **DEFERRED** (public SPA without client secret).
 |---|---|---|---|
 | OIDC issuer | `VITE_OIDC_ISSUER` | unset | `https://YOUR_TENANT.auth0.com` (example) |
 | OIDC client ID | `VITE_OIDC_CLIENT_ID` | unset | Public SPA client id |
-| OIDC API audience | `VITE_OIDC_AUDIENCE` | would be `dse-gateway` | Must equal Convex audience |
-| Access token | OIDC `access_token` | N/A (lab mints JWT directly) | RS256 JWT with `aud=dse-gateway` |
+| OIDC API audience | `VITE_OIDC_AUDIENCE` | `icanova` | Must equal Convex audience |
+| Access token | OIDC `access_token` | N/A (lab mints JWT directly) | RS256 JWT with `aud=icanova` |
 | Application JWT | Same as access token when configured correctly | Lab-minted RS256 JWT | IdP API access token |
-| Convex issuer | `AUTH_JWT_ISSUER` + JWT `iss` | `https://dapper-roadrunner-247.convex.site` | Must equal IdP issuer URL |
-| Convex audience | `AUTH_JWT_AUDIENCE` + JWT `aud` | `dse-gateway` | `dse-gateway` |
+| Convex issuer | `AUTH_JWT_ISSUER` + JWT `iss` | Auth0 staging issuer | Must equal IdP issuer URL |
+| Convex audience | `AUTH_JWT_AUDIENCE` + JWT `aud` | `icanova` | `icanova` (fail closed if unset) |
 | JWKS endpoint | `AUTH_JWKS_URL` | `{site}/.well-known/jwks.json` | IdP JWKS URL |
 | Public JWKS body | `AUTH_JWT_JWKS` (self-host only) | Set (`kid=dse-staging-1`) | Usually empty (IdP hosts JWKS) |
 

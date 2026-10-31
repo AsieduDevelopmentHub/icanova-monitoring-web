@@ -39,7 +39,7 @@ Required operator values for production/staging (never invented by agents):
 - Resend / Arkesel only if email/SMS alerts enabled
 - Static host domain + TLS certificate
 
-See `docs/env-inventory.md` and `docs/production-auth-setup.md`.
+See `docs/guide/env-inventory.md` and `docs/guide/production-auth-setup.md`.
 
 ---
 

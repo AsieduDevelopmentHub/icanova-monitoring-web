@@ -14,13 +14,18 @@ Do not copy staging or development secrets into production.
 |---|---|---|---|
 | Development | `effervescent-kangaroo-10` (dev) | `.env.local` | `pnpm dev` / default build |
 | Staging | `dapper-roadrunner-247` (reference `staging`) | `.env.staging.local` | `vite --mode staging` / `vite build --mode staging` |
+| Recovery | `vivid-mosquito-28` (reference `recovery`) | `.env.recovery.local` | Quarantined — **not** a product host |
 | Production | **Proposed** `tremendous-sturgeon-449` | `.env.production.local` (gitignored; create when ready) | Build with prod `VITE_*` only |
 
-**Never** overwrite kangaroo or roadrunner when targeting production. Use an explicit prod deploy key / `--prod` / dedicated env file.
+**Never** overwrite kangaroo, roadrunner, or mosquito when targeting production. Use an explicit prod deploy key / `--prod` / dedicated env file.
 
-Hosting (SPA): **OPERATOR DECISION** — no Vercel/CI in this repo. Ship `dist/` to any HTTPS static host.
+**Verified 2026-10-31:** `tremendous-sturgeon-449` responds as Convex project default `--deployment production` and still has **0** env vars. Confirm purpose with operator before any secret push.
 
-CI: **None** (no `.github/workflows`). Deploys are manual.
+Hosting (SPA): **OPERATOR DECISION REQUIRED** — Cloudflare Pages recommended but **not selected**; domain **unknown** (8.5B STOP). See `docs/guide/production-auth0-and-hosting.md` §4b. SPA fallback: `public/_redirects`. Template: `.env.production.example`.
+
+**Production Convex secrets:** `BLOCKED — awaiting verified production Auth0 + hosting`.
+
+CI: **None** (no `.github/workflows`). Deploys are manual (**accepted residual risk** — see security audit S4).
 
 ---
 
@@ -38,7 +43,7 @@ CI: **None** (no `.github/workflows`). Deploys are manual.
 
 **Forbidden in `VITE_*`:** client secrets, `INGEST_SECRET`, Resend/Arkesel keys, PEM private keys, `AUTH_JWT_JWKS`.
 
-Full inventory: `docs/env-inventory.md`.
+Full inventory: `docs/guide/env-inventory.md`.
 
 ---
 
@@ -103,22 +108,58 @@ Smoke: `GET /me` 401 without token; 200 with prod Auth0 access token (`aud` matc
 | 8–9 | JWT config + secrets (ingest, notify) | Operator | OPEN |
 | 10–12 | Frontend host, domain, TLS, DNS | Operator | OPEN |
 | 13 | Monitoring/alerting | Operator | OPEN |
-| 14 | Backup/recovery | Operator | Depends on restore drill |
+| 14 | Backup/recovery | Operator | Staging restore VERIFIED; prod DR still open |
 | 15 | Notification providers | Operator | OPEN |
 | 16 | Device credential provisioning process | Operator | Plan ready |
 | 17 | Operator access / admin accounts | Operator | OPEN |
-| 18 | Rollback procedure | Docs | `docs/production-deployment-runbook.md` |
+| 18 | Rollback procedure | Docs | `docs/guide/production-deployment-runbook.md` |
 
-Validate local/staging profiles (non-destructive):
+Validate profiles (non-destructive; never prints secrets):
 
 ```bash
+node scripts/validate-env-profile.mjs development
 node scripts/validate-env-profile.mjs staging
+node scripts/validate-env-profile.mjs recovery
 node scripts/validate-env-profile.mjs production
 ```
 
-## 7. Related docs
+Expected today: development/staging/recovery **PASS** (when local env files present); production **FAIL** while env empty / `.env.production.local` absent.
 
-- Auth0 contract: `docs/identity-provider-setup.md`, `docs/production-auth-setup.md`
-- Deploy/rollback: `docs/production-deployment-runbook.md`
-- Security findings: `docs/production-security-audit.md`
-- Master status: `docs/phase8-master-status.md`
+---
+
+## 7–8. Production Auth0 + hosting
+
+Canonical design, operator checklist, hosting comparison, and domain placeholders:
+
+**`docs/guide/production-auth0-and-hosting.md`**
+
+| Topic | Status |
+|---|---|
+| Production Auth0 | `OPERATOR CONFIGURATION REQUIRED` |
+| SPA hosting | `OPERATOR DECISION REQUIRED` (Cloudflare Pages recommended; not selected) |
+| Production Convex secrets | `BLOCKED — awaiting verified production Auth0 + hosting` |
+
+Do not deploy hosting or create Auth0 apps without written authorization. Do not set Auth0 callback URLs until `<production-domain>` is chosen.
+
+---
+
+## 9. Controlled production notification test (authorized only)
+
+Preconditions: prod Resend/Arkesel set; `TEST_NOTIFY_*` **absent**; recipient policy reviewed; written authorization for **one** named recipient.
+
+1. Confirm alerts disabled or policies scoped to approved org only.  
+2. Authorize a single test email (prefer email over SMS).  
+3. Trigger one controlled event or Ops test path.  
+4. Confirm delivery + outbox row; no fan-out.  
+5. Disable or re-scope policies.  
+
+**Do not** send from recovery. Recovery must keep notify env absent.
+
+---
+
+## 10. Related docs
+
+- Auth0 contract: `docs/guide/identity-provider-setup.md`, `docs/guide/production-auth-setup.md`
+- Deploy/rollback: `docs/guide/production-deployment-runbook.md`
+- Security findings: `docs/status/production-security-audit.md`
+- Master status: `docs/status/phase8-master-status.md`
