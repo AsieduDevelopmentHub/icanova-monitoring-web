@@ -232,7 +232,7 @@ export function Shell() {
       <aside className="sidebar" aria-label="Application">
         <NavLink to="/" className="brand-lockup">
           <span className="brand-mark">iCanOva</span>
-          <span className="brand-name">MONITORING</span>
+          <span className="brand-name">Monitoring</span>
         </NavLink>
         <NavList />
         <p className="sidebar-foot">ADH</p>

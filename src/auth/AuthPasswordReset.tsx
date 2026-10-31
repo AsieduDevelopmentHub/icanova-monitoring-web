@@ -2,6 +2,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router";
+import { AuthChrome, AuthFormBrand } from "./AuthChrome";
 import { resetRequestConfirmation } from "./passwordResetCopy";
 
 type Step = "request" | "verify";
@@ -25,28 +26,24 @@ export function AuthPasswordReset() {
 
   if (!import.meta.env.VITE_CONVEX_URL) {
     return (
-      <div className="auth-shell">
-        <div className="auth-form-pane">
-          <section className="auth-panel auth-card">
-            <p role="alert">Set VITE_CONVEX_URL to use password recovery.</p>
-            <Link to="/auth/login" className="btn btn-secondary">
-              Back to sign in
-            </Link>
-          </section>
+      <AuthChrome>
+        <AuthFormBrand />
+        <p role="alert">Set VITE_CONVEX_URL to use password recovery.</p>
+        <div className="auth-footer">
+          <Link to="/auth/login" className="text-btn">
+            Back to sign in
+          </Link>
         </div>
-      </div>
+      </AuthChrome>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="auth-shell">
-        <div className="auth-form-pane">
-          <section className="auth-panel auth-card">
-            <p role="status">Checking session…</p>
-          </section>
-        </div>
-      </div>
+      <AuthChrome>
+        <AuthFormBrand />
+        <p role="status">Checking session…</p>
+      </AuthChrome>
     );
   }
 
@@ -93,97 +90,86 @@ export function AuthPasswordReset() {
   }
 
   return (
-    <div className="auth-shell">
-      <div className="auth-form-pane" style={{ gridColumn: "1 / -1", justifyContent: "center" }}>
-        <section className="auth-panel auth-card" aria-labelledby="auth-reset-title">
-          <header className="page-head">
-            <p className="brand-mark">iCanOva</p>
-            <p className="brand-name">Monitoring</p>
-            <h1 id="auth-reset-title">Reset password</h1>
-            <p>Recover access with a one-time email code. Auth0 is not used.</p>
-          </header>
+    <AuthChrome labelledBy="auth-reset-title">
+      <header className="page-head">
+        <AuthFormBrand />
+        <h1 id="auth-reset-title">Reset password</h1>
+        <p className="auth-lede">Recover access with a one-time email code.</p>
+      </header>
 
-          {step === "request" ? (
-            <form className="stack" onSubmit={(event) => void onRequest(event)}>
-              <label className="field">
-                <span>Email</span>
-                <input
-                  name="email"
-                  type="email"
-                  autoComplete="username"
-                  required
-                  disabled={pending}
-                />
-              </label>
-              {error ? (
-                <p className="notice" role="alert">
-                  {error}
-                </p>
-              ) : null}
-              <div className="btn-row">
-                <button type="submit" className="btn btn-primary" disabled={pending}>
-                  {pending ? "Sending…" : "Send reset code"}
-                </button>
-                <Link to="/auth/login" className="btn btn-secondary">
-                  Back to sign in
-                </Link>
-              </div>
-            </form>
-          ) : (
-            <form className="stack" onSubmit={(event) => void onVerify(event)}>
-              {info ? (
-                <p className="notice" role="status">
-                  {info}
-                </p>
-              ) : null}
-              <label className="field">
-                <span>Reset code</span>
-                <input
-                  name="code"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  required
-                  disabled={pending}
-                />
-              </label>
-              <label className="field">
-                <span>New password</span>
-                <input
-                  name="newPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                  disabled={pending}
-                />
-              </label>
-              {error ? (
-                <p className="notice" role="alert">
-                  {error}
-                </p>
-              ) : null}
-              <div className="btn-row">
-                <button type="submit" className="btn btn-primary" disabled={pending}>
-                  {pending ? "Working…" : "Update password"}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  disabled={pending}
-                  onClick={() => {
-                    setStep("request");
-                    setError(null);
-                    setInfo(null);
-                  }}
-                >
-                  Start over
-                </button>
-              </div>
-            </form>
-          )}
-        </section>
-      </div>
-    </div>
+      {step === "request" ? (
+        <form className="stack auth-form" onSubmit={(event) => void onRequest(event)}>
+          <label className="field">
+            <span>Email</span>
+            <input name="email" type="email" autoComplete="username" required disabled={pending} />
+          </label>
+          {error ? (
+            <p className="notice" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <div className="btn-row auth-actions">
+            <button type="submit" className="btn btn-primary" disabled={pending}>
+              {pending ? "Sending…" : "Send reset code"}
+            </button>
+            <Link to="/auth/login" className="btn btn-secondary">
+              Back to sign in
+            </Link>
+          </div>
+        </form>
+      ) : (
+        <form className="stack auth-form" onSubmit={(event) => void onVerify(event)}>
+          {info ? (
+            <p className="notice" role="status">
+              {info}
+            </p>
+          ) : null}
+          <label className="field">
+            <span>Reset code</span>
+            <input
+              name="code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
+              disabled={pending}
+            />
+          </label>
+          <label className="field">
+            <span>New password</span>
+            <input
+              name="newPassword"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              disabled={pending}
+            />
+          </label>
+          {error ? (
+            <p className="notice" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <div className="btn-row auth-actions">
+            <button type="submit" className="btn btn-primary" disabled={pending}>
+              {pending ? "Working…" : "Update password"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={pending}
+              onClick={() => {
+                setStep("request");
+                setError(null);
+                setInfo(null);
+              }}
+            >
+              Start over
+            </button>
+          </div>
+        </form>
+      )}
+    </AuthChrome>
   );
 }

@@ -15,15 +15,18 @@
   --bg: var(--color-warm-white);
   --bg-elev: #ffffff;
   --bg-inset: #e9e8e3;
-  --bg-nav: var(--color-graphite);
+  /* Light industrial shell (landing family) */
+  --bg-nav: color-mix(in srgb, var(--color-warm-white) 92%, white);
   --ink: var(--color-graphite);
-  --ink-nav: var(--color-warm-white);
+  --ink-nav: var(--color-graphite);
   --muted: var(--color-industrial-steel);
-  --muted-nav: var(--color-titanium);
+  --muted-nav: var(--color-industrial-steel);
   --faint: #707780;
   --line: var(--color-light-silver);
   --line-strong: var(--color-titanium);
-  --line-nav: #2a3642;
+  --line-nav: color-mix(in srgb, var(--color-light-silver) 80%, transparent);
+  --shell-nav-hover: color-mix(in srgb, var(--color-deep-navy) 5%, transparent);
+  --shell-nav-active: color-mix(in srgb, var(--color-muted-copper) 14%, transparent);
   --accent: var(--color-muted-copper);
   --accent-dim: #8a5f3d;
   --accent-contrast: #1a1208;
@@ -48,7 +51,7 @@
   --radius-md: 6px;
   --radius-lg: 8px;
   --sidebar: 208px;
-  --topbar: 48px;
+  --topbar: 56px;
   --content-max: 1280px;
   --shadow: 0 1px 2px rgba(17, 24, 32, 0.06);
   --shadow-md: 0 4px 16px rgba(17, 24, 32, 0.08);
@@ -83,6 +86,8 @@ html[data-theme="dark"] {
   --line: #2a3642;
   --line-strong: var(--color-industrial-steel);
   --line-nav: #2a3642;
+  --shell-nav-hover: rgba(242, 241, 237, 0.06);
+  --shell-nav-active: color-mix(in srgb, var(--color-muted-copper) 16%, transparent);
   --accent: var(--color-muted-copper);
   --accent-dim: #7d5639;
   --accent-contrast: #1a1208;
@@ -254,16 +259,17 @@ a.brand-lockup:hover .brand-mark {
 .brand-mark {
   color: var(--ink-nav);
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 1.15rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
 }
 
 .brand-name {
   color: var(--muted-nav);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
@@ -309,13 +315,13 @@ a.brand-lockup:hover .brand-mark {
 
 .nav-link:hover {
   color: var(--ink-nav);
-  background: rgba(242, 241, 237, 0.06);
+  background: var(--shell-nav-hover);
 }
 
 .nav-link.on {
   border-left-color: var(--accent);
   color: var(--ink-nav);
-  background: rgba(168, 117, 77, 0.16);
+  background: var(--shell-nav-active);
 }
 
 .nav-badge {
@@ -344,9 +350,9 @@ a.brand-lockup:hover .brand-mark {
   gap: var(--space-3);
   min-height: var(--topbar);
   padding: 0 var(--space-4);
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
 }
 
 .menu-btn {
@@ -2083,7 +2089,7 @@ html[data-theme="dark"] {
 }
 
 .nav-link.on {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  background: var(--shell-nav-active);
   box-shadow: inset 2px 0 0 var(--accent);
 }
 
@@ -2093,12 +2099,24 @@ html[data-theme="dark"] {
 }
 
 .topbar {
-  min-height: 48px;
+  min-height: 56px;
 }
 
 .topbar-title {
-  font-size: var(--text-lg);
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   margin: 0;
+}
+
+.sidebar {
+  background: var(--bg-nav);
+}
+
+.brand-lockup {
+  padding-bottom: var(--space-4);
 }
 
 .page-head {
@@ -2303,56 +2321,101 @@ html[data-theme="dark"] {
   }
 }
 
-/* Full-screen enterprise auth */
+/* Full-screen auth — landing family */
 .auth-shell {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr;
-  background: var(--color-graphite);
-  color: var(--color-warm-white);
+  background: var(--color-warm-white);
+  color: var(--color-graphite);
 }
 
 .auth-brand-pane {
   display: none;
   flex-direction: column;
   justify-content: space-between;
+  gap: var(--space-5);
   padding: clamp(2rem, 5vw, 3.5rem);
   background:
-    radial-gradient(ellipse 70% 50% at 20% 0%, color-mix(in srgb, var(--color-muted-copper) 22%, transparent), transparent 55%),
-    var(--color-graphite);
-  border-right: 1px solid #2a3642;
+    radial-gradient(
+      ellipse 80% 55% at 15% 0%,
+      color-mix(in srgb, var(--color-muted-copper) 18%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 60% 45% at 90% 80%,
+      color-mix(in srgb, var(--color-deep-navy) 8%, transparent),
+      transparent 55%
+    ),
+    var(--color-warm-white);
+  border-right: 1px solid color-mix(in srgb, var(--color-light-silver) 70%, transparent);
+  color: var(--color-graphite);
 }
 
-.auth-brand-pane .brand-mark {
+.auth-brand-lockup {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.05;
+}
+
+.auth-brand-lockup-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.auth-brand-mark {
   font-family: var(--font-display);
-  font-size: 1.75rem;
+  font-size: 1.35rem;
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
 }
 
-.auth-brand-pane .brand-name {
-  margin-top: 0.15rem;
-  font-size: 0.75rem;
-  letter-spacing: 0.16em;
+.auth-brand-sub {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-muted-copper);
+  color: var(--color-industrial-steel);
+}
+
+.auth-brand-body {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 28rem;
 }
 
 .auth-brand-pane h2 {
-  margin: 0 0 var(--space-3);
-  max-width: 12ch;
+  margin: 0;
+  max-width: 14ch;
   font-family: var(--font-display);
-  font-size: clamp(1.85rem, 3vw, 2.6rem);
+  font-size: clamp(1.85rem, 3.2vw, 2.65rem);
   font-weight: 700;
   letter-spacing: -0.035em;
-  line-height: 1.1;
+  line-height: 1.08;
 }
 
 .auth-brand-pane p {
   margin: 0;
-  max-width: 28rem;
-  color: var(--color-titanium);
+  color: var(--color-industrial-steel);
   line-height: 1.55;
+  font-size: 1rem;
+}
+
+.auth-brand-product {
+  display: block;
+  width: min(100%, 420px);
+  height: auto;
+  margin-top: var(--space-2);
+  object-fit: contain;
+}
+
+.auth-brand-tag {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-industrial-steel);
 }
 
 .auth-form-pane {
@@ -2367,7 +2430,8 @@ html[data-theme="dark"] {
   width: min(100%, 400px);
 }
 
-.auth-panel {
+.auth-shell .auth-panel {
+  width: min(100%, 400px);
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -2375,31 +2439,166 @@ html[data-theme="dark"] {
   box-shadow: none;
 }
 
-.auth-panel .page-head {
+.auth-shell .auth-panel .page-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   margin-bottom: var(--space-5);
 }
 
-.auth-panel .page-head h1 {
-  font-size: clamp(1.6rem, 3vw, 2rem);
-}
-
-.auth-panel .brand-mark {
+.auth-shell .auth-panel .page-head h1 {
+  margin: var(--space-3) 0 0;
   font-family: var(--font-display);
+  font-size: clamp(1.65rem, 3vw, 2.05rem);
   font-weight: 700;
-  font-size: 1.1rem;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
 }
 
-.auth-panel .brand-name {
-  margin: 0 0 var(--space-3);
-  font-size: 0.68rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.auth-form-brand {
+  margin-bottom: 0;
+}
+
+.auth-lede {
+  margin: 0;
   color: var(--color-industrial-steel);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.auth-form {
+  gap: var(--space-4);
+}
+
+.auth-shell .auth-panel .field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--color-graphite);
+}
+
+.auth-shell .auth-panel .field span {
+  font-weight: 500;
+  color: var(--color-industrial-steel);
+  font-size: 0.82rem;
+}
+
+.auth-shell .auth-panel .field input {
+  padding: 0.7rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--color-titanium) 70%, transparent);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--color-graphite);
+  font: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-shell .auth-panel .field input:focus {
+  outline: none;
+  border-color: var(--color-muted-copper);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-muted-copper) 22%, transparent);
+}
+
+.auth-actions {
+  margin-top: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.auth-shell .btn {
+  border-radius: 999px;
+  min-height: 2.55rem;
+  padding: 0.55rem 1.15rem;
+  font-weight: 600;
+}
+
+.auth-shell .btn-primary {
+  background: var(--color-muted-copper);
+  border-color: var(--color-muted-copper);
+  color: #1a1208;
+}
+
+.auth-shell .btn-primary:hover {
+  background: var(--accent-dim);
+  border-color: var(--accent-dim);
+  color: #1a1208;
+}
+
+.auth-shell .btn-secondary {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--color-titanium) 80%, transparent);
+  color: var(--color-graphite);
+}
+
+.auth-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid color-mix(in srgb, var(--color-light-silver) 75%, transparent);
+}
+
+.auth-footer .text-btn {
+  color: var(--color-industrial-steel);
+  font-size: 0.9rem;
+}
+
+.auth-footer .text-btn:hover {
+  color: var(--color-graphite);
+}
+
+html[data-theme="dark"] .auth-shell {
+  background: var(--color-graphite);
+  color: var(--color-warm-white);
+}
+
+html[data-theme="dark"] .auth-brand-pane {
+  background:
+    radial-gradient(
+      ellipse 70% 50% at 20% 0%,
+      color-mix(in srgb, var(--color-muted-copper) 20%, transparent),
+      transparent 55%
+    ),
+    var(--color-graphite);
+  border-right-color: #2a3642;
+  color: var(--color-warm-white);
+}
+
+html[data-theme="dark"] .auth-brand-sub,
+html[data-theme="dark"] .auth-brand-pane p,
+html[data-theme="dark"] .auth-brand-tag {
+  color: var(--color-titanium);
 }
 
 html[data-theme="dark"] .auth-form-pane {
   background: var(--color-deep-navy);
   color: var(--color-warm-white);
+}
+
+html[data-theme="dark"] .auth-lede,
+html[data-theme="dark"] .auth-shell .auth-panel .field span,
+html[data-theme="dark"] .auth-footer .text-btn {
+  color: var(--color-titanium);
+}
+
+html[data-theme="dark"] .auth-shell .auth-panel .field {
+  color: var(--color-warm-white);
+}
+
+html[data-theme="dark"] .auth-shell .auth-panel .field input {
+  background: var(--color-graphite);
+  border-color: #2a3642;
+  color: var(--color-warm-white);
+}
+
+html[data-theme="dark"] .auth-shell .btn-secondary {
+  color: var(--color-warm-white);
+  border-color: var(--color-industrial-steel);
+}
+
+html[data-theme="dark"] .auth-footer {
+  border-top-color: #2a3642;
 }
 
 @media (min-width: 880px) {
@@ -2411,8 +2610,7 @@ html[data-theme="dark"] .auth-form-pane {
     display: flex;
   }
 
-  .auth-form-pane .brand-mark,
-  .auth-form-pane .brand-name {
+  .auth-form-brand {
     display: none;
   }
 }
