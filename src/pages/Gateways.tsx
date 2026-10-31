@@ -354,7 +354,8 @@ function DeviceTable({
         <FilterSelect label="Site" value={siteFilter} onChange={onSiteFilter} options={siteOptions} />
       </FilterBar>
       <DataTable
-        caption="iCanOva Edge gateways in this organization"
+        dense
+        caption="Gateways"
         rows={rows}
         getRowKey={(row) => row._id}
         empty="No gateways match these filters."

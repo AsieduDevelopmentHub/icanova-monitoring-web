@@ -292,8 +292,8 @@ function CurrentTable({
   const rows = Array.isArray(data.rows) ? data.rows : [];
   return (
     <div className="table-wrap">
-      <table className="data-table">
-        <caption>Current readings for this site</caption>
+      <table className="data-table dense">
+        <caption>Readings</caption>
         <thead>
           <tr>
             <th>Generator</th>

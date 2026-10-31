@@ -318,6 +318,39 @@ export function Landing() {
     document.title = "iCanOva Monitoring · Industrial operations visibility";
   }, []);
 
+  useEffect(() => {
+    const root = document.querySelector(".mkt");
+    if (!root) return;
+    const nodes = root.querySelectorAll<HTMLElement>("[data-mkt-reveal]");
+    if (nodes.length === 0) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      nodes.forEach((node) => node.classList.add("is-in"));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-in");
+            observer.unobserve(entry.target);
+          }
+        }
+      },
+      { root: null, rootMargin: "0px 0px -6% 0px", threshold: 0.08 },
+    );
+    nodes.forEach((node) => {
+      const rect = node.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 0.92 && rect.bottom > 0) {
+        node.classList.add("is-in");
+        return;
+      }
+      observer.observe(node);
+    });
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="mkt">
       <header className="mkt-nav">
@@ -412,7 +445,7 @@ export function Landing() {
 
       <main className="mkt-main">
         <section className="mkt-hero" aria-labelledby="mkt-hero-title">
-          <div className="mkt-hero-copy mkt-inner">
+          <div className="mkt-hero-copy mkt-inner" data-mkt-reveal>
             <p className="mkt-eyebrow">Intelligent industrial monitoring</p>
             <h1 id="mkt-hero-title">
               Connect your operations.
@@ -432,10 +465,12 @@ export function Landing() {
               </a>
             </div>
           </div>
-          <HeroProductFrame />
+          <div data-mkt-reveal data-mkt-delay="1">
+            <HeroProductFrame />
+          </div>
         </section>
 
-        <section className="mkt-stats" aria-label="Product facts">
+        <section className="mkt-stats" aria-label="Product facts" data-mkt-reveal>
           <div className="mkt-inner mkt-stats-row">
             <div>
               <strong>3</strong>
@@ -452,7 +487,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section id="platform" className="mkt-section">
+        <section id="platform" className="mkt-section" data-mkt-reveal>
           <div className="mkt-inner mkt-split">
             <div>
               <p className="mkt-eyebrow">Platform</p>
@@ -468,14 +503,16 @@ export function Landing() {
 
         <section id="capabilities" className="mkt-section mkt-band">
           <div className="mkt-inner">
-            <p className="mkt-eyebrow">Capabilities</p>
-            <h2>What the platform actually does.</h2>
-            <p className="mkt-copy mkt-copy-narrow">
-              Every item maps to a real application route. Sign-in is required before the Shell opens.
-            </p>
+            <div data-mkt-reveal>
+              <p className="mkt-eyebrow">Capabilities</p>
+              <h2>What the platform actually does.</h2>
+              <p className="mkt-copy mkt-copy-narrow">
+                Every item maps to a real application route. Sign-in is required before the Shell opens.
+              </p>
+            </div>
             <ul className="mkt-cap-list">
-              {CAPABILITIES.map((item) => (
-                <li key={item.title}>
+              {CAPABILITIES.map((item, index) => (
+                <li key={item.title} data-mkt-reveal data-mkt-delay={String((index % 3) + 1)}>
                   <div>
                     <h3>{item.title}</h3>
                     <p>{item.body}</p>
@@ -487,25 +524,64 @@ export function Landing() {
           </div>
         </section>
 
-        <section id="product" className="mkt-section" aria-labelledby="mkt-product-title">
+        <section id="product" className="mkt-section mkt-product-hardware" aria-labelledby="mkt-product-title">
+          <div className="mkt-inner mkt-hardware-layout">
+            <div className="mkt-hardware-copy" data-mkt-reveal>
+              <p className="mkt-eyebrow">Product</p>
+              <h2 id="mkt-product-title">iCanOva Edge Gateway</h2>
+              <p className="mkt-copy">
+                Industrial enclosure for Modbus RTU edge connectivity — power, transmit and receive
+                status at a glance. Concept casing for field mounting beside generator controllers.
+              </p>
+              <ul className="mkt-hardware-facts">
+                <li>RS485 Modbus RTU</li>
+                <li>Wide DC input</li>
+                <li>Power · TX · RX indicators</li>
+              </ul>
+            </div>
+            <figure className="mkt-hardware-figure" data-mkt-reveal data-mkt-delay="1">
+              <div className="mkt-hardware-stage">
+                <img
+                  className="mkt-hardware-img"
+                  src="/brand/icanova-edge-gateway.png?v=7"
+                  alt="iCanOva Edge Gateway concept casing"
+                  width={1280}
+                  height={720}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <span className="mkt-hardware-ground" aria-hidden="true" />
+              </div>
+              <figcaption className="mkt-hardware-cap">Concept enclosure · not a retail render pack</figcaption>
+            </figure>
+          </div>
+        </section>
+
+        <section className="mkt-section" aria-labelledby="mkt-platform-title">
           <div className="mkt-inner">
-            <p className="mkt-eyebrow">Product</p>
-            <h2 id="mkt-product-title">The interface is the proof.</h2>
-            <p className="mkt-copy mkt-copy-narrow">
-              Illustrative compositions of the authenticated application — refined for operational
-              scanning, not decorative KPI mosaics.
-            </p>
-            <ShowcaseFrames />
+            <div data-mkt-reveal>
+              <p className="mkt-eyebrow">Platform</p>
+              <h2 id="mkt-platform-title">The interface is the proof.</h2>
+              <p className="mkt-copy mkt-copy-narrow">
+                Illustrative compositions of the authenticated application — refined for operational
+                scanning, not decorative KPI mosaics.
+              </p>
+            </div>
+            <div data-mkt-reveal data-mkt-delay="1">
+              <ShowcaseFrames />
+            </div>
           </div>
         </section>
 
         <section className="mkt-section mkt-dark" aria-labelledby="mkt-truth-title">
           <div className="mkt-inner">
-            <p className="mkt-eyebrow">Engineering honesty</p>
-            <h2 id="mkt-truth-title">Built around how industrial links actually fail.</h2>
+            <div data-mkt-reveal>
+              <p className="mkt-eyebrow">Engineering honesty</p>
+              <h2 id="mkt-truth-title">Built around how industrial links actually fail.</h2>
+            </div>
             <div className="mkt-truths">
-              {TRUTHS.map((item) => (
-                <article key={item.title}>
+              {TRUTHS.map((item, index) => (
+                <article key={item.title} data-mkt-reveal data-mkt-delay={String(index + 1)}>
                   <h3>{item.title}</h3>
                   <p>{item.body}</p>
                 </article>
@@ -516,11 +592,13 @@ export function Landing() {
 
         <section className="mkt-section">
           <div className="mkt-inner">
-            <p className="mkt-eyebrow">Workflow</p>
-            <h2>From registration to response.</h2>
+            <div data-mkt-reveal>
+              <p className="mkt-eyebrow">Workflow</p>
+              <h2>From registration to response.</h2>
+            </div>
             <ol className="mkt-steps">
-              {STEPS.map((step) => (
-                <li key={step.n}>
+              {STEPS.map((step, index) => (
+                <li key={step.n} data-mkt-reveal data-mkt-delay={String((index % 2) + 1)}>
                   <span className="mkt-step-n">{step.n}</span>
                   <div>
                     <h3>{step.title}</h3>
@@ -534,11 +612,11 @@ export function Landing() {
 
         <section id="faq" className="mkt-section mkt-band">
           <div className="mkt-inner mkt-faq-layout">
-            <div>
+            <div data-mkt-reveal>
               <p className="mkt-eyebrow">Good to know</p>
               <h2>Frequently asked questions</h2>
             </div>
-            <div className="mkt-faq">
+            <div className="mkt-faq" data-mkt-reveal data-mkt-delay="1">
               {FAQ.map((item) => (
                 <FaqItem key={item.q} q={item.q} a={item.a} />
               ))}
@@ -546,7 +624,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="mkt-close-band" id="about">
+        <section className="mkt-close-band" id="about" data-mkt-reveal>
           <div className="mkt-inner mkt-close-card">
             <div>
               <p className="mkt-eyebrow">Next step</p>

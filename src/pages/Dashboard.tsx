@@ -26,8 +26,10 @@ import { SeriesChart } from "../ui/SeriesChart";
 import { Skeleton } from "../ui/Skeleton";
 import { StatusMark } from "../ui/StatusMark";
 import { StatusStrip } from "../ui/StatusStrip";
-import { CommandTwinLazy } from "../viz/CommandTwinLazy";
+import { PowerFlowTwinLazy } from "../viz/PowerFlowTwinLazy";
 import type { TwinStatus } from "../viz/CommandTwin";
+import { derivePowerFlow } from "../viz/powerFlowModel";
+import { TechValue } from "../ui/TechValue";
 import { id } from "../fleet/access";
 
 type BoardRow = LiveRow & {
@@ -35,6 +37,12 @@ type BoardRow = LiveRow & {
   name: string;
   powerKw: number | null;
   powerQuality: string;
+  batteryV?: number | null;
+  batteryQuality?: string;
+  frequencyHz?: number | null;
+  frequencyQuality?: string;
+  voltageL1?: number | null;
+  voltageQuality?: string;
 };
 
 export function Dashboard() {
@@ -218,6 +226,44 @@ function SiteBoard({
           : "Unavailable";
   const primary = loaded[0];
   const twinStatus = twinFromRows(loaded);
+  const primaryFresh = primary ? storedFreshness(primary.updatedAt, Date.now()) : null;
+  const primaryEngine = primary ? engineView(primary.rpm, primary.rpmQuality) : null;
+  const primaryLink = primary ? linkView(primary.link) : null;
+  const powerReading = primary
+    ? storedReading(primary.powerKw, primary.powerQuality, "kW")
+    : null;
+  const flow = derivePowerFlow({
+    label: primary?.name ?? siteName,
+    twinStatus,
+    gatewayOnline: siteReady ? (summary.gatewayOnline ?? 0) > 0 : null,
+    linkOk:
+      primaryLink == null
+        ? null
+        : primaryLink.label === "Modbus ok"
+          ? true
+          : primaryLink.label === "Modbus fail"
+            ? false
+            : null,
+    hasSample: primary?.updatedAt != null,
+    stale: primaryFresh?.stale ?? false,
+    engineRunning: primaryEngine?.label === "Running",
+    powerKw:
+      powerReading?.quality === "measured" && powerReading.value != null
+        ? powerReading.value
+        : null,
+    voltageL1:
+      primary?.voltageQuality === "measured" && primary.voltageL1 != null
+        ? primary.voltageL1
+        : null,
+    batteryV:
+      primary?.batteryQuality === "measured" && primary.batteryV != null
+        ? primary.batteryV
+        : null,
+    frequencyHz:
+      primary?.frequencyQuality === "measured" && primary.frequencyHz != null
+        ? primary.frequencyHz
+        : null,
+  });
 
   return (
     <div className="cc-layout">
@@ -270,7 +316,39 @@ function SiteBoard({
 
       <div className="cc-viz-grid">
         <div>
-          <CommandTwinLazy status={twinStatus} label={primary?.name ?? siteName} />
+          <PowerFlowTwinLazy flow={flow} />
+          {primary ? (
+            <div className="metric-grid metric-grid-primary" style={{ marginTop: "0.75rem" }}>
+              <TechValue
+                label="kW"
+                value={formatReading(storedReading(primary.powerKw, primary.powerQuality, "kW"))}
+              />
+              <TechValue
+                label="Hz"
+                value={formatReading(
+                  storedReading(
+                    primary.frequencyHz ?? null,
+                    primary.frequencyQuality ?? "unavailable",
+                    "Hz",
+                  ),
+                )}
+              />
+              <TechValue
+                label="RPM"
+                value={formatReading(storedReading(primary.rpm, primary.rpmQuality, "rpm"))}
+              />
+              <TechValue
+                label="L1 V"
+                value={formatReading(
+                  storedReading(
+                    primary.voltageL1 ?? null,
+                    primary.voltageQuality ?? "unavailable",
+                    "V",
+                  ),
+                )}
+              />
+            </div>
+          ) : null}
           {loaded.length > 0 ? (
             <ul className="cc-equip-list" style={{ marginTop: "0.75rem" }}>
               {loaded.slice(0, 8).map((row) => {
@@ -340,6 +418,7 @@ function SiteBoard({
         }
       >
         <DataTable
+          dense
           columns={columns}
           rows={rows}
           getRowKey={(row) => row.generatorId}
@@ -367,7 +446,7 @@ function CommandCharts({ generatorId }: { generatorId: string }) {
         points={series.power}
         reduced={series.reduced.power}
         caption="24h"
-        height={240}
+        height={260}
       />
       <SeriesChart
         title="Frequency"
@@ -375,7 +454,7 @@ function CommandCharts({ generatorId }: { generatorId: string }) {
         points={series.frequency}
         reduced={series.reduced.frequency}
         caption="24h"
-        height={240}
+        height={260}
       />
     </div>
   );

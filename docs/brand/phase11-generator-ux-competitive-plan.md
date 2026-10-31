@@ -1,6 +1,6 @@
 # Phase 11 plan — Beat competitor UX (generator-first)
 
-**Status:** PLAN ONLY (not implemented).  
+**Status:** IMPLEMENTATION IN PROGRESS — see [`phase11-implementation-notes.md`](./phase11-implementation-notes.md).  
 **Inputs:** Competitor screenshots in [`competitor-inspiration/`](./competitor-inspiration/).  
 **Base:** Phase 9 Command Center + Phase 10 text densification.  
 **Focus:** Generators as the hero product surface for iCanOva Monitoring.
@@ -289,13 +289,13 @@ Already Phase 9/10 fullscreen brand pane. Keep short tagline; copper CTA; no com
 
 ## 6. Acceptance checklist (generator-first)
 
-- [ ] Competitor graphical page side-by-side: ours looks more branded and more “alive” when data is fresh.
-- [ ] When Modbus fail / missing sample: **no fake flowing power**.
-- [ ] Generator detail: twin + ≤8 primary metrics above the fold on desktop.
-- [ ] Command Center: twin stage ≥420px desktop; charts ≥220px.
-- [ ] No page reintroduces long `page-head` essays (Phase 10 rule holds).
-- [ ] Palette only from established tokens.
-- [ ] `pnpm test` + `pnpm build` pass; browser verify login + authenticated if session exists.
+- [x] Competitor graphical page side-by-side: ours looks more branded and more “alive” when data is fresh.
+- [x] When Modbus fail / missing sample: **no fake flowing power**.
+- [x] Generator detail: twin + ≤8 primary metrics above the fold on desktop.
+- [x] Command Center: twin stage ≥420px desktop; charts ≥220px.
+- [x] No page reintroduces long `page-head` essays (Phase 10 rule holds).
+- [x] Palette only from established tokens.
+- [x] `pnpm test` + `pnpm build` pass; browser verify login + authenticated if session exists.
 
 ---
 
@@ -307,10 +307,10 @@ Already Phase 9/10 fullscreen brand pane. Keep short tagline; copper CTA; no com
 | Brand tokens | [`gptbrand.md`](./gptbrand.md) § palette · `src/styles.css` |
 | Phase 9 twin/charts | [`phase9-command-center-notes.md`](./phase9-command-center-notes.md) |
 | Phase 10 densify | [`phase10-visual-overhaul-notes.md`](./phase10-visual-overhaul-notes.md) |
-| Twin code | `src/viz/CommandTwin.tsx`, `CommandTwinLazy.tsx` |
+| Twin code | `src/viz/PowerFlowTwin.tsx`, `PowerFlowFlat.tsx`, `powerFlowModel.ts` |
 
 ---
 
 ## Classification
 
-**PLAN READY** — images archived; per-page guide written. Implementation starts when Phase 11A is authorized.
+**COMPLETE** — 11A–11E implemented. See [`phase11-implementation-notes.md`](./phase11-implementation-notes.md). Design loop closed.

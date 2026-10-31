@@ -12,12 +12,14 @@ import {
   type MachinePose,
 } from "../telemetry/readings";
 import { storedFreshness } from "../telemetry/freshness";
-import { CommandTwinLazy } from "../viz/CommandTwinLazy";
+import { PowerFlowTwinLazy } from "../viz/PowerFlowTwinLazy";
 import type { TwinStatus } from "../viz/CommandTwin";
+import { derivePowerFlow } from "../viz/powerFlowModel";
 import { SeriesChart } from "../ui/SeriesChart";
 import { DataTable } from "../ui/DataTable";
 import { formatStat, seriesStats } from "../telemetry/seriesStats";
 import { FilterBar, FilterSelect } from "../ui/FilterBar";
+import { TechValue } from "../ui/TechValue";
 import { storedReading, id } from "./access";
 import { FleetBoundary } from "./boundary";
 import { GeneratorAlarms } from "./AlarmPanel";
@@ -76,6 +78,26 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
   const pose = machinePose(rpm);
   const flag = machineFlag(typeof current?.link === "string" ? current.link : null);
   const freshness = storedFreshness(current?.updatedAt ?? null, Date.now());
+  const twinStatus = twinStatusFromPose(pose, flag);
+  const linkRaw = typeof current?.link === "string" ? current.link.toLowerCase() : "";
+  const flow = derivePowerFlow({
+    label: detail.name,
+    twinStatus,
+    gatewayOnline: null,
+    linkOk: linkRaw.includes("fail")
+      ? false
+      : linkRaw.includes("ok") || linkRaw.includes("up")
+        ? true
+        : null,
+    hasSample: current?.updatedAt != null,
+    stale: freshness.stale,
+    engineRunning: pose === "running",
+    powerKw: power.quality === "measured" && power.value != null ? power.value : null,
+    voltageL1: voltage.quality === "measured" && voltage.value != null ? voltage.value : null,
+    batteryV: battery.quality === "measured" && battery.value != null ? battery.value : null,
+    frequencyHz:
+      frequency.quality === "measured" && frequency.value != null ? frequency.value : null,
+  });
 
   return (
     <section className="page">
@@ -96,16 +118,24 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
           {current?.mode ? ` · ${current.mode}` : ""}
         </span>
       </div>
-      <CommandTwinLazy status={twinStatusFromPose(pose, flag)} label={detail.name} />
-      <div className="metric-grid metric-grid-primary">
-        <Metric label="RPM" value={formatReading(rpm)} />
-        <Metric label="Battery" value={formatReading(battery)} />
-        <Metric label="Hz" value={formatReading(frequency)} />
-        <Metric label="kW" value={formatReading(power)} />
-        <Metric label="L1 V" value={formatReading(voltage)} />
-        <Metric label="Load" value={formatReading(extraReading(current, "loadPct", "%"))} />
-        <Metric label="Fuel" value={formatReading(extraReading(current, "fuelPct", "%"))} />
-        <Metric label="Coolant" value={formatReading(extraReading(current, "coolantC", "°C"))} />
+      <div className="gen-flagship">
+        <PowerFlowTwinLazy flow={flow} />
+        <div className="stack">
+          <div className="metric-grid metric-grid-primary">
+            <TechValue label="RPM" value={formatReading(rpm)} />
+            <TechValue label="Battery" value={formatReading(battery)} />
+            <TechValue label="Hz" value={formatReading(frequency)} />
+            <TechValue label="kW" value={formatReading(power)} />
+            <TechValue label="L1 V" value={formatReading(voltage)} />
+            <TechValue label="Load" value={formatReading(extraReading(current, "loadPct", "%"))} />
+            <TechValue label="Fuel" value={formatReading(extraReading(current, "fuelPct", "%"))} />
+            <TechValue
+              label="Coolant"
+              value={formatReading(extraReading(current, "coolantC", "°C"))}
+            />
+          </div>
+          <GeneratorAlarms generatorId={generatorId} organizationId={detail.organizationId} />
+        </div>
       </div>
       <details className="cc-more-metrics">
         <summary>More measurements</summary>
@@ -127,10 +157,9 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
         </div>
       </details>
       <HistoryCharts generatorId={generatorId} />
-      <GeneratorAlarms generatorId={generatorId} organizationId={detail.organizationId} />
       <div className="table-wrap">
-        <table className="data-table">
-          <caption>History buckets for this generator</caption>
+        <table className="data-table dense">
+          <caption>History buckets</caption>
           <thead>
             <tr>
               <th>Bucket start</th>

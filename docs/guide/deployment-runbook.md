@@ -12,7 +12,7 @@ A green `productionReady` / `productionProfileReady` check is **not** production
 
 | Layer | How it ships today |
 |---|---|
-| Frontend | Vite → `dist/` via `pnpm build`. No `vercel.json`. Host is operator-chosen static HTTPS. |
+| Frontend | Vite → `dist/`. **Staging Pages:** `pnpm build:staging` (not bare `pnpm build`). No `vercel.json`. |
 | Backend | Convex functions via Convex CLI (`pnpm exec convex dev --once` or `convex deploy`) |
 | Collector | `icanova-edge-gateway/tools/ncu_inbox.py` → `INGEST_URL` + `INGEST_SECRET` |
 | Firmware | Separate repo; uplink host/path/bearer in NVS — not flashed by this web deploy |
@@ -49,9 +49,10 @@ See `docs/guide/env-inventory.md` and `docs/guide/production-auth-setup.md`.
 
 1. `pnpm test`
 2. `pnpm exec tsc --noEmit`
-3. `pnpm build`
+3. For staging Pages: `pnpm build:staging` (embeds roadrunner; fails if kangaroo/sturgeon sneak in). For local/CI artifact checks only: `pnpm build`.
 4. Confirm no secrets in `VITE_*` or committed `.env*`
 5. Confirm target is development or isolated staging — **not** production while gates remain open
+6. See `docs/status/phase-10-data-persistence.md` if orgs/gateways appear “missing” after deploy (wrong Convex host in bundle).
 
 ### Backend (development)
 
@@ -70,10 +71,15 @@ Do **not** run destructive migrations automatically. Use `convex/migrations.ts` 
 ### Frontend
 
 ```text
-pnpm build
+# Staging Cloudflare Pages (icanova.pages.dev) — REQUIRED
+pnpm build:staging
+npx wrangler pages deploy dist --project-name icanova
+
+# Bare `pnpm build` uses Vite production mode, which on this repo loads .env.local
+# and can embed kangaroo — that looks like "orgs/gateways disappeared" after deploy.
 ```
 
-Upload `dist/` to the static host. Set build-time `VITE_CONVEX_URL` to the **target** Convex cloud URL only.
+Upload `dist/` to the static host only after `assert-dist-convex-url` passes for the intended profile.
 
 ### Collector / firmware
 

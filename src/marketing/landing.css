@@ -615,6 +615,171 @@
   color: var(--color-muted-copper);
 }
 
+/* —— Hardware product (casing) —— */
+.mkt-product-hardware {
+  background:
+    radial-gradient(ellipse 55% 45% at 85% 40%, color-mix(in srgb, var(--color-muted-copper) 10%, transparent), transparent 60%),
+    var(--color-warm-white);
+}
+
+.mkt-hardware-layout {
+  display: grid;
+  gap: clamp(1.75rem, 4vw, 3.25rem);
+  align-items: center;
+}
+
+.mkt-hardware-copy .mkt-copy {
+  margin-top: var(--space-3);
+  max-width: 34rem;
+}
+
+.mkt-hardware-facts {
+  list-style: none;
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-industrial-steel);
+}
+
+.mkt-hardware-facts li {
+  padding-left: 0.85rem;
+  border-left: 2px solid var(--color-muted-copper);
+}
+
+.mkt-hardware-figure {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: clamp(0.5rem, 2vw, 1rem) 0 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.mkt-hardware-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(100%, 1080px);
+  isolation: isolate;
+}
+
+.mkt-hardware-img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  max-width: 1080px;
+  height: auto;
+  object-fit: contain;
+  object-position: center bottom;
+  background: transparent;
+  filter:
+    drop-shadow(0 18px 22px color-mix(in srgb, var(--color-graphite) 22%, transparent))
+    drop-shadow(0 4px 8px color-mix(in srgb, var(--color-graphite) 16%, transparent));
+}
+
+/* Soft floor that blends residual ground leftovers under the keyed PNG */
+.mkt-hardware-ground {
+  position: absolute;
+  z-index: 0;
+  left: 2%;
+  right: 2%;
+  bottom: 0;
+  height: 42%;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      ellipse 72% 55% at 50% 35%,
+      color-mix(in srgb, var(--color-graphite) 42%, transparent) 0%,
+      color-mix(in srgb, var(--color-graphite) 18%, transparent) 34%,
+      transparent 72%
+    );
+  filter: blur(22px);
+  transform: scaleY(0.42);
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.92;
+}
+
+.mkt-hardware-ground::after {
+  content: "";
+  position: absolute;
+  inset: 18% 18% 8%;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      ellipse 60% 45% at 50% 50%,
+      color-mix(in srgb, var(--color-graphite) 28%, transparent) 0%,
+      transparent 70%
+    );
+  filter: blur(10px);
+  transform: scaleY(0.55);
+}
+
+.mkt-hardware-cap {
+  font-size: 0.78rem;
+  color: var(--color-industrial-steel);
+  letter-spacing: 0.02em;
+}
+
+@media (min-width: 900px) {
+  .mkt-hardware-layout {
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  }
+
+  .mkt-hardware-stage {
+    width: min(100%, 1100px);
+  }
+}
+
+@media (min-width: 1100px) {
+  .mkt-product-hardware .mkt-inner {
+    width: min(100% - 2 * clamp(var(--space-4), 4vw, var(--space-6)), 1240px);
+  }
+}
+
+/* —— Scroll reveal —— */
+[data-mkt-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 1.35rem, 0);
+  transition:
+    opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+[data-mkt-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+[data-mkt-reveal][data-mkt-delay="1"] {
+  transition-delay: 0.08s;
+}
+
+[data-mkt-reveal][data-mkt-delay="2"] {
+  transition-delay: 0.16s;
+}
+
+[data-mkt-reveal][data-mkt-delay="3"] {
+  transition-delay: 0.24s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-mkt-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 /* —— Product proof —— */
 .mkt-proof-grid {
   display: grid;

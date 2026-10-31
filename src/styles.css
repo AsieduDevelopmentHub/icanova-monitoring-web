@@ -1967,6 +1967,12 @@ html[data-theme="dark"] {
   height: 280px !important;
 }
 
+.cc-twin-stage.is-power-flow .cc-twin-caption {
+  border-left: 2px solid var(--color-muted-copper);
+  padding-left: var(--space-3);
+  letter-spacing: 0.02em;
+}
+
 .cc-twin-caption {
   position: absolute;
   left: var(--space-3);
@@ -2113,11 +2119,116 @@ html[data-theme="dark"] {
 }
 
 .cc-twin-stage {
-  min-height: 420px;
+  min-height: 480px;
 }
 
 .cc-twin-stage canvas {
-  height: 420px !important;
+  height: 480px !important;
+}
+
+.cc-twin-stage.is-power-flow {
+  min-height: 480px;
+}
+
+.power-flow-flat .power-flow-svg {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  margin: 1rem auto 0.5rem;
+  height: auto;
+}
+
+.pf-bg {
+  fill: var(--cc-twin-bg);
+}
+
+.pf-edge {
+  fill: none;
+  stroke-width: 2.5;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .power-flow-flat .pf-edge[stroke-dasharray="6 4"] {
+    animation: pf-dash 1.1s linear infinite;
+  }
+}
+
+@keyframes pf-dash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.pf-node {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  fill: color-mix(in srgb, var(--color-deep-navy) 88%, black);
+}
+
+.pf-node.is-primary {
+  fill: color-mix(in srgb, var(--color-deep-navy) 70%, var(--color-industrial-steel));
+}
+
+.pf-node-ok {
+  stroke: #24845b;
+}
+
+.pf-node-alarm {
+  stroke: #c64747;
+}
+
+.pf-node-warn {
+  stroke: #d18a26;
+}
+
+.pf-node-offline {
+  stroke: #707780;
+}
+
+.pf-node-idle {
+  stroke: var(--color-industrial-steel);
+}
+
+.pf-node-label {
+  fill: #d8d9d7;
+  font-size: 11px;
+  font-family: var(--font-display);
+}
+
+.pf-node-value {
+  fill: #f2f1ed;
+  font-size: 10px;
+  font-family: var(--font-mono);
+}
+
+.pf-caption {
+  fill: var(--color-titanium);
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+.gen-flagship {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 960px) {
+  .gen-flagship {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
+    align-items: start;
+  }
+
+  .cc-twin-stage.is-power-flow,
+  .cc-twin-stage.is-power-flow canvas {
+    min-height: 480px;
+    height: 480px !important;
+  }
+}
+
+.data-table.dense th,
+.data-table.dense td {
+  padding: 0.35rem 0.55rem;
+  font-size: var(--text-sm);
 }
 
 @media (max-width: 959px) {
@@ -2156,6 +2267,17 @@ html[data-theme="dark"] {
 
 .metric-grid-primary .metric .value {
   font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+}
+
+.metric-grid-primary .tech-value {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev);
+}
+
+.metric-grid-primary .tech-value-data {
+  font-size: clamp(1.15rem, 2.2vw, 1.6rem);
 }
 
 .topbar-sys {

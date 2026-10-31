@@ -13,16 +13,18 @@ export function DataTable<T>({
   getRowKey,
   empty,
   caption,
+  dense,
 }: {
   columns: Column<T>[];
   rows: T[];
   getRowKey: (row: T) => string;
   empty: string;
   caption?: string;
+  dense?: boolean;
 }) {
   return (
     <div className="table-wrap">
-      <table className="data-table">
+      <table className={`data-table${dense ? " dense" : ""}`}>
         {caption ? <caption>{caption}</caption> : null}
         <thead>
           <tr>

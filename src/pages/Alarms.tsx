@@ -373,7 +373,8 @@ function AlarmTable({
       </section>
       {banner ? <p className="empty">{banner}</p> : null}
       <DataTable
-        caption="Stored alarms for this organization"
+        dense
+        caption="Alarms"
         rows={records}
         getRowKey={(row) => row.id}
         empty={copy.empty}
