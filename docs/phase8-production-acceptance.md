@@ -4,7 +4,7 @@
 **Deployment under review:** development `effervescent-kangaroo-10`  
 **Production approval:** **Not granted.** Mandatory external gates remain unverified.
 
-**Phase 8.1:** **PARTIALLY COMPLETED** — Auth0/`icanova` + E2E + device-cred **VERIFIED**; restore drill **BLOCKED**. See `docs/phase8-1-closure.md`. Phase 8.2 prep: `docs/phase8-2-production-acceptance.md` (no prod deploy).
+**Phase 8.1:** **COMPLETED** — Auth0/`icanova` + E2E + device-cred + isolated restore **VERIFIED**. See `docs/phase8-1-closure.md`. Phase 8.2 prep: `docs/phase8-2-production-acceptance.md` (no prod deploy).
 
 Statuses: COMPLETE | VERIFIED | IMPLEMENTED — NOT VERIFIED | OPERATOR ACTION REQUIRED | BLOCKED | DEFERRED | NOT APPLICABLE
 
@@ -22,7 +22,7 @@ Statuses: COMPLETE | VERIFIED | IMPLEMENTED — NOT VERIFIED | OPERATOR ACTION R
 | 8C Unsigned smoke | Dashboard/Ops notices | VERIFIED | `docs/browser-e2e-report.md` | local | Re-run after UI changes |
 | 8C Auth browser E2E | Signed-in flows | BLOCKED | same | — | Staging accounts |
 | 8D Backup artifact helpers | Path/manifest | COMPLETE | `backupArtifact.ts` | unit | — |
-| 8D Restore drill | Isolated restore | BLOCKED | `docs/backup-restore-verification.md` | — | Operator drill |
+| 8D Restore drill | Isolated restore | VERIFIED | `docs/backup-restore-verification.md` §6 (`vivid-mosquito-28`) | recovery | Quarantine; prod DR separate |
 | 8E Dual-auth foundation | Shared secret + device hash | VERIFIED (staging HTTP) | `scripts/staging-device-cred-http.mjs` | staging | Fleet migration later; firmware unchanged |
 | 8E Remove shared secret | Cutover | DEFERRED | `docs/device-credential-migration.md` | — | After proven migration |
 | 8F Prod env inventory | Secrets separation | COMPLETE | `docs/production-environment-readiness.md` | docs | — |

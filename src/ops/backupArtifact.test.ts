@@ -59,6 +59,7 @@ describe("backup artifact checks", () => {
         explicitApproval: false,
       }).allowed,
     ).toBe(true);
-    expect(RESTORE_TEST_STATUS).toContain("NOT TESTED");
+    expect(RESTORE_TEST_STATUS).toContain("VERIFIED");
+    expect(RESTORE_TEST_STATUS).toContain("vivid-mosquito-28");
   });
 });

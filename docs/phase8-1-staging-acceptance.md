@@ -1,8 +1,8 @@
 # Phase 8.1 staging acceptance evidence
 
 **Date:** 2026-10-31  
-**Decision:** **PHASE 8.1 PARTIALLY COMPLETED — OPERATOR ACTION REQUIRED**  
-(Auth0 + software gates verified; restore drill still blocked)  
+**Decision:** **PHASE 8.1 COMPLETED**  
+(Auth0 + software gates verified; isolated restore drill verified)  
 **Closure notes:** `docs/phase8-1-closure.md`
 
 | Criterion | Status | Evidence |
@@ -15,8 +15,8 @@
 | F Tenant isolation | VERIFIED | Staging foreign-org denial + local tenant tests |
 | G Device credentials | VERIFIED | HTTP matrix PASSED |
 | H Shared INGEST_SECRET | VERIFIED | Matrix shared-secret-ok |
-| I Restore drill | BLOCKED | Empty recovery + authorization required |
+| I Restore drill | **VERIFIED** | Empty recovery `vivid-mosquito-28`; §6 in `backup-restore-verification.md` |
 | J Regression | VERIFIED | 155 unit + build |
 | K Docs | VERIFIED | closure + this file |
 
-**Not full ACCEPTED** until restore drill completes.
+**ACCEPTED** for Phase 8.1 staging activation scope. Production launch remains separately gated (8.5).

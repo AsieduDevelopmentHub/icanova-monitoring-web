@@ -35,18 +35,14 @@ Do **not** paste secrets into source or git. Staging is provisioned.
 
 Auth0 login → `/me`, org seed, and `E2E_OIDC=1` Playwright were verified in Phase 8.1 close-out.
 
-### Restore drill (do not skip authorization)
+### Restore drill — COMPLETED 2026-10-31
+
+Evidence: `docs/backup-restore-verification.md` §6  
+Recovery: `vivid-mosquito-28` (quarantined; no notify/fleet)  
+Source: staging `dapper-roadrunner-247` (untouched)  
 
 ```bash
 node scripts/restore-drill-check.mjs
-# After downloading a staging backup ZIP path listing:
-# node scripts/restore-drill-check.mjs --paths-file backups/staging-paths.txt
 ```
-
-1. Written authorization.  
-2. Backup `dapper-roadrunner-247` only as **source**.  
-3. Create **empty** recovery deployment (not kangaroo / roadrunner / sturgeon).  
-4. Restore into recovery only; reconstruct env from vault.  
-5. Record RPO/RTO in `docs/backup-restore-verification.md`.  
 
 Full notes: `docs/phase8-1-closure.md` · Master: `docs/phase8-master-status.md`

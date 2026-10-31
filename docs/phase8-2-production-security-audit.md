@@ -7,4 +7,5 @@ This file is the Phase 8 programme alias required by the master plan. Keep both 
 **Last reconciled:** 2026-10-31  
 **Production deploy:** not executed  
 **Critical:** proposed prod `tremendous-sturgeon-449` has empty Convex env  
-**High:** shared `INGEST_SECRET` fleet risk; staging restore drill not completed  
+**High:** shared `INGEST_SECRET` fleet risk  
+**Note:** staging isolated restore drill **VERIFIED** (`vivid-mosquito-28`); prod-sourced DR still open  

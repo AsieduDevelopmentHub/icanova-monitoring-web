@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-31  
 **Status:** OPERATOR PROCESS REQUIRED  
-**Phase 8.1 restore drill:** still **BLOCKED** — do not claim production DR verified.
+**Phase 8.1 restore drill:** **VERIFIED** on empty recovery `vivid-mosquito-28` (staging snapshot). Do **not** claim production DR verified until a prod-sourced drill (or written residual-risk acceptance).
 
 Platform facts (Convex docs) and product recommendations: also see `docs/backup-and-disaster-recovery.md` and `docs/backup-restore-verification.md`.
 
@@ -19,7 +19,7 @@ Platform facts (Convex docs) and product recommendations: also see `docs/backup-
 | Collector/firmware secrets | Operator / device NVS |
 | Auth0 tenant config | Auth0 + operator |
 | Static SPA hosting config | Operator |
-| Proven restore RTO/RPO | **Operator drill** (open) |
+| Proven restore RTO/RPO | **Staging drill measured** (see `backup-restore-verification.md`); prod drill still open |
 
 ---
 
@@ -31,8 +31,8 @@ Platform facts (Convex docs) and product recommendations: also see `docs/backup-
 | On-platform retention | Per Convex plan (e.g. 7–14 days) | NOT VERIFIED for this project’s plan tier |
 | Off-platform retention | Encrypted copy for ≥30 days if business requires | OPERATOR CONFIGURATION REQUIRED |
 | Recovery target | **Empty** recovery deployment — never restore over live prod first | READY FOR PRODUCTION (procedure) |
-| RPO | ≤ 24 h config; tighter telemetry only with higher cadence | Recommended — NOT VERIFIED |
-| RTO | ≤ 4–8 h including verify | Recommended — NOT VERIFIED |
+| RPO | ≤ 24 h config; tighter telemetry only with higher cadence | Staging drill met ≤24 h; prod NOT VERIFIED |
+| RTO | ≤ 4–8 h including verify | Staging drill ≪ 4 h; prod NOT VERIFIED |
 | Backup verification | Path/manifest helpers (`backupArtifact.ts`) on every retained ZIP | READY FOR PRODUCTION (tooling) |
 | Secret reconstruction checklist | Auth0, `INGEST_SECRET`, Resend/Arkesel, SPA host env | READY FOR PRODUCTION (docs) |
 
@@ -65,10 +65,10 @@ Platform facts (Convex docs) and product recommendations: also see `docs/backup-
 
 ## 5. Dependency on Phase 8.1
 
-Until the staging isolated restore drill succeeds:
+Staging isolated restore drill **succeeded** (2026-10-31). Remaining:
 
-- Production DR readiness remains **BLOCKED**.  
-- Deployment may still proceed only with **explicit residual-risk acceptance**.
+- Production DR readiness still needs a **prod-sourced** backup/restore drill (or explicit residual-risk acceptance).  
+- Quarantine recovery `vivid-mosquito-28` — no fleet/notify traffic.
 
 ---
 

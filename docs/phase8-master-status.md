@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-31  
 **Overall programme status:** **NOT READY** (for production launch)  
-**Closest accurate review label:** **READY FOR OPERATOR REVIEW** on software/docs; launch remains **NOT READY** until restore + prod env + Auth0 + hosting + authorization.
+**Closest accurate review label:** **READY FOR OPERATOR REVIEW** on software/docs (8.1 restore drill closed); launch remains **NOT READY** until prod env + Auth0 + hosting + authorization.
 
 Git: `master` @ `c552261` (iCanOva branding). Working tree may include uncommitted Phase 8 docs/scripts from this programme.
 
@@ -14,7 +14,7 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree may include uncommitt
 |---|---|---|---|---|
 | Staging Convex `dapper-roadrunner-247` | VERIFIED | Deploy + Auth0 + E2E + device matrix | Keep isolated | Yes (read-only checks) |
 | Staging Auth0 `aud=icanova` | VERIFIED | `/me`, Playwright 13/13 | — | Yes |
-| Phase 8.1 restore drill | BLOCKED | No recovery restore evidence | Operator auth + empty recovery | **No** |
+| Phase 8.1 restore drill | VERIFIED | Empty recovery `vivid-mosquito-28`; RPO/RTO recorded | Quarantine recovery; prod DR still separate | Yes (read-only) |
 | Dev Convex kangaroo-10 | VERIFIED | Linked CLI default | Do not overwrite | Yes |
 | Prod Convex sturgeon-449 | READY FOR OPERATOR ACTION | Exists; **0 env vars** | Configure + approve | **No** (config is operator) |
 | Prod Auth0 | READY FOR OPERATOR ACTION | Not provisioned in-repo | Create tenant/app | No |
@@ -33,11 +33,11 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree may include uncommitt
 
 | Workstream | Status |
 |---|---|
-| 8.1 Staging activation | PARTIALLY COMPLETED — OPERATOR ACTION REQUIRED (restore) |
+| 8.1 Staging activation | COMPLETED |
 | 8.2A Security/architecture audit | COMPLETE (audit) |
 | 8.2B Production env blueprint | COMPLETE (docs + validate script) |
 | 8.2C Deploy/rollback engineering | COMPLETE (runbook + validate script) — not executed |
-| 8.2D Backup/BCP | DOCUMENTED — restore drill BLOCKED |
+| 8.2D Backup/BCP | DOCUMENTED — staging restore drill VERIFIED; prod DR still operator |
 | 8.2E Operations readiness | COMPLETE (ops runbook) |
 | 8.2F Automated acceptance | VERIFIED this run: `pnpm test` 155; `pnpm build`; `E2E_OIDC=1` Playwright **13 passed** |
 | 8.3 Device migration prep | COMPLETE (plan) — not executed |
@@ -76,4 +76,4 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree may include uncommitt
 
 ## Next single safest action
 
-**Authorize and perform the empty recovery restore drill** from a staging backup (never over kangaroo/roadrunner/sturgeon), then record RPO/RTO — closes Phase 8.1’s last software gate before any production configuration push.
+**Provision / verify production Auth0 + Convex env on `tremendous-sturgeon-449` only after written authorization** — do not push secrets until hosting + launch gates are reviewed (`docs/phase8-5-launch-readiness.md`). Keep recovery `vivid-mosquito-28` quarantined (no notify / no fleet).

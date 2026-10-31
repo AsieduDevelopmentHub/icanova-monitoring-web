@@ -1,5 +1,6 @@
 node_modules/
 dist/
+backups/
 package-lock.json
 .DS_Store
 .env

@@ -1,7 +1,7 @@
 # Production deployment runbook (Phase 8.2A)
 
 **Date:** 2026-10-31  
-**Status:** READY FOR OPERATOR USE — **DO NOT EXECUTE** until Phase 8.1 restore drill + written approval  
+**Status:** READY FOR OPERATOR USE — **DO NOT EXECUTE** until written production approval (Phase 8.1 staging restore drill already VERIFIED)  
 **Proposed target:** `tremendous-sturgeon-449` (empty env as of 2026-10-31)
 
 Never overwrite `effervescent-kangaroo-10` or `dapper-roadrunner-247` with this procedure.
@@ -11,7 +11,7 @@ Never overwrite `effervescent-kangaroo-10` or `dapper-roadrunner-247` with this 
 ## 0. Preconditions (all required)
 
 - [ ] Staging Auth0 + E2E still green (Phase 8.1 software)  
-- [ ] Isolated restore drill completed **or** accepted residual risk in writing  
+- [x] Isolated staging restore drill completed (`vivid-mosquito-28`) — prod-sourced DR still optional/residual-risk  
 - [ ] Production Auth0 SPA + API configured (issuer/JWKS/audience/callbacks)  
 - [ ] Production `INGEST_SECRET` generated (≥32) and stored in operator vault  
 - [ ] SPA host chosen; TLS ready; Auth0 allowlists match host  

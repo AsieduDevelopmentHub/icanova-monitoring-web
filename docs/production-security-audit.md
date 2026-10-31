@@ -14,7 +14,7 @@ Severity: CRITICAL | HIGH | MEDIUM | LOW | INFORMATIONAL
 |---|---|---|---|---|
 | S1 | **CRITICAL** (config) | Proposed production deployment `tremendous-sturgeon-449` has **no Convex environment variables** | `convex env list --deployment production` → empty | Do not serve traffic until Auth + ingest + notify env set and verified |
 | S2 | **HIGH** | Shared `INGEST_SECRET` remains fleet-wide auth for ESP32/NCU1 | Dual-auth design; staging matrix keeps shared path | Keep until approved per-device cutover; rotate if leaked; monitor `auth_failed` |
-| S3 | **HIGH** | Disaster recovery restore **not drilled** on isolated recovery target | Phase 8.1 restore **BLOCKED** | Complete empty-recovery restore before claiming prod DR |
+| S3 | **MEDIUM** | Production-sourced DR restore **not drilled** (staging isolated restore **VERIFIED** on `vivid-mosquito-28`) | `docs/backup-restore-verification.md` §6 | Run prod-sourced empty-recovery drill before claiming prod DR |
 | S4 | **MEDIUM** | No CI/CD workflows; deploy is fully manual | No `.github/workflows` | Operator runbook discipline; optional future CI with env isolation |
 | S5 | **MEDIUM** | SPA stores access token in `sessionStorage` | `src/platform/bearer.ts` | XSS would expose bearer; keep CSP/deps clean; short Auth0 token TTL |
 | S6 | **MEDIUM** | SMS (Arkesel) has no provider idempotency key | `convex/notify.ts` / `notifyDelivery.ts` comments | Treat uncertain timeouts as possible duplicates; prefer email idempotency (Resend) |

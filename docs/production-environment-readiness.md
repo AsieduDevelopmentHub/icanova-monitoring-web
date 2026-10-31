@@ -37,7 +37,7 @@ Never print secret values in logs or UI.
 | Production `INGEST_SECRET` | OPERATOR ACTION REQUIRED |
 | HTTPS app host + `VITE_CONVEX_URL` | OPERATOR ACTION REQUIRED |
 | Notify providers if enabled | OPERATOR ACTION REQUIRED |
-| Backup restore drill | BLOCKED — OPERATOR |
+| Backup restore drill | VERIFIED (staging → `vivid-mosquito-28`); prod DR still operator |
 | Hardware acceptance | BLOCKED |
 
 ---

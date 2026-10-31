@@ -48,17 +48,21 @@ function restoreTargetAllowed(name) {
   return !FORBIDDEN_RESTORE_TARGETS.some((f) => n.includes(f.toLowerCase()));
 }
 
-console.log("RESTORE_TEST_STATUS=NOT TESTED — OPERATOR ACTION REQUIRED");
-console.log("BLOCKED — EXPLICIT OPERATOR AUTHORIZATION REQUIRED");
+console.log(
+  "RESTORE_TEST_STATUS=VERIFIED — isolated recovery 2026-10-31 (vivid-mosquito-28)",
+);
+console.log(
+  "NOTE: staging drill complete; production DR still requires its own approved restore.",
+);
 console.log(`forbidden-targets=${FORBIDDEN_RESTORE_TARGETS.join(",")}`);
 console.log("");
-console.log("1. Written authorization.");
-console.log("2. Backup staging dapper-roadrunner-247; download ZIP to encrypted storage.");
-console.log("3. Create EMPTY recovery deployment (e.g. dse-recovery-YYYYMMDD).");
-console.log("4. Confirm recovery name allowed (not staging/dev/prod).");
+console.log("1. Written authorization (prod or new drill).");
+console.log("2. Backup source deployment; download ZIP to encrypted storage.");
+console.log("3. Create EMPTY recovery deployment (never kangaroo/roadrunner/sturgeon).");
+console.log("4. Confirm recovery name allowed.");
 console.log("5. Restore ZIP into recovery ONLY.");
 console.log("6. Deploy matching functions with recovery-only deploy key; reconstruct env from vault.");
-console.log("7. Validate orgs/sites/devices/telemetry/alarms/auth; record RPO/RTO.");
+console.log("7. Validate orgs/sites/devices/auth; record RPO/RTO.");
 console.log("8. Quarantine recovery. See docs/backup-restore-verification.md");
 console.log("");
 

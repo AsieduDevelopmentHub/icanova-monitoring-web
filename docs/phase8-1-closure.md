@@ -1,10 +1,11 @@
 # Phase 8.1 — Final closure & implementation notes
 
 **Date:** 2026-10-31  
-**Decision:** **PHASE 8.1 PARTIALLY COMPLETED — OPERATOR ACTION REQUIRED**  
-Software + Auth0 staging integration **accepted with evidence**. Isolated **backup/restore drill** remains **BLOCKED — EXPLICIT OPERATOR AUTHORIZATION REQUIRED**.  
+**Decision:** **PHASE 8.1 COMPLETED** (staging software + Auth0 + isolated restore drill)  
+Software + Auth0 staging integration **accepted with evidence**. Isolated **backup/restore drill** into empty recovery **VERIFIED**.  
 **Production:** not deployed.  
-**Development:** `effervescent-kangaroo-10` preserved.
+**Development:** `effervescent-kangaroo-10` preserved.  
+**Staging:** `dapper-roadrunner-247` preserved (source of snapshot; not overwritten).
 
 ---
 
@@ -20,7 +21,8 @@ Software + Auth0 staging integration **accepted with evidence**. Isolated **back
 | Device-cred HTTP matrix | VERIFIED | `staging-device-cred-http.mjs` |
 | Shared `INGEST_SECRET` retained | VERIFIED | Matrix |
 | Unit/build regression | VERIFIED | 155 tests; `pnpm build` |
-| Restore drill | **BLOCKED** | `node scripts/restore-drill-check.mjs` |
+| Staging snapshot export + path validation | **VERIFIED** | Export 2026-10-31; `restore-drill-check` PASS |
+| Restore into empty recovery | **VERIFIED** | `vivid-mosquito-28`; see `docs/backup-restore-verification.md` §6 |
 
 ---
 

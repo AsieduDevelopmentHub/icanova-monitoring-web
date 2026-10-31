@@ -103,4 +103,4 @@ export function restoreTargetAllowed(target: {
 }
 
 export const RESTORE_TEST_STATUS =
-  "NOT TESTED — OPERATOR ACTION REQUIRED" as const;
+  "VERIFIED — isolated recovery 2026-10-31 (vivid-mosquito-28)" as const;

@@ -7,7 +7,7 @@ Mandatory gates must each be independently green. Staging success ≠ production
 
 | Gate | Status | Evidence / doc |
 |---|---|---|
-| Phase 8.1 restore drill accepted | **OPEN** | `docs/backup-restore-verification.md` — BLOCKED |
+| Phase 8.1 restore drill accepted | **READY FOR OPERATOR REVIEW** | `docs/backup-restore-verification.md` — staging isolated restore VERIFIED (`vivid-mosquito-28`) |
 | Phase 8.2 security audit accepted | **READY FOR OPERATOR REVIEW** | `docs/phase8-2-production-security-audit.md` |
 | Production Auth0 provisioned | **OPEN** | Operator |
 | Production Convex env verified | **OPEN** | `tremendous-sturgeon-449` env empty |
@@ -16,7 +16,7 @@ Mandatory gates must each be independently green. Staging success ≠ production
 | Production domain + TLS verified | **OPEN** | |
 | Production notification providers configured | **OPEN** | |
 | Production notification authorization approved | **OPEN** | |
-| Backup and recovery verified | **OPEN** | Depends on restore drill |
+| Backup and recovery verified | **READY FOR OPERATOR REVIEW** | Staging drill VERIFIED; production DR still needs approved prod backup/drill or residual-risk acceptance |
 | Operational monitoring accepted | **READY FOR OPERATOR REVIEW** | `docs/production-operations-runbook.md` |
 | Production admin/operator accounts reviewed | **OPEN** | |
 | Device credential migration plan approved | **READY FOR OPERATOR REVIEW** | `docs/device-credential-migration-plan.md` |

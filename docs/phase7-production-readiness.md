@@ -209,7 +209,7 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 - [x] Bounded ingest rate limit that preserves legitimate retries (Phase 7.2)
 - [x] Env inventory + validation helpers (7C / 7.2)
 - [x] Production auth setup guide (`docs/production-auth-setup.md`) — **operator must still supply real IdP values**
-- [x] Backup/RPO/RTO documented from Convex product reality (7G) — see `docs/backup-and-disaster-recovery.md` (**restore drill still operator**)
+- [x] Backup/RPO/RTO documented from Convex product reality (7G) — see `docs/backup-and-disaster-recovery.md` (**staging restore drill VERIFIED 2026-10-31**)
 - [x] Scheduled job inventory + run visibility (7H) — `docs/scheduled-jobs-audit.md`, `jobRunState`
 - [x] Observability / ops overview (7I) — `docs/observability-audit.md`, `/admin/ops`, ingest op windows
 - [x] Frontend production readiness (7J) — `docs/frontend-production-readiness.md`
@@ -309,7 +309,7 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 | Job visibility | `jobRunState` + `api.jobStatus.list` |
 | Backup path/manifest guards | `src/ops/backupArtifact.ts` |
 | Real dashboard backup | **NOT TESTED — OPERATOR ACTION REQUIRED** |
-| Restore drill | **NOT TESTED — OPERATOR ACTION REQUIRED** |
+| Restore drill | **VERIFIED** (staging → `vivid-mosquito-28`, 2026-10-31) |
 | Periodic Pro backups enabled | **OPERATOR ACTION REQUIRED** |
 | Production deploy | **Not done** |
 
@@ -342,7 +342,7 @@ Bottleneck candidates: health sweep chain depth, prune under backlog, notificati
 | 7L Software E2E (Vitest / convex-test) | **COMPLETE** — `docs/staging-e2e-report.md` |
 | 7L Browser IdP E2E | **BLOCKED** |
 | 7L Scale simulation | **COMPLETE** (simulation — not production load) |
-| Backup restore drill | **OPERATOR ACTION REQUIRED** |
+| Backup restore drill | **VERIFIED** (staging isolated; prod DR still separate) |
 | Shared `INGEST_SECRET` | Known risk — future per-device credentials |
 | Hardware / live DSE | **BLOCKED** — not claimed |
 

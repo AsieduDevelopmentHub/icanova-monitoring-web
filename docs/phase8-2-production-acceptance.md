@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-31  
 **Status:** **AUDIT COMPLETE — NO PRODUCTION DEPLOYMENT**  
-**Phase 8.1 dependency:** Restore drill still **BLOCKED**  
+**Phase 8.1 dependency:** Staging restore drill **VERIFIED** (`vivid-mosquito-28`); prod-sourced DR still open  
 **Proposed prod Convex:** `tremendous-sturgeon-449` — **env empty** as of audit
 
 Classifications: VERIFIED IN STAGING | READY FOR PRODUCTION | OPERATOR CONFIGURATION REQUIRED | IMPLEMENTATION REQUIRED | BLOCKED | NOT APPLICABLE | NOT VERIFIED
@@ -76,10 +76,10 @@ Classifications: VERIFIED IN STAGING | READY FOR PRODUCTION | OPERATOR CONFIGURA
 
 | Requirement | Classification | Notes |
 |---|---|---|
-| Staging restore drill | BLOCKED | Phase 8.1 open item |
+| Staging restore drill | VERIFIED | `vivid-mosquito-28` — see backup-restore-verification §6 |
 | Prod backup schedule | OPERATOR CONFIGURATION REQUIRED | |
 | Artifact validation tooling | READY FOR PRODUCTION (code) | `backupArtifact.ts` |
-| Claimed RPO/RTO | NOT VERIFIED | Targets only |
+| Claimed RPO/RTO | Staging measured; prod NOT VERIFIED | See §6 evidence |
 
 ## 7. Monitoring & ops
 
@@ -97,8 +97,8 @@ See `docs/production-security-audit.md`.
 | Severity | Count (this audit) |
 |---|---|
 | CRITICAL | 1 (empty prod env) |
-| HIGH | 2 (shared ingest; undrilled restore) |
-| MEDIUM | 4 |
+| HIGH | 1 (shared ingest) |
+| MEDIUM | 5 (includes prod-sourced DR open) |
 | LOW | 2 |
 | INFORMATIONAL | 3 |
 
@@ -111,7 +111,7 @@ See `docs/production-security-audit.md`.
 
 ## 10. Operator actions (ordered)
 
-1. Complete Phase 8.1 isolated restore drill **or** accept residual DR risk in writing.  
+1. Quarantine recovery `vivid-mosquito-28`; schedule prod-sourced DR drill **or** accept residual prod DR risk in writing.  
 2. Choose production SPA host + TLS.  
 3. Create production Auth0 SPA + API; set callbacks.  
 4. Set Convex prod env on approved deployment (never clone staging values).  
