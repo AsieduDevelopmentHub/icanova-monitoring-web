@@ -50,7 +50,7 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree includes Phase 8 docs
 | 8.5D Shared Auth0 tenant + separate prod SPA | **SUPERSEDED for login** by 8.5E (Auth0 retained inactive); SPA checklist still valid for future IdP |
 | 8.5E Convex Auth primary | **CODE COMPLETE** — `docs/status/phase-8.5e-convex-auth-transition.md` |
 | 8.5F Staging Convex Auth activation | **VERIFIED** (roadrunner + live E2E) — `docs/status/phase-8.5f-staging-convex-auth-activation.md` |
-| 8.5G Pages Convex Auth cutover | **BLOCKED** — Cloudflare API token missing — `docs/status/phase-8.5g-pages-convex-auth-cutover.md` |
+| 8.5G Pages Convex Auth cutover | **VERIFIED** — `icanova.pages.dev` → roadrunner Password Auth; hosted E2E 4/4 — `docs/status/phase-8.5g-pages-convex-auth-cutover.md` |
 
 ---
 
@@ -95,7 +95,7 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree includes Phase 8 docs
 
 ## Next single safest action
 
-**Create a Cloudflare API token (Account → Cloudflare Pages → Edit), set `CLOUDFLARE_API_TOKEN` in the local shell, then `npx wrangler pages deploy dist --project-name icanova` and smoke Password login on `https://icanova.pages.dev`.** Verified Auth0-free `dist/` is ready. Do **not** touch sturgeon.
+**Staging frontend cutover is VERIFIED.** Next production gates remain operator-authorized only (sturgeon env, prod deploy, written go-live). Do **not** touch sturgeon without authorization.
 
 Canonical: `docs/status/phase-8.5g-pages-convex-auth-cutover.md`  
 **PRODUCTION DEPLOYMENT NOT AUTHORIZED.**
