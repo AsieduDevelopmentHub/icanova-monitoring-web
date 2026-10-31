@@ -206,6 +206,7 @@ function SiteBoard({
           <Link to="/local">Live readings</Link>
           <Link to="/alarms">Alarms</Link>
           <Link to="/events">Events</Link>
+          <Link to="/reports">Reports</Link>
         </div>
       </div>
 

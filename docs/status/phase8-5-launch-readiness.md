@@ -3,8 +3,8 @@
 **Date:** 2026-10-31  
 **Overall status:** **NOT READY**  
 **Closest software label:** **READY FOR OPERATOR REVIEW**  
-**8.5B:** Hosting checkpoint **STOP** — provider/domain not selected; Cloudflare Pages config prepared locally only.  
-**Next programme label target:** `READY FOR PRODUCTION CONFIGURATION` — only after operator selects host/domain **and** creates production Auth0 (still **before** Convex prod secrets).
+**8.5C:** Production Convex provisioning **BLOCKED** — Pages still on staging Auth0/Convex; sturgeon empty.  
+**Must remain:** `PRODUCTION DEPLOYMENT NOT AUTHORIZED` until written approval.
 
 Mandatory gates must each be independently green. Staging success ≠ production readiness.
 
@@ -12,9 +12,9 @@ Mandatory gates must each be independently green. Staging success ≠ production
 |---|---|---|
 | **1 — Recovery / restore drill** | **VERIFIED** | `docs/guide/backup-restore-verification.md` §6 — `vivid-mosquito-28` quarantined |
 | **2 — Security** | **READY FOR OPERATOR REVIEW** | `docs/status/production-security-audit.md` |
-| **3 — Production Auth0** | **OPERATOR CONFIGURATION REQUIRED** | Design + checklist: `docs/guide/production-auth0-and-hosting.md` |
-| **4 — Production Convex secrets** | **BLOCKED UNTIL AUTH0 + HOSTING ARE ESTABLISHED** | `tremendous-sturgeon-449` empty; do not populate yet |
-| **5 — SPA hosting** | **OPERATOR DECISION REQUIRED** | Recommended Cloudflare Pages; **not selected**; domain **unknown** — `docs/guide/production-auth0-and-hosting.md` §4b |
+| **3 — Production Auth0** | **NOT VERIFIED** | Pages still uses staging Auth0 issuer — `docs/status/phase-8.5c-production-convex-provisioning.md` |
+| **4 — Production Convex secrets** | **BLOCKED** | Sturgeon empty; staging secrets not copied (8.5C) |
+| **5 — SPA hosting** | **VERIFIED (Pages)** | `https://icanova.pages.dev`; still pointed at **staging** Convex |
 | **6 — Notifications** | **OPERATOR CONFIGURATION REQUIRED** | Controlled test in `docs/guide/production-environment-setup.md` §9 |
 | **7 — Device credentials** | **PLAN ONLY** | `docs/guide/device-credential-migration-plan.md` |
 | **8 — Hardware** | **BLOCKED — PHYSICAL HARDWARE REQUIRED** | `docs/guide/hardware-acceptance-test-plan.md` |

@@ -11,6 +11,7 @@ const kind = v.union(
   v.literal("devices"),
   v.literal("deliveries"),
   v.literal("telemetry"),
+  v.literal("health"),
 );
 const format = v.union(v.literal("csv"), v.literal("xlsx"), v.literal("pdf"));
 
@@ -70,7 +71,7 @@ export const file = query({
 async function loadRows(
   ctx: { db: import("./_generated/server").QueryCtx["db"] },
   organizationId: import("./_generated/dataModel").Id<"organizations">,
-  reportKind: "alarms" | "maintenance" | "devices" | "deliveries" | "telemetry",
+  reportKind: "alarms" | "maintenance" | "devices" | "deliveries" | "telemetry" | "health",
 ): Promise<{ headers: string[]; rows: string[][]; capped: boolean }> {
   if (reportKind === "alarms") {
     const batch = await ctx.db
@@ -162,6 +163,46 @@ async function loadRows(
       headers: ["Name", "Identity", "Site id"],
       capped: batch.length > MAX_EXPORT,
       rows: batch.slice(0, MAX_EXPORT).map((row) => [row.name, row.identity, row.siteId]),
+    };
+  }
+  if (reportKind === "health") {
+    const batch = await ctx.db
+      .query("deviceHealthEvents")
+      .withIndex("by_org_at", (q) => q.eq("organizationId", organizationId))
+      .order("desc")
+      .take(MAX_EXPORT + 1);
+    const rows: string[][] = [];
+    for (const row of batch.slice(0, MAX_EXPORT)) {
+      const device = await ctx.db.get(row.deviceId);
+      if (device && device.organizationId !== organizationId) {
+        throw new Error("Forbidden");
+      }
+      rows.push([
+        formatExportTime(row.at),
+        device?.name ?? "",
+        device?.identity ?? "",
+        row.siteId,
+        row.reason,
+        row.gatewayTo ?? "",
+        row.modbusTo ?? "",
+        row.freshnessTo ?? "",
+        row.overallTo ?? "",
+      ]);
+    }
+    return {
+      headers: [
+        "At (UTC)",
+        "Gateway",
+        "Identity",
+        "Site id",
+        "Reason",
+        "Cloud to",
+        "Modbus to",
+        "Freshness to",
+        "Overall to",
+      ],
+      capped: batch.length > MAX_EXPORT,
+      rows,
     };
   }
   const batch = await ctx.db

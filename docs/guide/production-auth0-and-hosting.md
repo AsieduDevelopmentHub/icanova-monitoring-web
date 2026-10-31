@@ -1,20 +1,21 @@
 # Production Auth0 + SPA hosting (Phase 8.5A / 8.5B)
 
 **Date:** 2026-10-31  
-**Status:** Host live on Cloudflare Pages; Auth0 SPA env for that host may still be incomplete; Convex prod secrets remain blocked until Auth0 contract is verified  
+**Status (8.5C):** Host live; Pages OIDC complete but **issuer is still staging Auth0**; SPA still targets **staging Convex**. Production Convex env **not provisioned** (dedicated prod Auth0 not verified).  
 **Audience:** `icanova`  
-**Staging Auth0 (do not reuse for prod Convex):** `dev-notfczud6xx8hhxf.us.auth0.com`
+**Staging Auth0 (live on Pages today):** `dev-notfczud6xx8hhxf.us.auth0.com`
 
-### Hosting checkpoint (updated)
+### Hosting / Auth0 / Convex checkpoint (8.5C evidence)
 
 | Field | Status |
 |---|---|
 | Selected provider | **Cloudflare Pages** |
 | Current SPA URL | `https://icanova.pages.dev` |
-| Custom domain | Optional / operator |
-| Auth0 callbacks for Pages | **OPERATOR** — must include `https://icanova.pages.dev/auth/callback` |
-| Pages build `VITE_OIDC_*` | **REQUIRED** for Sign-in redirect; without them the app shows Sign in → “not configured” |
-| Convex prod secrets | **BLOCKED — awaiting verified production Auth0 + hosting contract** |
+| Pages `VITE_OIDC_*` | **SET** (issuer/client/audience/redirect/logout) |
+| Auth0 tenant on Pages | **Staging** `dev-notfczud6xx8hhxf…` — dedicated prod tenant **NOT VERIFIED** |
+| Pages `VITE_CONVEX_URL` | **Staging** `dapper-roadrunner-247` — **not** sturgeon |
+| Production Convex `tremendous-sturgeon-449` | Identity OK; **0 env vars**; `/me` → **404** (functions likely undeployed) |
+| Convex prod secrets | **BLOCKED** until dedicated Auth0 (or written interim acceptance) + deploy authorization |
 
 SPA entry-point UX (Phase 8.2G): header always shows **Sign in** when unsigned (no longer gated on `oidcConfigured()`).
 

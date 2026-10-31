@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-31  
 **Overall programme status:** **NOT READY** (for production launch)  
-**Closest accurate review label:** **READY FOR OPERATOR REVIEW** (8.5B preflight STOP — host/domain not selected). Convex prod secrets **BLOCKED — awaiting verified production Auth0 + hosting**.
+**Closest accurate review label:** **READY FOR OPERATOR REVIEW** (8.5C BLOCKED on prod Auth0 + sturgeon env). **PRODUCTION DEPLOYMENT NOT AUTHORIZED.**
 
 Git: `master` @ `c552261` (iCanOva branding). Working tree includes Phase 8 docs/scripts from this programme.
 
@@ -16,10 +16,10 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree includes Phase 8 docs
 | Staging Auth0 `aud=icanova` | VERIFIED | `/me`, Playwright | — | Yes |
 | Phase 8.1 restore drill | VERIFIED | `vivid-mosquito-28`; RPO/RTO recorded | Keep quarantined | Yes (read-only) |
 | Dev Convex kangaroo-10 | VERIFIED | Linked CLI default | Do not overwrite | Yes |
-| Prod Convex sturgeon-449 | OPERATOR CONFIGURATION REQUIRED | Exists as `--deployment production`; **0 env vars** | Configure + approve | **No** |
-| Prod Auth0 | OPERATOR CONFIGURATION REQUIRED | `docs/guide/production-auth0-and-hosting.md` | Create separate tenant/SPA/API | No |
-| Hosting | Cloudflare Pages live | `https://icanova.pages.dev` | Custom domain optional; set Pages `VITE_OIDC_*` | No |
-| Prod Convex secrets | BLOCKED — awaiting Auth0 + hosting | sturgeon empty | After host + domain + Auth0 verified | No |
+| Prod Convex sturgeon-449 | BLOCKED (8.5C) | Identity OK; **0 env**; `/me` 404 | AUTH_*/INGEST + function deploy auth | **No** |
+| Prod Auth0 | NOT VERIFIED | Pages still uses staging Auth0 issuer | Dedicated tenant or written interim acceptance | No |
+| Hosting | Cloudflare Pages live | `https://icanova.pages.dev`; OIDC set | Point `VITE_CONVEX_URL` at sturgeon after prod ready | No |
+| Prod Convex secrets | BLOCKED | Empty — staging secrets not copied | After Auth0 verified + written auth | No |
 | Dual-auth server | VERIFIED | Staging HTTP matrix | Fleet migration deferred | Yes (tests) |
 | Fleet credential migration | PLAN ONLY | Plan docs | Authorize batches | No |
 | Notify prod providers | OPERATOR CONFIGURATION REQUIRED | Controlled test procedure documented | Creds + auth to send | No |
@@ -45,7 +45,8 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree includes Phase 8 docs
 | 8.4 Hardware ATP prep | Plan COMPLETE — physical BLOCKED |
 | 8.5 Launch readiness | **NOT READY** |
 | 8.5A Auth0 + hosting readiness | **COMPLETE** (docs/templates) |
-| 8.5B Host + Auth0 preflight | **STOP** — waiting on operator host/domain selection |
+| 8.5B Host + Auth0 preflight | Pages live; OIDC set (staging Auth0) |
+| 8.5C Production Convex provisioning | **BLOCKED** — see `docs/status/phase-8.5c-production-convex-provisioning.md` |
 
 ---
 
@@ -65,6 +66,10 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree includes Phase 8 docs
 | `docs/guide/hardware-acceptance-test-plan.md` |
 | `docs/status/phase8-5-launch-readiness.md` |
 | `docs/guide/production-auth0-and-hosting.md` |
+| `docs/status/phase-8.5c-production-convex-provisioning.md` |
+| `docs/guide/production-environment-inventory.md` |
+| `docs/status/production-integration-verification.md` |
+| `docs/status/production-launch-checklist.md` |
 | This file |
 
 ## Tooling
@@ -80,6 +85,7 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree includes Phase 8 docs
 
 ## Next single safest action
 
-**Set Cloudflare Pages build `VITE_OIDC_*` (audience `icanova`, callback `https://icanova.pages.dev/auth/callback`) and authorize that origin in Auth0**, then rebuild/redeploy the SPA. Do not set Convex prod secrets until the Auth0 access-token contract is verified.
+**Verify or create a dedicated production Auth0 tenant (or accept staging Auth0 as interim IdP in writing), then authorize AUTH_*/new INGEST_SECRET on `tremendous-sturgeon-449` and a separate production function deploy.** Do not copy staging secrets. Keep Pages on roadrunner until sturgeon is ready.
 
-Canonical: `docs/guide/production-auth0-and-hosting.md`
+Canonical: `docs/status/phase-8.5c-production-convex-provisioning.md`  
+**PRODUCTION DEPLOYMENT NOT AUTHORIZED.**

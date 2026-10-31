@@ -23,6 +23,7 @@ import {
 } from "../telemetry/alarmCenter";
 import { DataTable } from "../ui/DataTable";
 import { FilterBar, FilterSearch, FilterSelect } from "../ui/FilterBar";
+import { Metric } from "../ui/Metric";
 import { StatusMark } from "../ui/StatusMark";
 
 const demoRows = demoAlarms(demoSamples);
@@ -363,8 +364,33 @@ function AlarmTable({
     filtered: narrowed || filter.siteId !== "",
   });
   const banner = pageBanner(records, filter.status);
+  const active = records.filter((row) => row.status === "active").length;
+  const acknowledged = records.filter((row) => row.status === "acknowledged").length;
+  const cleared = records.filter((row) => row.status === "cleared" || row.status === "resolved").length;
+  const critical = records.filter((row) => row.severity === "critical").length;
+  const warning = records.filter((row) => row.severity === "warning").length;
   return (
     <div className="stack">
+      <section className="ops-section" aria-labelledby="alarm-analytics-title">
+        <h2 id="alarm-analytics-title">Alarm analytics (this page)</h2>
+        <p className="meta">
+          Counts are for the loaded and filtered rows only — not an organization lifetime total.
+          {data.capped ? " The query is capped." : ""}
+        </p>
+        <div className="metric-grid">
+          <Metric label="Rows loaded" value={String(records.length)} />
+          <Metric label="Active" value={String(active)} />
+          <Metric label="Acknowledged" value={String(acknowledged)} />
+          <Metric label="Cleared / resolved" value={String(cleared)} />
+          <Metric label="Critical" value={String(critical)} />
+          <Metric label="Warning" value={String(warning)} />
+        </div>
+        <p className="meta">
+          <Link to="/reports">Export alarm report</Link>
+          {" · "}
+          <Link to="/events">Health / audit timeline</Link>
+        </p>
+      </section>
       {banner ? <p className="empty">{banner}</p> : null}
       <DataTable
         caption="Stored alarms for this organization"

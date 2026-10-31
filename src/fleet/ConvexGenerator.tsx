@@ -8,6 +8,8 @@ import { formatReading, machineFlag, machinePose } from "../telemetry/readings";
 import { storedFreshness } from "../telemetry/freshness";
 import { GeneratorScene } from "../viz/GeneratorScene";
 import { SeriesChart } from "../ui/SeriesChart";
+import { DataTable } from "../ui/DataTable";
+import { formatStat, seriesStats } from "../telemetry/seriesStats";
 import { FilterBar, FilterSelect } from "../ui/FilterBar";
 import { storedReading, id } from "./access";
 import { FleetBoundary } from "./boundary";
@@ -236,6 +238,22 @@ function HistoryCharts({ generatorId }: { generatorId: string }) {
       {series?.capped ? (
         <p className="meta">This range stopped at the read limit. It is not every stored bucket.</p>
       ) : null}
+      <p className="meta">
+        Retention is about 7 days of 15-minute buckets. Gaps are omitted from charts and averages —
+        missing samples are not treated as zero. A 30-day range is not offered because older buckets
+        are pruned.
+      </p>
+      {series ? (
+        <MetricStrip
+          items={[
+            { label: "RPM", unit: "rpm", points: series.rpm },
+            { label: "Battery", unit: "V", points: series.battery },
+            { label: "Frequency", unit: "Hz", points: series.frequency },
+            { label: "Power", unit: "kW", points: series.power },
+            { label: "L1 voltage", unit: "V", points: series.voltage },
+          ]}
+        />
+      ) : null}
       <SeriesChart
         title="RPM"
         unit="rpm"
@@ -272,5 +290,43 @@ function HistoryCharts({ generatorId }: { generatorId: string }) {
         caption={caption}
       />
     </div>
+  );
+}
+
+function MetricStrip({
+  items,
+}: {
+  items: { label: string; unit: string; points: Parameters<typeof seriesStats>[0] }[];
+}) {
+  const rows = items.map((item) => {
+    const stats = seriesStats(item.points);
+    return {
+      label: item.label,
+      unit: item.unit,
+      latest: formatStat(stats.latest),
+      min: formatStat(stats.min),
+      max: formatStat(stats.max),
+      average: formatStat(stats.average),
+      count: String(stats.count),
+      buckets: String(stats.bucketsWithData),
+    };
+  });
+  return (
+    <DataTable
+      caption="Measured statistics for the selected range"
+      rows={rows}
+      getRowKey={(row) => row.label}
+      empty="No measured history in this range."
+      columns={[
+        { key: "label", header: "Measurement", render: (row) => row.label },
+        { key: "unit", header: "Unit", render: (row) => row.unit },
+        { key: "latest", header: "Latest", align: "right", render: (row) => row.latest },
+        { key: "min", header: "Min", align: "right", render: (row) => row.min },
+        { key: "max", header: "Max", align: "right", render: (row) => row.max },
+        { key: "average", header: "Average", align: "right", render: (row) => row.average },
+        { key: "count", header: "Readings", align: "right", render: (row) => row.count },
+        { key: "buckets", header: "Buckets", align: "right", render: (row) => row.buckets },
+      ]}
+    />
   );
 }
