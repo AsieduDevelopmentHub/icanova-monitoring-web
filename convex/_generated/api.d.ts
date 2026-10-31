@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as accountSecurity from "../accountSecurity.js";
 import type * as alarms from "../alarms.js";
 import type * as audits from "../audits.js";
 import type * as auth from "../auth.js";
@@ -42,6 +43,8 @@ import type * as notifyTemplates from "../notifyTemplates.js";
 import type * as ops from "../ops.js";
 import type * as order from "../order.js";
 import type * as organizations from "../organizations.js";
+import type * as passwordPolicy from "../passwordPolicy.js";
+import type * as passwordResetEmail from "../passwordResetEmail.js";
 import type * as permissions from "../permissions.js";
 import type * as productionConfig from "../productionConfig.js";
 import type * as push from "../push.js";
@@ -60,6 +63,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  accountSecurity: typeof accountSecurity;
   alarms: typeof alarms;
   audits: typeof audits;
   auth: typeof auth;
@@ -94,6 +98,8 @@ declare const fullApi: ApiFromModules<{
   ops: typeof ops;
   order: typeof order;
   organizations: typeof organizations;
+  passwordPolicy: typeof passwordPolicy;
+  passwordResetEmail: typeof passwordResetEmail;
   permissions: typeof permissions;
   productionConfig: typeof productionConfig;
   push: typeof push;

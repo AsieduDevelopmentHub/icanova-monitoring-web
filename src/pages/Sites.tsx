@@ -25,10 +25,6 @@ export function Sites() {
     <section className="page">
       <header className="page-head">
         <h1>Sites</h1>
-        <p>
-          Sites group gateways and generators inside one organization. A site record stores a name —
-          there is no location hierarchy yet.
-        </p>
       </header>
       <LiveGate>
         {(org) => <SiteList organizationId={org.organizationId} permissions={org.permissions} />}

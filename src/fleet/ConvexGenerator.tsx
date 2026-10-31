@@ -4,9 +4,16 @@ import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Metric } from "../ui/Metric";
 import { StatusMark } from "../ui/StatusMark";
-import { formatReading, machineFlag, machinePose } from "../telemetry/readings";
+import {
+  formatReading,
+  machineFlag,
+  machinePose,
+  type MachineFlag,
+  type MachinePose,
+} from "../telemetry/readings";
 import { storedFreshness } from "../telemetry/freshness";
-import { GeneratorScene } from "../viz/GeneratorScene";
+import { CommandTwinLazy } from "../viz/CommandTwinLazy";
+import type { TwinStatus } from "../viz/CommandTwin";
 import { SeriesChart } from "../ui/SeriesChart";
 import { DataTable } from "../ui/DataTable";
 import { formatStat, seriesStats } from "../telemetry/seriesStats";
@@ -78,71 +85,49 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
           <Link to="/generators">Generators</Link>
         </p>
       </header>
-      <div className="notice" role="note">
-        <strong>Stored current reading.</strong> One document for this generator. History below is a
-        page of 15-minute buckets, not the live poll. Engine, electrical, and mains sections remain
-        on the demo log. This is not a Modbus session.
-      </div>
       <div className="status-row">
         {freshness.stale ? <StatusMark tone="warn">stale</StatusMark> : null}
-        <span className="meta">{freshness.label}</span>
+        <StatusMark tone={flag === "fault" ? "alarm" : flag === "warning" ? "warn" : "ok"}>
+          {current?.link ?? "link —"}
+        </StatusMark>
+        <span className="meta">
+          {freshness.label}
+          {current?.alarmCount == null ? "" : ` · alarms ${current.alarmCount}`}
+          {current?.mode ? ` · ${current.mode}` : ""}
+        </span>
       </div>
-      <GeneratorScene pose={pose} flag={flag} />
-      <div className="metric-grid">
+      <CommandTwinLazy status={twinStatusFromPose(pose, flag)} label={detail.name} />
+      <div className="metric-grid metric-grid-primary">
         <Metric label="RPM" value={formatReading(rpm)} />
         <Metric label="Battery" value={formatReading(battery)} />
-        <Metric label="Frequency" value={formatReading(frequency)} />
-        <Metric label="Power" value={formatReading(power)} />
-        <Metric label="L1 voltage" value={formatReading(voltage)} />
-        <Metric label="L2 voltage" value={formatReading(extraReading(current, "voltageL2", "V"))} />
-        <Metric label="L3 voltage" value={formatReading(extraReading(current, "voltageL3", "V"))} />
-        <Metric label="L1 current" value={formatReading(extraReading(current, "currentL1", "A"))} />
-        <Metric label="L2 current" value={formatReading(extraReading(current, "currentL2", "A"))} />
-        <Metric label="L3 current" value={formatReading(extraReading(current, "currentL3", "A"))} />
+        <Metric label="Hz" value={formatReading(frequency)} />
+        <Metric label="kW" value={formatReading(power)} />
+        <Metric label="L1 V" value={formatReading(voltage)} />
         <Metric label="Load" value={formatReading(extraReading(current, "loadPct", "%"))} />
-        <Metric label="Oil pressure" value={formatReading(extraReading(current, "oilPressureKpa", "kPa"))} />
-        <Metric label="Coolant" value={formatReading(extraReading(current, "coolantC", "°C"))} />
         <Metric label="Fuel" value={formatReading(extraReading(current, "fuelPct", "%"))} />
-        <Metric label="Engine status code" value={formatReading(extraReading(current, "engineStatus", ""))} />
-        <Metric label="Engine status alt" value={formatReading(extraReading(current, "engineStatusAlt", ""))} />
-        <Metric label="Control status" value={formatReading(extraReading(current, "controlStatus", ""))} />
-        <Metric label="Charger voltage" value={formatReading(extraReading(current, "chargeAltV", "V"))} />
-        <Metric label="L1 real power" value={formatReading(extraReading(current, "powerL1W", "W"))} />
-        <Metric label="L2 real power" value={formatReading(extraReading(current, "powerL2W", "W"))} />
-        <Metric label="L3 real power" value={formatReading(extraReading(current, "powerL3W", "W"))} />
-        <Metric label="L1 apparent" value={formatReading(extraReading(current, "apparentL1Va", "VA"))} />
-        <Metric label="L2 apparent" value={formatReading(extraReading(current, "apparentL2Va", "VA"))} />
-        <Metric label="L3 apparent" value={formatReading(extraReading(current, "apparentL3Va", "VA"))} />
-        <Metric label="Apparent total" value={formatReading(extraReading(current, "apparentTotVa", "VA"))} />
-        <Metric label="L1 reactive" value={formatReading(extraReading(current, "reactiveL1Var", "VAr"))} />
-        <Metric label="L2 reactive" value={formatReading(extraReading(current, "reactiveL2Var", "VAr"))} />
-        <Metric label="L3 reactive" value={formatReading(extraReading(current, "reactiveL3Var", "VAr"))} />
-        <Metric label="Reactive total" value={formatReading(extraReading(current, "reactiveTotVar", "VAr"))} />
-        <Metric label="L1 power factor" value={formatReading(extraReading(current, "pfL1", ""))} />
-        <Metric label="L2 power factor" value={formatReading(extraReading(current, "pfL2", ""))} />
-        <Metric label="L3 power factor" value={formatReading(extraReading(current, "pfL3", ""))} />
-        <Metric label="Power factor" value={formatReading(extraReading(current, "pfTot", ""))} />
-        <Metric
-          label="Source time"
-          value={current?.sourceTime == null ? "—" : new Date(current.sourceTime).toISOString()}
-        />
+        <Metric label="Coolant" value={formatReading(extraReading(current, "coolantC", "°C"))} />
       </div>
-      <p className="meta">
-        Engine status and control status are controller codes. They are not running or stopped.
-        Phase power, apparent power, reactive power, power factor, charger voltage, oil, coolant,
-        and fuel stay unavailable until a sample includes them. A missing value is not zero.
-      </p>
-      <p className="meta">
-        Reported alarm count {current?.alarmCount == null ? "—" : String(current.alarmCount)}. This
-        number is not a list of generator alarm names. Mode {current?.mode ?? "—"}. Link{" "}
-        {current?.link ?? "—"}. {freshness.label}. Link and freshness are separate.
-      </p>
+      <details className="cc-more-metrics">
+        <summary>More measurements</summary>
+        <div className="metric-grid">
+          <Metric label="L2 V" value={formatReading(extraReading(current, "voltageL2", "V"))} />
+          <Metric label="L3 V" value={formatReading(extraReading(current, "voltageL3", "V"))} />
+          <Metric label="L1 A" value={formatReading(extraReading(current, "currentL1", "A"))} />
+          <Metric label="L2 A" value={formatReading(extraReading(current, "currentL2", "A"))} />
+          <Metric label="L3 A" value={formatReading(extraReading(current, "currentL3", "A"))} />
+          <Metric label="Oil kPa" value={formatReading(extraReading(current, "oilPressureKpa", "kPa"))} />
+          <Metric label="Engine code" value={formatReading(extraReading(current, "engineStatus", ""))} />
+          <Metric label="Control" value={formatReading(extraReading(current, "controlStatus", ""))} />
+          <Metric label="Charger V" value={formatReading(extraReading(current, "chargeAltV", "V"))} />
+          <Metric label="PF" value={formatReading(extraReading(current, "pfTot", ""))} />
+          <Metric
+            label="Source time"
+            value={current?.sourceTime == null ? "—" : new Date(current.sourceTime).toISOString()}
+          />
+        </div>
+      </details>
       <HistoryCharts generatorId={generatorId} />
       <GeneratorAlarms generatorId={generatorId} organizationId={detail.organizationId} />
-      <p className="meta">
-        Each row is one 15-minute bucket. Buckets are kept for 7 days. A missing measurement stays
-        unavailable. The chart above does not connect across a gap.
-      </p>
       <div className="table-wrap">
         <table className="data-table">
           <caption>History buckets for this generator</caption>
@@ -212,37 +197,24 @@ function HistoryCharts({ generatorId }: { generatorId: string }) {
     range,
   });
   const caption =
-    range === "hour"
-      ? "Last hour. Resolution is 15 minutes, so this range has at most four buckets."
-      : range === "six"
-        ? "Last 6 hours. Resolution is 15 minutes."
-        : range === "week"
-          ? "Last 7 days. Resolution is 15 minutes. Older buckets are deleted."
-          : "Last 24 hours. Resolution is 15 minutes.";
+    range === "hour" ? "1h" : range === "six" ? "6h" : range === "week" ? "7d" : "24h";
   return (
     <div className="stack">
-      <FilterBar label="History range">
+      <FilterBar label="Range">
         <FilterSelect
           label="Range"
           value={range}
           onChange={(value) => setRange(RANGES.find((item) => item === value) ?? "day")}
           options={[
-            { value: "hour", label: "Last hour" },
-            { value: "six", label: "Last 6 hours" },
-            { value: "day", label: "Last 24 hours" },
-            { value: "week", label: "Last 7 days" },
+            { value: "hour", label: "1 hour" },
+            { value: "six", label: "6 hours" },
+            { value: "day", label: "24 hours" },
+            { value: "week", label: "7 days" },
           ]}
         />
       </FilterBar>
       {series === undefined ? <p className="empty">Loading history.</p> : null}
-      {series?.capped ? (
-        <p className="meta">This range stopped at the read limit. It is not every stored bucket.</p>
-      ) : null}
-      <p className="meta">
-        Retention is about 7 days of 15-minute buckets. Gaps are omitted from charts and averages —
-        missing samples are not treated as zero. A 30-day range is not offered because older buckets
-        are pruned.
-      </p>
+      {series?.capped ? <p className="meta">Read limit reached.</p> : null}
       {series ? (
         <MetricStrip
           items={[
@@ -254,41 +226,48 @@ function HistoryCharts({ generatorId }: { generatorId: string }) {
           ]}
         />
       ) : null}
-      <SeriesChart
-        title="RPM"
-        unit="rpm"
-        points={series?.rpm ?? []}
-        reduced={Boolean(series?.reduced.rpm)}
-        caption={caption}
-      />
-      <SeriesChart
-        title="Battery"
-        unit="V"
-        points={series?.battery ?? []}
-        reduced={Boolean(series?.reduced.battery)}
-        caption={caption}
-      />
-      <SeriesChart
-        title="Frequency"
-        unit="Hz"
-        points={series?.frequency ?? []}
-        reduced={Boolean(series?.reduced.frequency)}
-        caption={caption}
-      />
-      <SeriesChart
-        title="Power"
-        unit="kW"
-        points={series?.power ?? []}
-        reduced={Boolean(series?.reduced.power)}
-        caption={caption}
-      />
-      <SeriesChart
-        title="L1 voltage"
-        unit="V"
-        points={series?.voltage ?? []}
-        reduced={Boolean(series?.reduced.voltage)}
-        caption={caption}
-      />
+      <div className="cc-charts">
+        <SeriesChart
+          title="Power"
+          unit="kW"
+          points={series?.power ?? []}
+          reduced={Boolean(series?.reduced.power)}
+          caption={caption}
+          height={240}
+        />
+        <SeriesChart
+          title="Frequency"
+          unit="Hz"
+          points={series?.frequency ?? []}
+          reduced={Boolean(series?.reduced.frequency)}
+          caption={caption}
+          height={240}
+        />
+        <SeriesChart
+          title="RPM"
+          unit="rpm"
+          points={series?.rpm ?? []}
+          reduced={Boolean(series?.reduced.rpm)}
+          caption={caption}
+          height={220}
+        />
+        <SeriesChart
+          title="Battery"
+          unit="V"
+          points={series?.battery ?? []}
+          reduced={Boolean(series?.reduced.battery)}
+          caption={caption}
+          height={220}
+        />
+        <SeriesChart
+          title="L1 voltage"
+          unit="V"
+          points={series?.voltage ?? []}
+          reduced={Boolean(series?.reduced.voltage)}
+          caption={caption}
+          height={220}
+        />
+      </div>
     </div>
   );
 }
@@ -329,4 +308,23 @@ function MetricStrip({
       ]}
     />
   );
+}
+
+function twinStatusFromPose(pose: MachinePose, flag: MachineFlag): TwinStatus {
+  if (flag === "fault") {
+    return "fault";
+  }
+  if (flag === "warning") {
+    return "warning";
+  }
+  if (pose === "running") {
+    return "running";
+  }
+  if (pose === "offline") {
+    return "offline";
+  }
+  if (pose === "stopped") {
+    return "stopped";
+  }
+  return "unknown";
 }

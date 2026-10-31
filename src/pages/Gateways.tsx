@@ -23,10 +23,6 @@ export function Gateways() {
     <section className="page">
       <header className="page-head">
         <h1>Gateways</h1>
-        <p>
-          Edge Gateway inventory for one organization. Cloud registration only — this page does not
-          deliver Modbus settings to Soft-AP hardware.
-        </p>
       </header>
       {import.meta.env.VITE_CONVEX_URL ? <SignedInventory /> : null}
       <DemoInventory />

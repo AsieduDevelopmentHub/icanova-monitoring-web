@@ -7,7 +7,6 @@ import { LiveGate, SiteSelect } from "../fleet/scope";
 import { FleetBoundary } from "../fleet/boundary";
 import { storedReading } from "../fleet/access";
 import { SiteAlarmPanel } from "../fleet/AlarmPanel";
-import { DEMO_GENERATOR_ID } from "../telemetry/logModel";
 import { engineView, linkView, snapshotScope, type LiveRow } from "../telemetry/fleetView";
 import { pageFreshness, storedFreshness } from "../telemetry/freshness";
 import { formatReading } from "../telemetry/readings";
@@ -21,10 +20,15 @@ import {
 import { DataTable, type Column } from "../ui/DataTable";
 import { EmptyState } from "../ui/EmptyState";
 import { FilterBar, FilterSearch } from "../ui/FilterBar";
-import { Metric } from "../ui/Metric";
 import { Panel } from "../ui/Panel";
+import { SectionHeader } from "../ui/SectionHeader";
+import { SeriesChart } from "../ui/SeriesChart";
 import { Skeleton } from "../ui/Skeleton";
 import { StatusMark } from "../ui/StatusMark";
+import { StatusStrip } from "../ui/StatusStrip";
+import { CommandTwinLazy } from "../viz/CommandTwinLazy";
+import type { TwinStatus } from "../viz/CommandTwin";
+import { id } from "../fleet/access";
 
 type BoardRow = LiveRow & {
   generatorId: string;
@@ -33,33 +37,21 @@ type BoardRow = LiveRow & {
   powerQuality: string;
 };
 
-function formatContact(at: number | null | undefined): string {
-  if (at == null || !Number.isFinite(at)) {
-    return "Never";
-  }
-  return new Date(at).toISOString();
-}
-
 export function Dashboard() {
   return (
     <section className="page">
       <header className="page-head">
-        <h1>Operations overview</h1>
-        <p>
-          Attention first. Then cloud contact, Modbus health, measurement freshness and readings —
-          from stored telemetry only.
-        </p>
+        <h1>Command Center</h1>
       </header>
       <LiveGate>
         {(org) => (
           <SiteSelect organizationId={org.organizationId}>
-            {(siteId, siteName, moreSites) => (
+            {(siteId, siteName) => (
               <FleetBoundary key={siteId}>
                 <SiteBoard
                   organizationId={org.organizationId}
                   siteId={siteId}
                   siteName={siteName}
-                  moreSites={moreSites}
                   permissions={org.permissions}
                 />
               </FleetBoundary>
@@ -67,26 +59,44 @@ export function Dashboard() {
           </SiteSelect>
         )}
       </LiveGate>
-      <p className="meta">
-        Demo log stays at{" "}
-        <Link to={`/generators/${DEMO_GENERATOR_ID}`}>generators/{DEMO_GENERATOR_ID}</Link>. It is not
-        this board.
-      </p>
     </section>
   );
+}
+
+function twinFromRows(rows: BoardRow[]): TwinStatus {
+  if (rows.length === 0) {
+    return "unknown";
+  }
+  const engines = rows.map((row) => engineView(row.rpm, row.rpmQuality));
+  if (engines.some((e) => e.tone === "alarm")) {
+    return "fault";
+  }
+  if (engines.some((e) => e.label.toLowerCase().includes("run"))) {
+    return "running";
+  }
+  const links = rows.map((row) => linkView(row.link));
+  if (links.some((l) => l.tone === "alarm" || l.tone === "warn")) {
+    return "warning";
+  }
+  const fresh = rows.map((row) => storedFreshness(row.updatedAt, Date.now()));
+  if (fresh.every((f) => f.state !== "fresh" && !f.stale)) {
+    return "offline";
+  }
+  if (fresh.some((f) => f.stale)) {
+    return "warning";
+  }
+  return "stopped";
 }
 
 function SiteBoard({
   organizationId,
   siteId,
   siteName,
-  moreSites,
   permissions,
 }: {
   organizationId: string;
   siteId: Id<"sites">;
   siteName: string;
-  moreSites: boolean;
   permissions: readonly string[];
 }) {
   const data = useQuery(api.telemetry.currentForSite, {
@@ -115,7 +125,6 @@ function SiteBoard({
   const scope = snapshotScope(loaded, Boolean(data.capped));
   const freshness = pageFreshness(loaded, Date.now());
   const siteReady = summary.ready === true;
-  const lastUpdate = summary.lastTelemetryAt ?? summary.lastGatewayContactAt ?? null;
   const columns: Column<BoardRow>[] = [
     {
       key: "name",
@@ -189,43 +198,106 @@ function SiteBoard({
     },
   ];
 
+  const unhealthy = siteReady ? (summary.overallUnhealthy ?? 0) : 0;
+  const offlineGateways = siteReady ? (summary.gatewayOffline ?? 0) : 0;
+  const systemTone =
+    unhealthy > 0 || (summary.linkFail ?? 0) > 0
+      ? "alarm"
+      : offlineGateways > 0 || freshness.stale > 0
+        ? "warn"
+        : siteReady
+          ? "ok"
+          : "offline";
+  const systemLabel =
+    systemTone === "alarm"
+      ? "Attention required"
+      : systemTone === "warn"
+        ? "Degraded"
+        : siteReady
+          ? "Operational"
+          : "Unavailable";
+  const primary = loaded[0];
+  const twinStatus = twinFromRows(loaded);
+
   return (
-    <div className="dash-layout">
-      <div className="ops-banner">
-        <div>
-          <p className="meta">
-            Site <strong>{siteName}</strong>
-            {moreSites ? " · switch sites above" : ""}
-          </p>
-          <p className="meta">
-            Last stored contact{" "}
-            <span className="tech">{formatContact(lastUpdate)}</span>
-            {lastUpdate != null ? ` (${contactAgeLabel(lastUpdate, Date.now())})` : ""}. Cloud
-            contact ≠ Modbus ≠ freshness.
-          </p>
-        </div>
-        <div className="ops-links">
-          <Link to="/alarms">Alarms</Link>
-          <Link to="/gateways">Gateways</Link>
-          <Link to="/local">Live readings</Link>
-          <Link to="/events">Events</Link>
-        </div>
-      </div>
+    <div className="cc-layout">
+      <StatusStrip
+        title={siteName}
+        subtitle={systemLabel}
+        items={[
+          {
+            label: "Online",
+            value: siteReady ? String(summary.gatewayOnline ?? 0) : "—",
+            tone: siteReady ? "ok" : "offline",
+          },
+          {
+            label: "Generators",
+            value:
+              siteReady && summary.generators !== null
+                ? String(summary.generators)
+                : String(scope.generators),
+          },
+          {
+            label: "Modbus fail",
+            value: siteReady ? String(summary.linkFail) : String(scope.modbusFail),
+            tone: (summary.linkFail ?? scope.modbusFail) > 0 ? "alarm" : "ok",
+          },
+          {
+            label: "Stale",
+            value: String(siteReady ? (summary.telemetryStale ?? freshness.stale) : freshness.stale),
+            tone: (summary.telemetryStale ?? freshness.stale) > 0 ? "warn" : "ok",
+          },
+        ]}
+        trailing={
+          <div className="ops-links">
+            <Link to="/alarms">Alarms</Link>
+            <Link to="/gateways">Gateways</Link>
+          </div>
+        }
+      />
 
       {loaded.length === 0 ? (
         <EmptyState
-          title="No generators on this site"
-          body="Register a gateway and generator to populate this board. Device identity is the 12-character eFuse MAC."
-          action={<Link to="/generators">Open generators</Link>}
+          title="No generators"
+          body="Register a gateway and generator for this site."
+          action={<Link to="/generators">Generators</Link>}
         />
       ) : scope.reporting === 0 ? (
         <div className="notice" role="note">
-          <strong>No stored telemetry yet.</strong> Generators are registered, but none has a reading.
-          Confirm the gateway identity matches the registered device.
+          <strong>No telemetry yet.</strong>
         </div>
       ) : null}
 
-      <div className="dash-hero">
+      <div className="cc-viz-grid">
+        <div>
+          <CommandTwinLazy status={twinStatus} label={primary?.name ?? siteName} />
+          {loaded.length > 0 ? (
+            <ul className="cc-equip-list" style={{ marginTop: "0.75rem" }}>
+              {loaded.slice(0, 8).map((row) => {
+                const engine = engineView(row.rpm, row.rpmQuality);
+                const fresh = storedFreshness(row.updatedAt, Date.now());
+                return (
+                  <li key={row.generatorId}>
+                    <Link to={`/generators/${row.generatorId}`}>{row.name}</Link>
+                    <StatusMark
+                      tone={
+                        engine.tone === "alarm"
+                          ? "alarm"
+                          : fresh.stale
+                            ? "warn"
+                            : engine.tone === "ok"
+                              ? "ok"
+                              : "offline"
+                      }
+                    >
+                      {engine.label}
+                    </StatusMark>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+        </div>
         <FleetBoundary>
           <OperationalAttention
             organizationId={organizationId}
@@ -233,63 +305,17 @@ function SiteBoard({
             permissions={permissions}
           />
         </FleetBoundary>
-
-        <Panel
-          title="Site health at a glance"
-          description={
-            siteReady
-              ? "Secondary tallies from stored health. Freshness ages without a new sample."
-              : scope.note
-          }
-        >
-          <div className="metric-grid metric-grid-primary metric-grid-secondary">
-            <Metric
-              label="Cloud online"
-              value={siteReady ? String(summary.gatewayOnline ?? 0) : "—"}
-              note="Contact ≤ 3 min"
-              tone="ok"
-            />
-            <Metric
-              label="Cloud offline"
-              value={siteReady ? String(summary.gatewayOffline ?? 0) : "—"}
-              note="No contact ≤ 3 min"
-              tone={(summary.gatewayOffline ?? 0) > 0 ? "warn" : "ok"}
-            />
-            <Metric
-              label="Modbus fail"
-              value={siteReady ? String(summary.linkFail) : String(scope.modbusFail)}
-              note="Sample link — not engine stop"
-              tone={(summary.linkFail ?? scope.modbusFail) > 0 ? "alarm" : "ok"}
-            />
-            <Metric
-              label="Stale readings"
-              value={
-                siteReady
-                  ? String(summary.telemetryStale ?? freshness.stale)
-                  : String(freshness.stale)
-              }
-              note="Age of stored reading"
-              tone={(summary.telemetryStale ?? freshness.stale) > 0 ? "warn" : "ok"}
-            />
-            <Metric
-              label="Generators"
-              value={
-                siteReady && summary.generators !== null
-                  ? String(summary.generators)
-                  : String(scope.generators)
-              }
-              note={`${siteReady ? summary.reporting : scope.reporting} reporting`}
-            />
-            <Metric
-              label="Overall unhealthy"
-              value={siteReady ? String(summary.overallUnhealthy ?? 0) : "—"}
-              note="Worst of cloud, Modbus, freshness"
-              tone={(summary.overallUnhealthy ?? 0) > 0 ? "alarm" : "ok"}
-              emphasis={(summary.overallUnhealthy ?? 0) > 0}
-            />
-          </div>
-        </Panel>
       </div>
+
+      {primary && permissions.includes("view.telemetry") ? (
+        <div>
+          <SectionHeader
+            title={primary.name}
+            actions={<Link to={`/generators/${primary.generatorId}/trends`}>Trends</Link>}
+          />
+          <CommandCharts generatorId={primary.generatorId} />
+        </div>
+      ) : null}
 
       <FleetBoundary>
         <GatewayHealthSection organizationId={organizationId} siteId={siteId} />
@@ -306,16 +332,10 @@ function SiteBoard({
       </FleetBoundary>
 
       <Panel
-        title="Current generator readings"
-        description={scope.note}
+        title="Readings"
         actions={
-          <FilterBar label="Filter this site snapshot">
-            <FilterSearch
-              label="Name"
-              value={query}
-              onChange={setQuery}
-              placeholder="Generator name"
-            />
+          <FilterBar label="Filter">
+            <FilterSearch label="Name" value={query} onChange={setQuery} placeholder="Name" />
           </FilterBar>
         }
       >
@@ -323,14 +343,40 @@ function SiteBoard({
           columns={columns}
           rows={rows}
           getRowKey={(row) => row.generatorId}
-          empty={
-            loaded.length === 0
-              ? "No generators are registered on this site."
-              : "No name matches this filter."
-          }
-          caption={`Current readings for ${siteName}`}
+          empty={loaded.length === 0 ? "No generators." : "No matches."}
+          caption={siteName}
         />
       </Panel>
+    </div>
+  );
+}
+
+function CommandCharts({ generatorId }: { generatorId: string }) {
+  const series = useQuery(api.telemetry.series, {
+    generatorId: id<"generators">(generatorId),
+    range: "day",
+  });
+  if (series === undefined) {
+    return <Skeleton lines={4} />;
+  }
+  return (
+    <div className="cc-charts">
+      <SeriesChart
+        title="Power"
+        unit="kW"
+        points={series.power}
+        reduced={series.reduced.power}
+        caption="24h"
+        height={240}
+      />
+      <SeriesChart
+        title="Frequency"
+        unit="Hz"
+        points={series.frequency}
+        reduced={series.reduced.frequency}
+        caption="24h"
+        height={240}
+      />
     </div>
   );
 }
@@ -425,11 +471,7 @@ function OperationalAttention({
     critical > 0 || unreadCritical > 0 ? "critical" : warning > 0 || offline > 0 ? "warning" : "default";
 
   return (
-    <Panel
-      title="Needs attention"
-      description="Priority signals for this site. Creation in the inbox is not proof of push/email delivery."
-      tone={tone}
-    >
+    <Panel title="Attention" tone={tone}>
       <ul className="attention-list">
         {items.map((item) => (
           <li key={item.key} className={`attention-item ${item.className}`.trim()}>
@@ -461,13 +503,7 @@ function GatewayHealthSection({
   }
   const now = Date.now();
   return (
-    <Panel
-      title="Gateway health"
-      description={`Cloud contact, Modbus, and freshness stay separate. Firmware version is not stored yet.${
-        data.capped ? " First page only." : ""
-      }`}
-      actions={<Link to="/gateways">Full inventory</Link>}
-    >
+    <Panel title="Gateways" actions={<Link to="/gateways">All</Link>}>
       <DataTable
         caption="Gateways on this site"
         rows={data.rows}
@@ -548,12 +584,7 @@ function RecentActivitySection({
     return <Skeleton lines={4} />;
   }
   return (
-    <Panel
-      title="Recent activity"
-      description={`Stored health transitions (heartbeat, ingest, sweep). Not a fabricated feed.${
-        data.capped ? " Newest page only." : ""
-      }`}
-    >
+    <Panel title="Events">
       <DataTable
         caption="Recent health transitions"
         rows={data.rows}

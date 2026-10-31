@@ -21,11 +21,7 @@ const KIND_HELP: Record<ReportKind, string> = {
 
 export function Reports() {
   return (
-    <OrgGate
-      title="Reports"
-      lede="Operational exports are built on the server from stored Convex data. Each file is capped (typically 200 rows). Measurement charts live on generator Trends; this page does not invent availability percentages."
-      offline="No export is running."
-    >
+    <OrgGate title="Reports" offline="No export is running.">
       {(organizationId) => <ExportForm organizationId={organizationId} />}
     </OrgGate>
   );
@@ -60,10 +56,7 @@ function ExportForm({ organizationId }: { organizationId: Id<"organizations"> })
   }
 
   return (
-    <Panel
-      title="Build export"
-      description={`${KIND_HELP[kind]} Coverage is bounded (~200 rows). Telemetry buckets ~7 days; health events ~14 days — not full-history archives.`}
-    >
+    <Panel title="Export" description={KIND_HELP[kind]}>
       <form className="filter-bar" onSubmit={onSubmit}>
         <label className="filter-field">
           <span>Kind</span>

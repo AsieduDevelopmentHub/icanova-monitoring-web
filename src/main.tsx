@@ -16,6 +16,7 @@ import { Generators } from "./pages/Generators";
 import { Maintenance } from "./pages/Maintenance";
 import { Notifications } from "./pages/Notifications";
 import { AuthLogin } from "./auth/AuthLogin";
+import { AuthPasswordReset } from "./auth/AuthPasswordReset";
 import { RequireAuth } from "./auth/RequireAuth";
 import { AuthCallback } from "./auth/integrations/auth0/AuthCallback";
 import { Ops } from "./pages/Ops";
@@ -54,6 +55,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Navigate to="/auth/login" replace />} />
             <Route path="/auth/login" element={<AuthLogin />} />
+            <Route path="/auth/reset" element={<AuthPasswordReset />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route element={<RequireAuth />}>
               <Route element={<Shell />}>

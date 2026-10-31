@@ -170,12 +170,41 @@ function OrgContext() {
   );
 }
 
+function SystemStatusChip() {
+  const { isAuthenticated } = useConvexAuth();
+  const live = Boolean(import.meta.env.VITE_CONVEX_URL) && isAuthenticated;
+  const orgs = useQuery(api.organizations.mine, live ? {} : "skip");
+  const organizationId = orgs?.[0]?.organizationId;
+  const unreadCritical = useQuery(
+    api.notifications.unreadCriticalCount,
+    live && organizationId ? { organizationId } : "skip",
+  );
+  if (!live || !organizationId) {
+    return null;
+  }
+  const critical = typeof unreadCritical === "number" ? unreadCritical : null;
+  const label =
+    critical == null
+      ? "Session active"
+      : critical > 0
+        ? `${critical} critical notice${critical === 1 ? "" : "s"}`
+        : "No critical notices";
+  return (
+    <div className="topbar-sys" title={label}>
+      <strong>{critical != null && critical > 0 ? "Attention" : "Operational"}</strong>
+      <span>{label}</span>
+    </div>
+  );
+}
+
 export function Shell() {
   const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>(() => resolveTheme());
   const crumbs = useMemo(() => crumbsFor(pathname), [pathname]);
   const here = pageTitleFor(pathname);
+  const deep = crumbs.length > 1;
 
   useEffect(() => {
     applyTheme(theme);
@@ -196,18 +225,17 @@ export function Shell() {
   }
 
   return (
-    <div className="shell">
+    <div className={`shell${navCollapsed ? " nav-collapsed" : ""}`}>
       <a className="skip" href="#main">
         Skip to content
       </a>
       <aside className="sidebar" aria-label="Application">
         <NavLink to="/" className="brand-lockup">
           <span className="brand-mark">iCanOva</span>
-          <span className="brand-name">Monitoring</span>
-          <p className="brand-tag">Industrial operations visibility</p>
+          <span className="brand-name">MONITORING</span>
         </NavLink>
         <NavList />
-        <p className="sidebar-foot">ASIEDU DEVELOPMENT HUB (ADH)</p>
+        <p className="sidebar-foot">ADH</p>
       </aside>
       <div className="shell-main">
         <header className="topbar">
@@ -221,26 +249,38 @@ export function Shell() {
           >
             <Icon name="menu" />
           </button>
+          <button
+            type="button"
+            className="icon-btn nav-collapse-btn"
+            aria-label={navCollapsed ? "Expand navigation" : "Collapse navigation"}
+            onClick={() => setNavCollapsed((v) => !v)}
+          >
+            <Icon name="menu" />
+          </button>
           <div className="crumbs">
-            <h1 className="topbar-title">{here}</h1>
-            <nav aria-label="Breadcrumb">
-              <ol>
-                {crumbs.map((crumb, index) => {
-                  const last = index === crumbs.length - 1;
-                  return (
-                    <li key={`${crumb.to}-${crumb.label}`}>
-                      {last ? (
-                        <span aria-current="page">{crumb.label}</span>
-                      ) : (
-                        <NavLink to={crumb.to}>{crumb.label}</NavLink>
-                      )}
-                    </li>
-                  );
-                })}
-              </ol>
-            </nav>
+            {deep ? (
+              <nav aria-label="Breadcrumb">
+                <ol>
+                  {crumbs.map((crumb, index) => {
+                    const last = index === crumbs.length - 1;
+                    return (
+                      <li key={`${crumb.to}-${crumb.label}`}>
+                        {last ? (
+                          <span aria-current="page">{crumb.label}</span>
+                        ) : (
+                          <NavLink to={crumb.to}>{crumb.label}</NavLink>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </nav>
+            ) : (
+              <h1 className="topbar-title">{here}</h1>
+            )}
           </div>
           <div className="topbar-cluster">
+            <SystemStatusChip />
             <OrgContext />
             <NavLink
               to="/notifications"

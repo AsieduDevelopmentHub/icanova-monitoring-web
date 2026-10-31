@@ -573,7 +573,7 @@ export async function emitHealthEvent(
       `<p>Device: ${device.name}</p>`,
       `<p>Open: /gateways/${args.deviceId}</p>`,
     ].join("\n"),
-    smsBody: `DSE ${args.event}: ${device.name} @ ${site.name}`,
+    smsBody: `iCanOva ${args.event}: ${device.name} @ ${site.name}`,
   });
 }
 

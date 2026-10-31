@@ -1,7 +1,10 @@
 import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
+import { ConvexError } from "convex/values";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
+import { PasswordResetEmail } from "./passwordResetEmail";
+import { assertPasswordRequirements } from "./passwordPolicy";
 
 function normalizeEmail(email: string | undefined): string | null {
   const trimmed = email?.trim().toLowerCase() ?? "";
@@ -79,12 +82,13 @@ async function createOrUpdateUser(
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Password({
+      reset: PasswordResetEmail,
       profile(params) {
         const email = normalizeEmail(
           typeof params.email === "string" ? params.email : undefined,
         );
         if (!email) {
-          throw new Error("Email is required");
+          throw new ConvexError("Email is required");
         }
         const name =
           typeof params.name === "string" && params.name.trim().length > 0
@@ -92,6 +96,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
             : undefined;
         return { email, ...(name ? { name } : {}) };
       },
+      validatePasswordRequirements: assertPasswordRequirements,
     }),
   ],
   callbacks: {

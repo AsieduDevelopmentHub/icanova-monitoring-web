@@ -281,7 +281,7 @@ export const deliverMessage = internalAction({
       if (claimed.channel === "email") {
         const outcome = await sendResend(
           claimed.to,
-          claimed.subject ?? "DSE notification",
+          claimed.subject ?? "iCanOva notification",
           claimed.body,
           claimed.idempotencyKey,
         );

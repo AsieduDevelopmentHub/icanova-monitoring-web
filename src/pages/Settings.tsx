@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { useConvexAuth } from "convex/react";
+import { ChangePasswordForm } from "../auth/ChangePasswordForm";
 import { unsignedNotice } from "../fleet/sessionGates";
 import { EmptyState } from "../ui/EmptyState";
 import { Panel } from "../ui/Panel";
@@ -14,10 +15,6 @@ export function Settings() {
     <section className="page">
       <header className="page-head">
         <h1>Settings</h1>
-        <p>
-          Read-only deployment notes. This screen does not change ESP32 poll intervals, Soft-AP Wi-Fi,
-          or uplink secrets.
-        </p>
       </header>
       {!configured ? (
         <EmptyState
@@ -30,32 +27,22 @@ export function Settings() {
         <div className="notice" role="note">
           <strong>{unsigned.title}</strong> {unsigned.detail}
         </div>
-      ) : null}
+      ) : (
+        <Panel title="Change password">
+          <ChangePasswordForm />
+        </Panel>
+      )}
 
-      <Panel title="What stays on the gateway" description="Local Soft-AP / USB CLI configuration is not delivered from the cloud.">
+      <Panel title="Gateway">
         <p className="meta">
-          Browser preferences do not change ESP32 poll interval or uplink period. Those stay on the
-          device.
-        </p>
-        <p className="meta">
-          Soft-AP Modbus baud, parity, and GenComm writes are applied locally — see{" "}
-          <Link to="/local/configure">Configure</Link>.
+          Soft-AP Modbus and Wi-Fi stay on the device — <Link to="/local/configure">Configure</Link>.
         </p>
       </Panel>
 
-      <Panel title="Retention & notifications" description="Honest limits of the current deployment.">
+      <Panel title="Retention">
         <p className="meta">
-          Historical telemetry buckets prune after about seven days. Current telemetry is one document
-          per generator and is not part of that prune. Health events retain about fourteen days.
-        </p>
-        <p className="meta">
-          Resend and Arkesel credentials are Convex environment variables. Browser push uses optional
-          VAPID keys (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`) — never FCM. Without
-          VAPID env, push policies record not configured.
-        </p>
-        <p className="meta">
-          Configure personal channels under <Link to="/notifications">Notifications</Link>. Role,
-          export, and notification changes are audited.
+          Telemetry buckets ~7 days · health events ~14 days. Channels:{" "}
+          <Link to="/notifications">Notifications</Link>.
         </p>
       </Panel>
     </section>

@@ -15,7 +15,7 @@ export function OrgGate({
   children,
 }: {
   title: string;
-  lede: string;
+  lede?: string;
   offline: string;
   children: (organizationId: Id<"organizations">) => ReactNode;
 }) {
@@ -23,7 +23,7 @@ export function OrgGate({
     <section className="page">
       <header className="page-head">
         <h1>{title}</h1>
-        <p>{lede}</p>
+        {lede ? <p>{lede}</p> : null}
       </header>
       {import.meta.env.VITE_CONVEX_URL ? (
         <Signed offline={offline}>{children}</Signed>

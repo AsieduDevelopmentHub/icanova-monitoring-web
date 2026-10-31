@@ -29,11 +29,7 @@ export function Ops() {
   return (
     <section className="page">
       <header className="page-head">
-        <h1>Operations</h1>
-        <p>
-          Platform observability for authorized operators. Each section requires its own permission.
-          Gateway, Modbus, freshness and engine stay separate. Missing is not zero.
-        </p>
+        <h1>Ops desk</h1>
       </header>
       {import.meta.env.VITE_CONVEX_URL ? (
         <SignedOps />

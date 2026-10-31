@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { OrgGate } from "../admin/OrgGate";
 import { accessMessage } from "../fleet/access";
+import { labelForNotifyEvent, NOTIFY_EVENT_CATALOG } from "../notify/eventCatalog";
 import {
   createBrowserPushSubscription,
   detectBrowserPushSupport,
@@ -18,16 +19,7 @@ import { Panel } from "../ui/Panel";
 import { StatusMark } from "../ui/StatusMark";
 import { Tabs } from "../ui/Tabs";
 
-const EVENTS = [
-  "alarm.raised",
-  "alarm.acknowledged",
-  "alarm.cleared",
-  "device.registered",
-  "health.gateway.offline",
-  "health.gateway.recovered",
-  "health.telemetry.stale",
-  "health.telemetry.recovered",
-] as const;
+const EVENTS = NOTIFY_EVENT_CATALOG.map((row) => row.event);
 const CHANNELS = ["inapp", "email", "sms", "push"] as const;
 
 function categoryFor(event: string): string {
@@ -48,11 +40,7 @@ function categoryFor(event: string): string {
 
 export function Notifications() {
   return (
-    <OrgGate
-      title="Notifications"
-      lede="In-app centre, organization policies, and delivery history. Email uses Resend and SMS uses Arkesel when configured. Browser push is optional VAPID Web Push — not FCM."
-      offline="No notification query is running."
-    >
+    <OrgGate title="Notifications" offline="No notification query is running.">
       {(organizationId) => <Desk organizationId={organizationId} />}
     </OrgGate>
   );
@@ -121,7 +109,6 @@ function Inbox({ organizationId }: { organizationId: Id<"organizations"> }) {
   return (
     <Panel
       title="Inbox"
-      description="In-app notices are created independently of email, SMS, or browser push delivery."
       actions={
         <button type="button" className="btn btn-secondary" onClick={() => run(() => markAllRead({ organizationId }))}>
           Mark all read
@@ -329,13 +316,31 @@ function Settings({ organizationId }: { organizationId: Id<"organizations"> }) {
       ) : (
         <p className="meta">Organization settings require configure.notifications.</p>
       )}
+      <Panel title="Event catalog">
+        <DataTable
+          caption="Notification events"
+          rows={[...NOTIFY_EVENT_CATALOG]}
+          getRowKey={(row) => row.event}
+          empty="No events defined."
+          columns={[
+            { key: "label", header: "Event", render: (row) => row.label },
+            { key: "id", header: "Id", render: (row) => row.event },
+            { key: "when", header: "Emitted when", render: (row) => row.when },
+            {
+              key: "subject",
+              header: "Sample subject",
+              render: (row) => row.sampleSubject,
+            },
+          ]}
+        />
+      </Panel>
       <h2>Policies</h2>
       <p className="meta">
         Channel × event matrix. Push delivery requires VAPID env plus an active browser subscription.
       </p>
       {EVENTS.map((eventName) => (
         <div key={eventName} className="filter-bar">
-          <span>{eventName}</span>
+          <span title={eventName}>{labelForNotifyEvent(eventName)}</span>
           {CHANNELS.map((channelName) => {
             const policy = policies.find(
               (item) => item.event === eventName && item.channel === channelName,
@@ -441,10 +446,7 @@ function BrowserPushPanel({ organizationId }: { organizationId: Id<"organization
   }
 
   return (
-    <Panel
-      title="Browser notifications"
-      description="Optional VAPID Web Push — not FCM. Permission is requested only when you enable it. Inbox works without browser push."
-    >
+    <Panel title="Browser push">
       <p className="meta">
         Support: {support.supported ? "available" : support.reason}. Permission: {permission}. Server
         VAPID: {vapid.configured ? "configured" : "not configured"}. Active subscriptions:{" "}

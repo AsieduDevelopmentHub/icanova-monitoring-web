@@ -126,7 +126,7 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
         </p>
       </header>
 
-      <Panel title="Identity" description="Cloud registration metadata. Soft-AP configuration is local-only.">
+      <Panel title="Identity">
         <dl className="facts">
           <dt>Product</dt>
           <dd>iCanOva Edge Gateway</dd>
@@ -146,10 +146,9 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
           <StatusMark tone={modbus.tone}>{modbus.label}</StatusMark>
           <StatusMark tone={fresh.tone}>{fresh.label}</StatusMark>
         </div>
-        <p className="meta">Remote register writes and start/stop are not enabled on this page.</p>
       </Panel>
 
-      <Panel title="Connectivity" description="Cloud contact is separate from Modbus link and from telemetry freshness.">
+      <Panel title="Connectivity">
         <dl className="facts">
           <dt>Last heartbeat</dt>
           <dd>{contactAgeLabel(health?.lastHeartbeatAt, now)}</dd>
@@ -175,20 +174,11 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
             {pending ? "Updating…" : active ? "Deactivate device" : "Reactivate device"}
           </Button>
         </p>
-        <p className="meta">
-          Deactivation stops ingest and heartbeat writes. Historical telemetry is kept. Soft-AP
-          credentials are never shown here.
-        </p>
         {error ? <p className="err">{error}</p> : null}
       </Panel>
 
-      <Panel title="Configuration" description="Honest boundaries between cloud metadata and local Soft-AP setup.">
-        <div className="notice" role="note">
-          <strong>Cloud does not deliver Modbus settings.</strong> Desired Soft-AP baud, parity, slave
-          ID, and GenComm writes are applied on the gateway itself (USB CLI or local Configure at the
-          Soft-AP). Saving cloud metadata here does not transmit or acknowledge controller
-          configuration.
-        </div>
+      <Panel title="Configuration">
+        <p className="meta">Modbus and Soft-AP settings apply on the gateway only.</p>
         <dl className="facts">
           <dt>Desired configuration</dt>
           <dd>Not stored as a cloud desired-state document</dd>

@@ -25,10 +25,7 @@ export function Events() {
   return (
     <section className="page">
       <header className="page-head">
-        <h1>Event timeline</h1>
-        <p>
-          Stored health transitions and organization audit actions — not an invented uptime feed.
-        </p>
+        <h1>Events</h1>
       </header>
       <Tabs
         label="Timeline source"
@@ -77,10 +74,8 @@ function HealthTimeline({
   return (
     <div className="stack">
       <p className="meta">
-        Site <strong>{siteName}</strong>. Stored health transitions (heartbeat, ingest, sweep) for
-        about 14 days. Cloud Online/Offline changes appear here when recorded — this is not a
-        calculated availability percentage.
-        {data.capped ? " Newest page only." : ""}
+        <strong>{siteName}</strong>
+        {data.capped ? " · newest page" : ""}
       </p>
       <DataTable
         caption={`Health transitions at ${siteName}`}
@@ -141,10 +136,6 @@ function AuditList({ organizationId }: { organizationId: string }) {
   const page = (Array.isArray(data.page) ? data.page : []) as AuditRow[];
   return (
     <div className="stack">
-      <p className="meta">
-        Operator and system audit rows for this organization. Telemetry samples and raw Modbus frames
-        are not listed here.
-      </p>
       <DataTable
         caption="Organization audit history"
         rows={page}

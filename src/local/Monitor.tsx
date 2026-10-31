@@ -37,11 +37,7 @@ export function Monitor() {
   return (
     <section className="page">
       <header className="page-head">
-        <h1>Live readings</h1>
-        <p>
-          Stored site telemetry from Convex. Not Soft-AP polling. Stale means the stored sample aged —
-          not a fabricated live stream.
-        </p>
+        <h1>Live Systems</h1>
       </header>
       <LiveGate>
         {(org) => (
@@ -87,33 +83,26 @@ function SiteReadings({
     <div className="stack">
       <div className="ops-banner">
         <p className="meta">
-          Site <strong>{siteName}</strong>. Phase B/C load fields are not in the stored sample.
-          {data.capped ? " First page of generators only." : ""}
+          <strong>{siteName}</strong>
+          {data.capped ? " · first page" : ""}
         </p>
         <div className="ops-links">
           <Link to="/app">Dashboard</Link>
           <Link to="/gateways">Gateways</Link>
-          <Link to="/local/configure">Configure (local)</Link>
         </div>
       </div>
       {loaded.length === 0 ? (
         <EmptyState
-          title="No generators on this site"
-          body="Register equipment to see stored readings here."
-          action={<Link to="/generators">Open generators</Link>}
+          title="No generators"
+          body="Register equipment for this site."
+          action={<Link to="/generators">Generators</Link>}
         />
       ) : (
         <Panel
-          title="Equipment readings"
-          description="Technical values use monospace. Missing measurements are not shown as zero."
+          title="Readings"
           actions={
-            <FilterBar label="Filter readings">
-              <FilterSearch
-                label="Generator"
-                value={query}
-                onChange={setQuery}
-                placeholder="Generator name"
-              />
+            <FilterBar label="Filter">
+              <FilterSearch label="Generator" value={query} onChange={setQuery} placeholder="Name" />
             </FilterBar>
           }
         >
@@ -151,21 +140,10 @@ function ReadingRow({ row }: { row: LiveRow }) {
       </div>
       <p className="meta">
         {freshness.label}
-        {row.updatedAt != null ? (
-          <>
-            {" · sample "}
-            <span className="tech">{new Date(row.updatedAt).toISOString()}</span>
-          </>
-        ) : (
-          " · no stored sample"
-        )}
-        {row.alarmCount === null ? "" : ` · alarm count ${row.alarmCount}`}
+        {row.alarmCount === null ? "" : ` · alarms ${row.alarmCount}`}
       </p>
       {row.updatedAt == null ? (
-        <EmptyState
-          title="No sample stored"
-          body="Measurement values appear after the gateway delivers a reading."
-        />
+        <EmptyState title="No sample" body="Waiting for a stored reading." />
       ) : (
         <div className="metric-grid metric-grid-primary">
           <Metric
@@ -173,27 +151,25 @@ function ReadingRow({ row }: { row: LiveRow }) {
             value={formatReading(storedReading(row.batteryV, row.batteryQuality, "V"))}
           />
           <Metric
-            label="Engine RPM"
+            label="RPM"
             value={formatReading(storedReading(row.rpm, row.rpmQuality, "rpm"))}
           />
           <Metric
-            label="Frequency"
+            label="Hz"
             value={formatReading(storedReading(row.frequencyHz, row.frequencyQuality, "Hz"))}
           />
           <Metric
-            label="L1 voltage"
+            label="L1 V"
             value={formatReading(storedReading(row.voltageL1, row.voltageQuality, "V"))}
           />
           <Metric
-            label="Total power"
+            label="kW"
             value={formatReading(storedReading(row.powerKw, row.powerQuality, "kW"))}
           />
         </div>
       )}
       {row.generatorId ? (
         <p className="meta">
-          <Link to={`/generators/${row.generatorId}`}>Open generator</Link>
-          {" · "}
           <Link to={`/generators/${row.generatorId}/trends`}>Trends</Link>
         </p>
       ) : null}

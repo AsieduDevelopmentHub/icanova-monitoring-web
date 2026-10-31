@@ -13,10 +13,6 @@ export function Generators() {
     <section className="page">
       <header className="page-head">
         <h1>Generators</h1>
-        <p>
-          Register organizations, sites, iCanOva Edge gateways, and generators. Gateway Modbus settings
-          are not delivered from this page — use Soft-AP Configure after the device is online.
-        </p>
       </header>
       {import.meta.env.VITE_CONVEX_URL ? <OrgFleet /> : null}
       <div className="notice fixture" role="note">

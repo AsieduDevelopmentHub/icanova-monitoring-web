@@ -40,11 +40,7 @@ export function Alarms() {
   return (
     <section className="page">
       <header className="page-head">
-        <h1>Alarm centre</h1>
-        <p>
-          Severity and lifecycle first. Communication faults are link transitions; acknowledgement
-          does not clear the condition.
-        </p>
+        <h1>Alarms</h1>
       </header>
       <LiveGate>
         {(org) => (
@@ -185,10 +181,6 @@ function OrgAlarms({
 
   return (
     <div className="stack alarm-board">
-      <p className="meta">
-        Recording an operator note does not write to the controller. Acknowledgement does not clear
-        the condition.
-      </p>
       <FilterBar label="Alarm filters">
         <FilterSearch label="Search" value={search} onChange={(value) => setParam("orgq", value)} />
         <FilterSelect
@@ -289,11 +281,7 @@ function RecordAlarm({ organizationId }: { organizationId: string }) {
   return (
     <form className="stack" onSubmit={onSubmit}>
       <h2>Operator note</h2>
-      <p className="meta">
-        This stores an operator note. It is not a DSE alarm name from the controller, and it does not
-        send a start, stop, or register write.
-      </p>
-      <FilterBar label="Record an operator note">
+      <FilterBar label="Record note">
         <FilterSelect
           label="Device"
           value={selected}
@@ -372,24 +360,16 @@ function AlarmTable({
   return (
     <div className="stack">
       <section className="ops-section" aria-labelledby="alarm-analytics-title">
-        <h2 id="alarm-analytics-title">Alarm analytics (this page)</h2>
-        <p className="meta">
-          Counts are for the loaded and filtered rows only — not an organization lifetime total.
-          {data.capped ? " The query is capped." : ""}
-        </p>
+        <h2 id="alarm-analytics-title">Summary</h2>
+        {data.capped ? <p className="meta">Query capped.</p> : null}
         <div className="metric-grid">
-          <Metric label="Rows loaded" value={String(records.length)} />
+          <Metric label="Rows" value={String(records.length)} />
           <Metric label="Active" value={String(active)} />
-          <Metric label="Acknowledged" value={String(acknowledged)} />
-          <Metric label="Cleared / resolved" value={String(cleared)} />
+          <Metric label="Ack" value={String(acknowledged)} />
+          <Metric label="Cleared" value={String(cleared)} />
           <Metric label="Critical" value={String(critical)} />
           <Metric label="Warning" value={String(warning)} />
         </div>
-        <p className="meta">
-          <Link to="/reports">Export alarm report</Link>
-          {" · "}
-          <Link to="/events">Health / audit timeline</Link>
-        </p>
       </section>
       {banner ? <p className="empty">{banner}</p> : null}
       <DataTable

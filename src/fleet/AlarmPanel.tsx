@@ -56,20 +56,12 @@ function SiteAlarmBody({
   );
   return (
     <section className="ops-section stack" aria-labelledby="ops-alarms-title">
-      <h2 id="ops-alarms-title">Active alarms</h2>
-      <p className="meta">
-        {summary.note} A failed Modbus link in readings is communication status. A communication alarm
-        is stored only after a generator reports ok, then fail, on the same boot.
-      </p>
+      <h2 id="ops-alarms-title">Alarms</h2>
       {summary.banner ? <p className="empty">{summary.banner}</p> : null}
       <div className="metric-grid">
-        <Metric label="Active critical" value={String(summary.critical)} note="In this site page" />
-        <Metric label="Active warnings" value={String(summary.warning)} note="In this site page" />
-        <Metric
-          label="Communication faults"
-          value={String(summary.communication)}
-          note="Open link alarms in this page"
-        />
+        <Metric label="Critical" value={String(summary.critical)} />
+        <Metric label="Warning" value={String(summary.warning)} />
+        <Metric label="Comm" value={String(summary.communication)} />
       </div>
       <DataTable
         caption="Recent alarm activity for this site"
@@ -159,13 +151,7 @@ export function GeneratorAlarms({
   return (
     <div className="stack">
       <h2>Alarms</h2>
-      <p className="meta">
-        {data.capped
-          ? "Latest 50 alarm records for this generator. Not a complete history."
-          : "Alarm records for this generator."}{" "}
-        Communication faults are separate from the controller alarm count. Named generator alarms are
-        not in the gateway sample.
-      </p>
+      {data.capped ? <p className="meta">Latest 50 records.</p> : null}
       {open.length === 0 ? <p className="empty">No active alarms for this generator.</p> : null}
       <DataTable
         caption="Open alarms for this generator"

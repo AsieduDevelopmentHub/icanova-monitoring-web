@@ -9,11 +9,7 @@ import { Skeleton } from "../ui/Skeleton";
 
 export function UsersAdmin() {
   return (
-    <OrgGate
-      title="Users"
-      lede="Membership grants a role inside one organization. Sign-in still depends on the JWT issuer."
-      offline="No membership query is running."
-    >
+    <OrgGate title="Users" offline="No membership query is running.">
       {(organizationId) => <Roster organizationId={organizationId} />}
     </OrgGate>
   );
@@ -54,10 +50,7 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
   }
 
   return (
-    <Panel
-      title="Membership"
-      description="Granting a role requires manage.users and refuses roles from another organization."
-    >
+    <Panel title="Membership">
       {roster.length === 0 ? <p className="empty">No members in this page.</p> : null}
       <ul>
         {roster.map((row) => (

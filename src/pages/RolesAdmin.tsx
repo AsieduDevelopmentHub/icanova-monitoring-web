@@ -8,11 +8,7 @@ import { OrgGate } from "../admin/OrgGate";
 
 export function RolesAdmin() {
   return (
-    <OrgGate
-      title="Roles"
-      lede="Roles are defined per organization. The server rejects any permission that is not on the allowlist."
-      offline="No role query is running."
-    >
+    <OrgGate title="Roles" offline="No role query is running.">
       {(organizationId) => <RoleEditor organizationId={organizationId} />}
     </OrgGate>
   );

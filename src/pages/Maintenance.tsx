@@ -8,11 +8,7 @@ import { DataTable } from "../ui/DataTable";
 
 export function Maintenance() {
   return (
-    <OrgGate
-      title="Maintenance"
-      lede="Records are entered by an operator. They do not reset controller hours or write Modbus."
-      offline="No maintenance query is running."
-    >
+    <OrgGate title="Maintenance" offline="No maintenance query is running.">
       {(organizationId) => <Records organizationId={organizationId} />}
     </OrgGate>
   );
