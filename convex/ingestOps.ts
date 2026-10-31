@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, query, type MutationCtx } from "./_generated/server";
+import { resolveDeviceByIdentity } from "./deviceIdentity";
 import { requireAnyPermission } from "./identity";
 import {
   INGEST_OPS_PRUNE_BATCH,
@@ -197,17 +198,11 @@ export const current = query({
 export const resolveOrgIdentity = internalMutation({
   args: { identity: v.string() },
   handler: async (ctx, args): Promise<Id<"organizations"> | null> => {
-    if (!/^[0-9a-f]{12}$/.test(args.identity)) {
+    const resolved = await resolveDeviceByIdentity(ctx, args.identity);
+    if (resolved.status !== "ok") {
       return null;
     }
-    const matches = await ctx.db
-      .query("devices")
-      .withIndex("by_identity", (q) => q.eq("identity", args.identity))
-      .take(2);
-    if (matches.length !== 1) {
-      return null;
-    }
-    return matches[0].organizationId;
+    return resolved.device.organizationId;
   },
 });
 

@@ -1,5 +1,6 @@
 import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
 import { decodeBatch } from "./ingestDecode";
@@ -123,6 +124,7 @@ http.route({
     const identityHint = extractIdentity(record);
 
     // Dual-auth: shared INGEST_SECRET OR registered device credential (migration).
+    let deviceOrgId: string | null = null;
     if (gate !== "ok") {
       const presented = extractBearer(authHeader);
       let deviceAuth: { ok: boolean; reason?: string; organizationId?: string } | null = null;
@@ -147,9 +149,10 @@ http.route({
         await note(ctx, "auth_failed");
         return Response.json({ error: "Unauthorized" }, { status: 401 });
       }
+      deviceOrgId = deviceAuth.organizationId ?? null;
     }
-    let orgId: string | null = null;
-    if (identityHint) {
+    let orgId: string | null = deviceOrgId;
+    if (!orgId && identityHint) {
       try {
         orgId = (await ctx.runMutation(internal.ingestOps.resolveOrgIdentity, {
           identity: identityHint,
@@ -181,7 +184,10 @@ http.route({
       const identity = identityHint ?? "";
       if (/^[0-9a-f]{12}$/.test(identity)) {
         try {
-          const result = await ctx.runMutation(internal.deviceHealth.recordHeartbeat, { identity });
+          const result = await ctx.runMutation(internal.deviceHealth.recordHeartbeat, {
+            identity,
+            ...(orgId ? { organizationId: orgId as Id<"organizations"> } : {}),
+          });
           if (result.status === "inactive") {
             await note(ctx, "inactive", orgId);
             return Response.json({ error: "Device inactive", status: "inactive" }, { status: 403 });
@@ -197,7 +203,10 @@ http.route({
     }
     try {
       const batch = decodeBatch(record);
-      const result = await ctx.runMutation(internal.ingest.acceptBatch, batch);
+      const result = await ctx.runMutation(internal.ingest.acceptBatch, {
+        ...batch,
+        ...(orgId ? { organizationId: orgId as Id<"organizations"> } : {}),
+      });
       await note(ctx, mapBatchStatus(result.status), orgId);
       if (result.status === "unknown" || result.status === "no-generator") {
         return Response.json(result, { status: 404 });

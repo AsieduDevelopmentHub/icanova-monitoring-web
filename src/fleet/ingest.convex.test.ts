@@ -44,7 +44,7 @@ async function registered() {
     deviceId,
     name: "Set",
   });
-  return { t, asOwner, generatorId };
+  return { t, asOwner, organizationId, siteId, deviceId, generatorId };
 }
 
 describe("NCU ingest", () => {
@@ -202,6 +202,86 @@ describe("NCU ingest", () => {
       samples: [sample({ rpm: 10 })],
     });
     expect(result.status).toBe("ambiguous");
+  });
+
+  test("an inactive duplicate does not block ingest to the active registration", async () => {
+    const { t, asOwner, organizationId, siteId } = await registered();
+    const staleId = await asOwner.mutation(api.devices.create, {
+      organizationId,
+      siteId,
+      name: "Stale clone",
+      identity: "ccddeeff0011",
+    });
+    await asOwner.mutation(api.devices.setLifecycle, {
+      deviceId: staleId,
+      lifecycle: "inactive",
+    });
+    const other = t.withIdentity({
+      subject: "other-org",
+      issuer: "https://issuer.test",
+      tokenIdentifier: "https://issuer.test|other-org",
+    });
+    const organizationIdB = await other.mutation(api.organizations.create, { name: "North" });
+    const siteIdB = await other.mutation(api.sites.create, {
+      organizationId: organizationIdB,
+      name: "Bay",
+    });
+    const liveId = await other.mutation(api.devices.create, {
+      organizationId: organizationIdB,
+      siteId: siteIdB,
+      name: "Live",
+      identity: "ccddeeff0011",
+    });
+    await other.mutation(api.generators.create, {
+      organizationId: organizationIdB,
+      siteId: siteIdB,
+      deviceId: liveId,
+      name: "Genset",
+    });
+    const result = await t.mutation(internal.ingest.acceptBatch, {
+      identity: "ccddeeff0011",
+      boot: 1,
+      seq: 1,
+      samples: [sample({ rpm: 1200 })],
+    });
+    expect(result).toEqual({ status: "accepted", accepted: 1 });
+  });
+
+  test("organizationId hint selects among two active registrations", async () => {
+    const { t, organizationId, siteId, deviceId } = await registered();
+    const other = t.withIdentity({
+      subject: "hint-other",
+      issuer: "https://issuer.test",
+      tokenIdentifier: "https://issuer.test|hint-other",
+    });
+    const organizationIdB = await other.mutation(api.organizations.create, { name: "Hint Org" });
+    const siteIdB = await other.mutation(api.sites.create, {
+      organizationId: organizationIdB,
+      name: "Hint Site",
+    });
+    await other.mutation(api.devices.create, {
+      organizationId: organizationIdB,
+      siteId: siteIdB,
+      name: "Other copy",
+      identity: "aabbccddeeff",
+    });
+    const ambiguous = await t.mutation(internal.ingest.acceptBatch, {
+      identity: "aabbccddeeff",
+      boot: 3,
+      seq: 1,
+      samples: [sample({ rpm: 900 })],
+    });
+    expect(ambiguous.status).toBe("ambiguous");
+    const accepted = await t.mutation(internal.ingest.acceptBatch, {
+      identity: "aabbccddeeff",
+      organizationId,
+      boot: 3,
+      seq: 1,
+      samples: [sample({ rpm: 900 })],
+    });
+    expect(accepted).toEqual({ status: "accepted", accepted: 1 });
+    expect(deviceId).toBeTruthy();
+    expect(siteId).toBeTruthy();
   });
 });
 

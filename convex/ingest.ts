@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
 import { observeCommunicationLink } from "./alarms";
-import { deviceIsActive } from "./deviceLifecycle";
+import { resolveDeviceByIdentity } from "./deviceIdentity";
 import { recordAcceptedBatch } from "./deviceHealth";
 import { INGEST_MAX_SAMPLES } from "./limits";
 import { METRIC_KEYS } from "./metrics";
@@ -31,9 +31,10 @@ const ncuSample = v.object({
 const links = new Set(["ok", "degraded", "fail", "unknown"]);
 
 /**
- * Station collector entry. The caller supplies the efuse MAC from the NCU1
- * header, not an organization id. One registered device and one generator
- * must already exist. The same MAC in two organizations is rejected.
+ * Station collector entry. Caller supplies the efuse MAC (and optionally the
+ * organization resolved from device credential / ops). Exactly one *active*
+ * device must resolve; inactive duplicates are ignored. Two+ active rows for
+ * the same MAC without an organization hint remain ambiguous (HTTP 409).
  */
 export const acceptBatch = internalMutation({
   args: {
@@ -42,6 +43,7 @@ export const acceptBatch = internalMutation({
     seq: v.number(),
     epoch: v.optional(v.number()),
     samples: v.array(ncuSample),
+    organizationId: v.optional(v.id("organizations")),
   },
   handler: async (ctx, args) => {
     if (!/^[0-9a-f]{12}$/.test(args.identity)) {
@@ -53,20 +55,19 @@ export const acceptBatch = internalMutation({
     if (args.samples.length < 1 || args.samples.length > INGEST_MAX_SAMPLES) {
       throw new Error("Invalid sample");
     }
-    const matches = await ctx.db
-      .query("devices")
-      .withIndex("by_identity", (q) => q.eq("identity", args.identity))
-      .take(2);
-    if (matches.length === 0) {
+    const resolved = await resolveDeviceByIdentity(ctx, args.identity, {
+      organizationId: args.organizationId,
+    });
+    if (resolved.status === "unknown") {
       return { status: "unknown" as const, accepted: 0 };
     }
-    if (matches.length > 1) {
+    if (resolved.status === "ambiguous") {
       return { status: "ambiguous" as const, accepted: 0 };
     }
-    const device = matches[0];
-    if (!deviceIsActive(device)) {
+    if (resolved.status === "inactive") {
       return { status: "inactive" as const, accepted: 0 };
     }
+    const device = resolved.device;
     const generators = await ctx.db
       .query("generators")
       .withIndex("by_device", (q) => q.eq("deviceId", device._id))

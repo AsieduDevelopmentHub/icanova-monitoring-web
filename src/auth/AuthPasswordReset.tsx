@@ -2,7 +2,14 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router";
-import { AuthChrome, AuthFormBrand } from "./AuthChrome";
+import { OtpInput } from "../ui/OtpInput";
+import { PasswordField } from "../ui/PasswordField";
+import { AuthChrome } from "./AuthChrome";
+import {
+  PASSWORD_RULE_HINT,
+  clientPasswordIssue,
+  sanitizeConvexError,
+} from "./convexError";
 import { resetRequestConfirmation } from "./passwordResetCopy";
 
 type Step = "request" | "verify";
@@ -27,13 +34,12 @@ export function AuthPasswordReset() {
   if (!import.meta.env.VITE_CONVEX_URL) {
     return (
       <AuthChrome>
-        <AuthFormBrand />
         <p role="alert">Set VITE_CONVEX_URL to use password recovery.</p>
-        <div className="auth-footer">
-          <Link to="/auth/login" className="text-btn">
+        <p className="auth-aux">
+          <Link to="/auth/login" className="auth-text-link">
             Back to sign in
           </Link>
-        </div>
+        </p>
       </AuthChrome>
     );
   }
@@ -41,7 +47,6 @@ export function AuthPasswordReset() {
   if (isLoading) {
     return (
       <AuthChrome>
-        <AuthFormBrand />
         <p role="status">Checking session…</p>
       </AuthChrome>
     );
@@ -80,10 +85,22 @@ export function AuthPasswordReset() {
     const form = new FormData(event.currentTarget);
     form.set("flow", "reset-verification");
     form.set("email", email);
+    const newPassword = String(form.get("newPassword") ?? "");
+    const localIssue = clientPasswordIssue(newPassword);
+    if (localIssue) {
+      setError(localIssue);
+      setPending(false);
+      return;
+    }
     try {
       await signIn("password", form);
-    } catch {
-      setError("Could not reset the password. Check the code and try again.");
+    } catch (err) {
+      setError(
+        sanitizeConvexError(
+          err,
+          "Could not reset the password. Check the latest code and try again.",
+        ),
+      );
     } finally {
       setPending(false);
     }
@@ -91,16 +108,20 @@ export function AuthPasswordReset() {
 
   return (
     <AuthChrome labelledBy="auth-reset-title">
-      <header className="page-head">
-        <AuthFormBrand />
+      <header className="auth-card-head">
         <h1 id="auth-reset-title">Reset password</h1>
-        <p className="auth-lede">Recover access with a one-time email code.</p>
+        <p className="auth-switch">
+          Remembered it?{" "}
+          <Link to="/auth/login" className="auth-text-link">
+            Sign in
+          </Link>
+        </p>
       </header>
 
       {step === "request" ? (
         <form className="stack auth-form" onSubmit={(event) => void onRequest(event)}>
           <label className="field">
-            <span>Email</span>
+            <span>Email address</span>
             <input name="email" type="email" autoComplete="username" required disabled={pending} />
           </label>
           {error ? (
@@ -108,14 +129,9 @@ export function AuthPasswordReset() {
               {error}
             </p>
           ) : null}
-          <div className="btn-row auth-actions">
-            <button type="submit" className="btn btn-primary" disabled={pending}>
-              {pending ? "Sending…" : "Send reset code"}
-            </button>
-            <Link to="/auth/login" className="btn btn-secondary">
-              Back to sign in
-            </Link>
-          </div>
+          <button type="submit" className="btn btn-primary auth-submit" disabled={pending}>
+            {pending ? "Sending…" : "Send reset code"}
+          </button>
         </form>
       ) : (
         <form className="stack auth-form" onSubmit={(event) => void onVerify(event)}>
@@ -124,40 +140,31 @@ export function AuthPasswordReset() {
               {info}
             </p>
           ) : null}
-          <label className="field">
+          <div className="field">
             <span>Reset code</span>
-            <input
-              name="code"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              required
-              disabled={pending}
-            />
-          </label>
-          <label className="field">
-            <span>New password</span>
-            <input
-              name="newPassword"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              disabled={pending}
-            />
-          </label>
+            <OtpInput name="code" length={8} required disabled={pending} />
+          </div>
+          <PasswordField
+            label="New password"
+            name="newPassword"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            disabled={pending}
+            hint={PASSWORD_RULE_HINT}
+          />
           {error ? (
             <p className="notice" role="alert">
               {error}
             </p>
           ) : null}
-          <div className="btn-row auth-actions">
-            <button type="submit" className="btn btn-primary" disabled={pending}>
-              {pending ? "Working…" : "Update password"}
-            </button>
+          <button type="submit" className="btn btn-primary auth-submit" disabled={pending}>
+            {pending ? "Working…" : "Update password"}
+          </button>
+          <p className="auth-aux">
             <button
               type="button"
-              className="btn btn-secondary"
+              className="auth-text-link"
               disabled={pending}
               onClick={() => {
                 setStep("request");
@@ -167,7 +174,7 @@ export function AuthPasswordReset() {
             >
               Start over
             </button>
-          </div>
+          </p>
         </form>
       )}
     </AuthChrome>

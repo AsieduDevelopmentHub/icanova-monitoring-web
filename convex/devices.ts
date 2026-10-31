@@ -379,31 +379,175 @@ export const verifyDeviceIngestCredential = internalMutation({
     const matches = await ctx.db
       .query("devices")
       .withIndex("by_identity", (q) => q.eq("identity", identity))
-      .take(2);
-    if (matches.length !== 1) {
+      .take(16);
+    if (matches.length === 0) {
       return { ok: false as const, reason: "unknown" as const };
     }
-    const device = matches[0]!;
-    if (lifecycleLabel(device) === "inactive") {
-      return { ok: false as const, reason: "inactive" as const, organizationId: device.organizationId };
+    const presentedHash = await hashIngestCredential(args.presented);
+    const credentialHits = matches.filter(
+      (device) =>
+        lifecycleLabel(device) === "active" &&
+        (device.ingestCredentialHash || device.ingestCredentialPreviousHash) &&
+        deviceCredentialMatches(
+          presentedHash,
+          device.ingestCredentialHash,
+          device.ingestCredentialPreviousHash,
+        ),
+    );
+    if (credentialHits.length === 1) {
+      const device = credentialHits[0]!;
+      return {
+        ok: true as const,
+        organizationId: device.organizationId,
+        deviceId: device._id,
+      };
     }
-    if (!device.ingestCredentialHash && !device.ingestCredentialPreviousHash) {
+    if (credentialHits.length > 1) {
+      return { ok: false as const, reason: "ambiguous" as const };
+    }
+    const active = matches.filter((device) => lifecycleLabel(device) === "active");
+    if (active.length === 0) {
+      return {
+        ok: false as const,
+        reason: "inactive" as const,
+        organizationId: matches[0]!.organizationId,
+      };
+    }
+    if (active.length === 1 && !active[0]!.ingestCredentialHash && !active[0]!.ingestCredentialPreviousHash) {
       return { ok: false as const, reason: "no_credential" as const };
     }
-    const presentedHash = await hashIngestCredential(args.presented);
-    if (
-      !deviceCredentialMatches(
-        presentedHash,
-        device.ingestCredentialHash,
-        device.ingestCredentialPreviousHash,
-      )
-    ) {
-      return { ok: false as const, reason: "mismatch" as const };
+    return { ok: false as const, reason: "mismatch" as const };
+  },
+});
+
+/** Ops helper: identities registered on more than one device row (cross-org clones). */
+export const listDuplicateIdentities = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const devices = await ctx.db.query("devices").take(5000);
+    const byIdentity = new Map<
+      string,
+      Array<{
+        deviceId: Id<"devices">;
+        organizationId: Id<"organizations">;
+        name: string;
+        lifecycle: "active" | "inactive";
+      }>
+    >();
+    for (const device of devices) {
+      const list = byIdentity.get(device.identity) ?? [];
+      list.push({
+        deviceId: device._id,
+        organizationId: device.organizationId,
+        name: device.name,
+        lifecycle: lifecycleLabel(device),
+      });
+      byIdentity.set(device.identity, list);
     }
+    const duplicates = [];
+    for (const [identity, rows] of byIdentity) {
+      if (rows.length < 2) {
+        continue;
+      }
+      duplicates.push({
+        identity,
+        count: rows.length,
+        activeCount: rows.filter((row) => row.lifecycle === "active").length,
+        devices: rows,
+      });
+    }
+    duplicates.sort((a, b) => b.activeCount - a.activeCount || a.identity.localeCompare(b.identity));
+    return { duplicates, scanned: devices.length };
+  },
+});
+
+/**
+ * Ops: leave one active device for an identity; deactivate the other active clones.
+ * Prefer keepDeviceId, else a row that already has a generator, else the oldest row.
+ */
+export const resolveIdentityDuplicates = internalMutation({
+  args: {
+    identity: v.string(),
+    keepDeviceId: v.optional(v.id("devices")),
+  },
+  handler: async (ctx, args) => {
+    const identity = args.identity.trim().toLowerCase();
+    if (!/^[0-9a-f]{12}$/.test(identity)) {
+      throw new Error("Invalid identity");
+    }
+    const matches = await ctx.db
+      .query("devices")
+      .withIndex("by_identity", (q) => q.eq("identity", identity))
+      .take(16);
+    if (matches.length === 0) {
+      return { identity, status: "unknown" as const, kept: null, deactivated: [] as Id<"devices">[] };
+    }
+    const active = matches.filter((device) => lifecycleLabel(device) === "active");
+    if (active.length <= 1) {
+      return {
+        identity,
+        status: "ok" as const,
+        kept: active[0]?._id ?? matches[0]!._id,
+        deactivated: [] as Id<"devices">[],
+      };
+    }
+
+    let keep = args.keepDeviceId
+      ? active.find((device) => device._id === args.keepDeviceId)
+      : undefined;
+    if (!keep) {
+      for (const device of active) {
+        const generators = await ctx.db
+          .query("generators")
+          .withIndex("by_device", (q) => q.eq("deviceId", device._id))
+          .take(1);
+        if (generators.length === 1) {
+          keep = device;
+          break;
+        }
+      }
+    }
+    if (!keep) {
+      keep = [...active].sort((a, b) => a._creationTime - b._creationTime)[0];
+    }
+
+    const deactivated: Id<"devices">[] = [];
+    const at = Date.now();
+    for (const device of active) {
+      if (device._id === keep!._id) {
+        continue;
+      }
+      await ctx.db.patch(device._id, {
+        lifecycle: "inactive",
+        lifecycleChangedAt: at,
+      });
+      const orgSummary = await ctx.db
+        .query("orgHealthSummaries")
+        .withIndex("by_org", (q) => q.eq("organizationId", device.organizationId))
+        .unique();
+      if (orgSummary) {
+        await ctx.db.patch(orgSummary._id, {
+          devicesActive: Math.max(0, (orgSummary.devicesActive ?? 0) - 1),
+          devicesInactive: (orgSummary.devicesInactive ?? 0) + 1,
+          updatedAt: at,
+        });
+      }
+      await writeAudit(ctx, device.organizationId, "device.deactivate", device._id);
+      deactivated.push(device._id);
+    }
+
+    const generators = await ctx.db
+      .query("generators")
+      .withIndex("by_device", (q) => q.eq("deviceId", keep!._id))
+      .take(2);
     return {
-      ok: true as const,
-      organizationId: device.organizationId,
-      deviceId: device._id,
+      identity,
+      status: "resolved" as const,
+      kept: keep!._id,
+      keptName: keep!.name,
+      keptOrganizationId: keep!.organizationId,
+      generatorCount: generators.length,
+      deactivated,
     };
   },
 });

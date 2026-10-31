@@ -110,6 +110,12 @@ describe("device health", () => {
     expect(
       await bare.mutation(internal.deviceHealth.recordHeartbeat, { identity: "112233445566" }),
     ).toEqual({ status: "ambiguous" });
+    expect(
+      await bare.mutation(internal.deviceHealth.recordHeartbeat, {
+        identity: "112233445566",
+        organizationId,
+      }),
+    ).toEqual({ status: "ok" });
   });
 
   test("accepted batch updates Modbus, freshness, and gateway contact", async () => {

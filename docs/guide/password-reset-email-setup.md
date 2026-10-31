@@ -43,7 +43,11 @@ node scripts/staging-password-reset-setup.mjs
 
 UI path: `https://icanova.pages.dev/auth/reset`
 
+**Localhost vs staging:** `pnpm dev` uses `.env.local` → **kangaroo**. Staging mail / Pages use **roadrunner**. An OTP emailed from staging will **not** verify on localhost (and vice versa). Complete reset on `https://icanova.pages.dev/auth/reset`, or run `vite --mode staging` so local talks to roadrunner.
+
 Anti-enumeration: the UI always says “If an account exists…” — **no email is sent** if the address has no Password account. Create the account first (script does this when possible).
+
+New password rules: **≥8 characters**, at least **one letter and one number**.
 
 ---
 

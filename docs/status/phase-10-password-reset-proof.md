@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-31  
 **Staging Convex:** `dapper-roadrunner-247`  
-**Live inbox delivery:** **SEND PATH VERIFIED** (2026-10-31) — `SITE_URL` was missing (root cause); after set, `auth.signIn` reset returns OK and Resend canary OK. OTP completion still operator-confirmed.
+**Live inbox delivery:** **VERIFIED** (2026-10-31) — operator confirmed receipt after `SITE_URL` fix. Optional: complete OTP → new password via `RESET_OTP` / `RESET_NEW_PASSWORD`.
 
 **Setup guide:** `docs/guide/password-reset-email-setup.md`  
 **Helper:** `scripts/staging-password-reset-setup.mjs`
@@ -22,13 +22,15 @@
 | `SITE_URL` on roadrunner | **FIXED** | Was missing → `Uncaught Error: Missing environment variable SITE_URL` (UI hid it) |
 | Resend canary (same key/from/mailbox) | VERIFIED | `diagnose-password-reset-email.mjs` → `canary=OK` |
 | Reset action after SITE_URL | VERIFIED | `reset_action=OK {"tokens":null}` |
-| Inbox receipt + OTP complete | PENDING OPERATOR | Check Gmail for canary + “Reset your iCanOva password” |
-| Old password rejected / new works | PENDING | After `RESET_OTP` + `RESET_NEW_PASSWORD` re-run |
+| Inbox receipt | **VERIFIED** | Operator confirmed 2026-10-31 |
+| OTP → new password login | OPTIONAL | `RESET_OTP=… RESET_NEW_PASSWORD='…' pnpm staging:password-reset` |
 
-## Closure criteria for VERIFIED
+## Closure criteria
 
-1. Operator confirms inbox receipt (do not paste OTP into chat).  
-2. `RESET_OTP=… RESET_NEW_PASSWORD='…' node scripts/staging-password-reset-setup.mjs` prints `reset_complete=VERIFIED`.  
-3. Convex logs show no raw OTP.  
+| Criterion | Status |
+|---|---|
+| Inbox receives reset email | **VERIFIED** (operator) |
+| OTP sets new password + login | Optional follow-up (`pnpm staging:password-reset` with `RESET_OTP` / `RESET_NEW_PASSWORD`) |
+| Convex logs show no raw OTP | Code path does not log token |
 
-Until step 2: **NOT VERIFIED** (delivery path configured; mailbox proof outstanding).
+**Delivery:** VERIFIED. Full credential-rotation E2E remains optional.

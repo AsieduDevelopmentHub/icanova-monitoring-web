@@ -17,6 +17,7 @@ import type * as crons from "../crons.js";
 import type * as delivery from "../delivery.js";
 import type * as deviceHealth from "../deviceHealth.js";
 import type * as deviceHealthLogic from "../deviceHealthLogic.js";
+import type * as deviceIdentity from "../deviceIdentity.js";
 import type * as deviceLifecycle from "../deviceLifecycle.js";
 import type * as devices from "../devices.js";
 import type * as diagnostics from "../diagnostics.js";
@@ -72,6 +73,7 @@ declare const fullApi: ApiFromModules<{
   delivery: typeof delivery;
   deviceHealth: typeof deviceHealth;
   deviceHealthLogic: typeof deviceHealthLogic;
+  deviceIdentity: typeof deviceIdentity;
   deviceLifecycle: typeof deviceLifecycle;
   devices: typeof devices;
   diagnostics: typeof diagnostics;

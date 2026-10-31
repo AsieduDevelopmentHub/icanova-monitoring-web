@@ -25,7 +25,7 @@ import {
   type OverallStatus,
   type TelemetryFreshness,
 } from "./deviceHealthLogic";
-import { deviceIsActive } from "./deviceLifecycle";
+import { resolveDeviceByIdentity } from "./deviceIdentity";
 import { recordJobRun } from "./jobStatus";
 import {
   HEALTH_EVENT_PRUNE_BATCH,
@@ -438,25 +438,27 @@ async function writeContactOnly(
 
 /** Authenticated heartbeat. Does not refresh telemetry freshness or invent Modbus. */
 export const recordHeartbeat = internalMutation({
-  args: { identity: v.string() },
+  args: {
+    identity: v.string(),
+    organizationId: v.optional(v.id("organizations")),
+  },
   handler: async (ctx, args) => {
     if (!/^[0-9a-f]{12}$/.test(args.identity)) {
       return { status: "ignored" as const };
     }
-    const matches = await ctx.db
-      .query("devices")
-      .withIndex("by_identity", (q) => q.eq("identity", args.identity))
-      .take(2);
-    if (matches.length === 0) {
+    const resolved = await resolveDeviceByIdentity(ctx, args.identity, {
+      organizationId: args.organizationId,
+    });
+    if (resolved.status === "unknown") {
       return { status: "unknown" as const };
     }
-    if (matches.length > 1) {
+    if (resolved.status === "ambiguous") {
       return { status: "ambiguous" as const };
     }
-    const device = matches[0];
-    if (!deviceIsActive(device)) {
+    if (resolved.status === "inactive") {
       return { status: "inactive" as const };
     }
+    const device = resolved.device;
     const generators = await ctx.db
       .query("generators")
       .withIndex("by_device", (q) => q.eq("deviceId", device._id))

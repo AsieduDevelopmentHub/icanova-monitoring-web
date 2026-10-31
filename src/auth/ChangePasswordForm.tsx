@@ -1,6 +1,12 @@
 import { useAction } from "convex/react";
 import { useState, type FormEvent } from "react";
 import { api } from "../../convex/_generated/api";
+import { PasswordField } from "../ui/PasswordField";
+import {
+  PASSWORD_RULE_HINT,
+  clientPasswordIssue,
+  sanitizeConvexError,
+} from "./convexError";
 
 /** Signed-in password rotation using Convex Auth account credentials. */
 export function ChangePasswordForm() {
@@ -23,15 +29,15 @@ export function ChangePasswordForm() {
       if (newPassword !== confirmPassword) {
         throw new Error("New password and confirmation do not match.");
       }
+      const localIssue = clientPasswordIssue(newPassword);
+      if (localIssue) {
+        throw new Error(localIssue);
+      }
       await changePassword({ currentPassword, newPassword });
       form.reset();
       setInfo("Password updated. Other sessions were signed out.");
     } catch (err) {
-      const message =
-        err instanceof Error && err.message.trim().length > 0
-          ? err.message.replace(/^\[CONVEX[^\]]*\]\s*/i, "").replace(/^Uncaught Error:\s*/i, "")
-          : "Could not change password.";
-      setError(message);
+      setError(sanitizeConvexError(err, "Could not change password."));
     } finally {
       setPending(false);
     }
@@ -39,38 +45,33 @@ export function ChangePasswordForm() {
 
   return (
     <form className="stack" onSubmit={(event) => void onSubmit(event)}>
-      <label className="filter-field">
-        <span>Current password</span>
-        <input
-          name="currentPassword"
-          type="password"
-          autoComplete="current-password"
-          required
-          disabled={pending}
-        />
-      </label>
-      <label className="filter-field">
-        <span>New password</span>
-        <input
-          name="newPassword"
-          type="password"
-          autoComplete="new-password"
-          required
-          minLength={8}
-          disabled={pending}
-        />
-      </label>
-      <label className="filter-field">
-        <span>Confirm new password</span>
-        <input
-          name="confirmPassword"
-          type="password"
-          autoComplete="new-password"
-          required
-          minLength={8}
-          disabled={pending}
-        />
-      </label>
+      <PasswordField
+        className="filter-field"
+        label="Current password"
+        name="currentPassword"
+        autoComplete="current-password"
+        required
+        disabled={pending}
+      />
+      <PasswordField
+        className="filter-field"
+        label="New password"
+        name="newPassword"
+        autoComplete="new-password"
+        required
+        minLength={8}
+        disabled={pending}
+        hint={PASSWORD_RULE_HINT}
+      />
+      <PasswordField
+        className="filter-field"
+        label="Confirm new password"
+        name="confirmPassword"
+        autoComplete="new-password"
+        required
+        minLength={8}
+        disabled={pending}
+      />
       {error ? (
         <p className="notice" role="alert">
           {error}

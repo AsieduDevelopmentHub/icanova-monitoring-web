@@ -1,4 +1,5 @@
 import type { Id, TableNames } from "../../convex/_generated/dataModel";
+import { extractConvexErrorText, sanitizeConvexError } from "../auth/convexError";
 import type { Quality, Reading } from "../telemetry/readings";
 
 export function id<Table extends TableNames>(value: string): Id<Table> {
@@ -33,7 +34,7 @@ export function storedReading(value: number | null, quality: string, unit: strin
 }
 
 export function accessMessage(error: unknown): string {
-  const text = error instanceof Error ? error.message : "";
+  const text = extractConvexErrorText(error);
   if (text.includes("Unauthorized")) {
     return "Sign in is required.";
   }
@@ -60,6 +61,11 @@ export function accessMessage(error: unknown): string {
   }
   if (text.includes("Export is too large")) {
     return "The export exceeded the size limit.";
+  }
+  // Auth / password policy messages when present.
+  const authMessage = sanitizeConvexError(error, "");
+  if (authMessage) {
+    return authMessage;
   }
   return "The request was refused.";
 }

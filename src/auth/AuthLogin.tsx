@@ -2,7 +2,13 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation } from "react-router";
-import { AuthChrome, AuthFormBrand } from "./AuthChrome";
+import { PasswordField } from "../ui/PasswordField";
+import { AuthChrome } from "./AuthChrome";
+import {
+  PASSWORD_RULE_HINT,
+  clientPasswordIssue,
+  sanitizeConvexError,
+} from "./convexError";
 import { safeReturnPath } from "./returnPath";
 
 type Mode = "signIn" | "signUp";
@@ -24,19 +30,13 @@ export function AuthLogin() {
   if (!import.meta.env.VITE_CONVEX_URL) {
     return (
       <AuthChrome labelledBy="auth-login-title">
-        <header className="page-head">
-          <AuthFormBrand />
-          <h1 id="auth-login-title">Sign in</h1>
-          <div className="notice" role="alert">
-            <strong>No deployment URL.</strong>
-            <p>
-              Set <code className="tech">VITE_CONVEX_URL</code> to use Convex Auth.
-            </p>
-          </div>
-          <Link to="/" className="btn btn-secondary">
-            Back to home
-          </Link>
-        </header>
+        <h1 id="auth-login-title">Sign in</h1>
+        <div className="notice" role="alert">
+          <strong>No deployment URL.</strong>
+          <p>
+            Set <code className="tech">VITE_CONVEX_URL</code> to use Convex Auth.
+          </p>
+        </div>
       </AuthChrome>
     );
   }
@@ -44,7 +44,6 @@ export function AuthLogin() {
   if (isLoading) {
     return (
       <AuthChrome>
-        <AuthFormBrand />
         <p role="status">Checking session…</p>
       </AuthChrome>
     );
@@ -60,13 +59,24 @@ export function AuthLogin() {
     setPending(true);
     const form = new FormData(event.currentTarget);
     form.set("flow", mode);
+    if (mode === "signUp") {
+      const localIssue = clientPasswordIssue(String(form.get("password") ?? ""));
+      if (localIssue) {
+        setError(localIssue);
+        setPending(false);
+        return;
+      }
+    }
     try {
       await signIn("password", form);
-    } catch {
+    } catch (err) {
       setError(
-        mode === "signIn"
-          ? "Sign-in failed. Check email and password."
-          : "Could not create the account. The email may already be registered.",
+        sanitizeConvexError(
+          err,
+          mode === "signIn"
+            ? "Sign-in failed. Check email and password."
+            : "Could not create the account. The email may already be registered.",
+        ),
       );
     } finally {
       setPending(false);
@@ -75,63 +85,72 @@ export function AuthLogin() {
 
   return (
     <AuthChrome labelledBy="auth-login-title">
-      <header className="page-head">
-        <AuthFormBrand />
+      <header className="auth-card-head">
         <h1 id="auth-login-title">{mode === "signIn" ? "Sign in" : "Create account"}</h1>
-        <p className="auth-lede">
-          {mode === "signIn"
-            ? "Access your organization’s gateways and equipment."
-            : "Create an account to register Edge Gateways and monitor sites."}
+        <p className="auth-switch">
+          {mode === "signIn" ? (
+            <>
+              New to iCanOva?{" "}
+              <button
+                type="button"
+                className="auth-text-link"
+                disabled={pending}
+                onClick={() => {
+                  setError(null);
+                  setMode("signUp");
+                }}
+              >
+                Sign up
+              </button>
+            </>
+          ) : (
+            <>
+              Already have an account?{" "}
+              <button
+                type="button"
+                className="auth-text-link"
+                disabled={pending}
+                onClick={() => {
+                  setError(null);
+                  setMode("signIn");
+                }}
+              >
+                Sign in
+              </button>
+            </>
+          )}
         </p>
       </header>
       <form className="stack auth-form" onSubmit={(event) => void onSubmit(event)}>
         <label className="field">
-          <span>Email</span>
+          <span>Email address</span>
           <input name="email" type="email" autoComplete="username" required disabled={pending} />
         </label>
-        <label className="field">
-          <span>Password</span>
-          <input
-            name="password"
-            type="password"
-            autoComplete={mode === "signIn" ? "current-password" : "new-password"}
-            required
-            minLength={8}
-            disabled={pending}
-          />
-        </label>
+        <PasswordField
+          label="Password"
+          name="password"
+          autoComplete={mode === "signIn" ? "current-password" : "new-password"}
+          required
+          minLength={8}
+          disabled={pending}
+          hint={mode === "signUp" ? PASSWORD_RULE_HINT : undefined}
+        />
         {error ? (
           <p className="notice" role="alert">
             {error}
           </p>
         ) : null}
-        <div className="btn-row auth-actions">
-          <button type="submit" className="btn btn-primary" disabled={pending}>
-            {pending ? "Working…" : mode === "signIn" ? "Sign in" : "Create account"}
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            disabled={pending}
-            onClick={() => {
-              setError(null);
-              setMode((current) => (current === "signIn" ? "signUp" : "signIn"));
-            }}
-          >
-            {mode === "signIn" ? "Create an account" : "Have an account? Sign in"}
-          </button>
-        </div>
+        <button type="submit" className="btn btn-primary auth-submit" disabled={pending}>
+          {pending ? "Working…" : mode === "signIn" ? "Sign in" : "Create account"}
+        </button>
       </form>
-      <div className="auth-footer">
-        {mode === "signIn" ? (
-          <Link to="/auth/reset" className="text-btn">
+      {mode === "signIn" ? (
+        <p className="auth-aux">
+          <Link to="/auth/reset" className="auth-text-link">
             Forgot password?
           </Link>
-        ) : null}
-        <Link to="/" className="text-btn">
-          Back to home
-        </Link>
-      </div>
+        </p>
+      ) : null}
     </AuthChrome>
   );
 }

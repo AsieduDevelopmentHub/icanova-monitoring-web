@@ -19,7 +19,9 @@ export type IconName =
   | "close"
   | "search"
   | "sun"
-  | "moon";
+  | "moon"
+  | "eye"
+  | "eyeOff";
 
 function Svg({ children }: { children: ReactNode }) {
   return (
@@ -154,6 +156,20 @@ const ICONS: Record<IconName, ReactNode> = {
   moon: (
     <Svg>
       <path d="M19 13.5A7 7 0 1 1 10.5 5 5.5 5.5 0 0 0 19 13.5z" />
+    </Svg>
+  ),
+  eye: (
+    <Svg>
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z" />
+      <circle cx="12" cy="12" r="2.5" />
+    </Svg>
+  ),
+  eyeOff: (
+    <Svg>
+      <path d="M3 3l18 18" />
+      <path d="M10.6 10.6A2.5 2.5 0 0 0 13.4 13.4" />
+      <path d="M9.9 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17.3 17.3 0 0 1-3.2 3.9" />
+      <path d="M6.1 6.1A17.5 17.5 0 0 0 2 12s3.5 6 10 6a10.2 10.2 0 0 0 4.2-.9" />
     </Svg>
   ),
 };
