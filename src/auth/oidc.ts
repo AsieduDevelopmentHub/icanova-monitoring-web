@@ -117,9 +117,9 @@ export function decodeJwtPayload(token: string): IdTokenClaims {
   return JSON.parse(atob(padded)) as IdTokenClaims;
 }
 
-export function validateIdTokenClaims(
+export function validateJwtClaims(
   claims: IdTokenClaims,
-  expected: { issuer: string; audience: string; nonce: string; nowSec?: number },
+  expected: { issuer: string; audience: string; nonce?: string | null; nowSec?: number },
 ): string | null {
   const now = expected.nowSec ?? Math.floor(Date.now() / 1000);
   if (!claims.iss || claims.iss.replace(/\/$/, "") !== expected.issuer.replace(/\/$/, "")) {
@@ -135,10 +135,68 @@ export function validateIdTokenClaims(
   if (typeof claims.nbf === "number" && claims.nbf > now + 60) {
     return "not_before";
   }
-  if (!claims.nonce || claims.nonce !== expected.nonce) {
-    return "invalid_nonce";
+  if (expected.nonce != null) {
+    if (!claims.nonce || claims.nonce !== expected.nonce) {
+      return "invalid_nonce";
+    }
   }
   return null;
+}
+
+/** @deprecated Use validateJwtClaims. Kept for existing tests. */
+export function validateIdTokenClaims(
+  claims: IdTokenClaims,
+  expected: { issuer: string; audience: string; nonce: string; nowSec?: number },
+): string | null {
+  return validateJwtClaims(claims, expected);
+}
+
+/**
+ * Select the JWT Convex customJwt will accept.
+ * Prefer the access token when its iss/aud/exp match the application audience.
+ * Do not assume every OIDC access token is valid for Convex.
+ */
+export function selectConvexBearer(args: {
+  accessToken: string;
+  idToken: string;
+  issuer: string;
+  audience: string;
+  clientId: string;
+  nonce: string;
+  nowSec?: number;
+}): { ok: true; token: string } | { ok: false; reason: string } {
+  let idClaims: IdTokenClaims;
+  try {
+    idClaims = decodeJwtPayload(args.idToken);
+  } catch {
+    return { ok: false, reason: "malformed_id_token" };
+  }
+  // id_token aud is typically the SPA client id, not the API audience.
+  const idError = validateJwtClaims(idClaims, {
+    issuer: args.issuer,
+    audience: args.clientId,
+    nonce: args.nonce,
+    nowSec: args.nowSec,
+  });
+  if (idError) {
+    return { ok: false, reason: `id_token_${idError}` };
+  }
+
+  let accessClaims: IdTokenClaims;
+  try {
+    accessClaims = decodeJwtPayload(args.accessToken);
+  } catch {
+    return { ok: false, reason: "malformed_access_token" };
+  }
+  const accessError = validateJwtClaims(accessClaims, {
+    issuer: args.issuer,
+    audience: args.audience,
+    nowSec: args.nowSec,
+  });
+  if (accessError) {
+    return { ok: false, reason: `access_token_${accessError}` };
+  }
+  return { ok: true, token: args.accessToken };
 }
 
 export function consumeOidcState(presented: string | null): boolean {
@@ -213,22 +271,18 @@ export async function completeLoginFromCallback(
   if (!exchanged.ok) {
     return exchanged;
   }
-  let claims: IdTokenClaims;
-  try {
-    claims = decodeJwtPayload(exchanged.idToken);
-  } catch {
-    return { ok: false, reason: "malformed_id_token" };
-  }
-  const claimError = validateIdTokenClaims(claims, {
+  const selected = selectConvexBearer({
+    accessToken: exchanged.accessToken,
+    idToken: exchanged.idToken,
     issuer: config.issuer,
     audience: config.audience,
+    clientId: config.clientId,
     nonce,
   });
-  if (claimError) {
-    return { ok: false, reason: claimError };
+  if (!selected.ok) {
+    return selected;
   }
-  // Convex customJwt expects the access token (or IdP-configured JWT) as bearer.
-  setBearerToken(exchanged.accessToken);
+  setBearerToken(selected.token);
   return { ok: true };
 }
 

@@ -35,7 +35,7 @@ describe("7L.10 scale simulation", () => {
   });
 
   test("ops UI permission helper does not grant access from empty or unrelated perms", () => {
-    expect(canViewOpsOverview(["view.dashboard", "view.alarms", "export.reports"])).toBe(false);
+    expect(canViewOpsOverview(["view.dashboard", "manage.devices", "export.reports"])).toBe(false);
     expect(canViewOpsOverview(["view.diagnostics", "view.alarms"])).toBe(true);
   });
 });

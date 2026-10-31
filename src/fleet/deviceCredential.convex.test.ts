@@ -26,7 +26,13 @@ async function seeded() {
     name: "Gateway",
     identity: "aabbccddeeff",
   });
-  return { t, asOwner, organizationId, deviceId };
+  const otherId = await asOwner.mutation(api.devices.create, {
+    organizationId,
+    siteId,
+    name: "Other",
+    identity: "112233445566",
+  });
+  return { t, asOwner, organizationId, deviceId, otherId };
 }
 
 describe("device ingest credentials", () => {
@@ -58,11 +64,15 @@ describe("device ingest credentials", () => {
     expect(JSON.stringify(detail)).not.toMatch(/ingestCredentialHash|device-secret-alpha1/);
   });
 
-  test("verifyDeviceIngestCredential accepts matching bearer and rejects wrong or inactive", async () => {
-    const { t, asOwner, deviceId } = await seeded();
+  test("valid credential accepted; invalid and wrong-device rejected", async () => {
+    const { t, asOwner, deviceId, otherId } = await seeded();
     await asOwner.mutation(api.devices.setIngestCredential, {
       deviceId,
       plaintext: "device-secret-beta12",
+    });
+    await asOwner.mutation(api.devices.setIngestCredential, {
+      deviceId: otherId,
+      plaintext: "other-device-secret9",
     });
     const ok = await t.mutation(internal.devices.verifyDeviceIngestCredential, {
       identity: "aabbccddeeff",
@@ -74,6 +84,49 @@ describe("device ingest credentials", () => {
       presented: "wrong-secret-zzzzzz",
     });
     expect(bad.ok).toBe(false);
+    const cross = await t.mutation(internal.devices.verifyDeviceIngestCredential, {
+      identity: "aabbccddeeff",
+      presented: "other-device-secret9",
+    });
+    expect(cross.ok).toBe(false);
+  });
+
+  test("rotation keeps previous hash until next rotate; revoke clears both", async () => {
+    const { t, asOwner, deviceId } = await seeded();
+    await asOwner.mutation(api.devices.setIngestCredential, {
+      deviceId,
+      plaintext: "device-secret-old111",
+    });
+    await asOwner.mutation(api.devices.setIngestCredential, {
+      deviceId,
+      plaintext: "device-secret-new222",
+    });
+    const previousOk = await t.mutation(internal.devices.verifyDeviceIngestCredential, {
+      identity: "aabbccddeeff",
+      presented: "device-secret-old111",
+    });
+    expect(previousOk.ok).toBe(true);
+    const currentOk = await t.mutation(internal.devices.verifyDeviceIngestCredential, {
+      identity: "aabbccddeeff",
+      presented: "device-secret-new222",
+    });
+    expect(currentOk.ok).toBe(true);
+    await asOwner.mutation(api.devices.clearIngestCredential, { deviceId });
+    const revoked = await t.mutation(internal.devices.verifyDeviceIngestCredential, {
+      identity: "aabbccddeeff",
+      presented: "device-secret-new222",
+    });
+    expect(revoked).toMatchObject({ ok: false, reason: "no_credential" });
+    const detail = await asOwner.query(api.devices.detail, { deviceId });
+    expect(detail.device.hasIngestCredential).toBe(false);
+  });
+
+  test("inactive device remains rejected after credential set", async () => {
+    const { t, asOwner, deviceId } = await seeded();
+    await asOwner.mutation(api.devices.setIngestCredential, {
+      deviceId,
+      plaintext: "device-secret-beta12",
+    });
     await asOwner.mutation(api.devices.setLifecycle, { deviceId, lifecycle: "inactive" });
     const inactive = await t.mutation(internal.devices.verifyDeviceIngestCredential, {
       identity: "aabbccddeeff",

@@ -3,12 +3,19 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api.js";
 
 const root = new URL("../", import.meta.url);
-const token = readFileSync(new URL(".jwt/session.token", root), "utf8").trim();
-const deployment = "https://effervescent-kangaroo-10.convex.cloud";
+const argv = process.argv.slice(2);
+const staging = argv.includes("--staging");
+const args = argv.filter((a) => a !== "--staging");
+const tokenRel = staging ? ".jwt/staging/session.token" : ".jwt/session.token";
+const scopeRel = staging ? ".jwt/staging/scope.json" : ".jwt/scope.json";
+const deployment = staging
+  ? "https://dapper-roadrunner-247.convex.cloud"
+  : "https://effervescent-kangaroo-10.convex.cloud";
+const token = readFileSync(new URL(tokenRel, root), "utf8").trim();
 const client = new ConvexHttpClient(deployment);
 client.setAuth(token);
 const page = { numItems: 10, cursor: null };
-const scopePath = new URL(".jwt/scope.json", root);
+const scopePath = new URL(scopeRel, root);
 
 async function ensureScope() {
   const userId = await client.mutation(api.users.ensure, {});
@@ -95,7 +102,7 @@ async function telemetry() {
   );
 }
 
-const [command, identity] = process.argv.slice(2);
+const [command, identity] = args;
 if (command === "ensure") {
   await ensureScope();
 } else if (command === "register") {
@@ -103,5 +110,5 @@ if (command === "ensure") {
 } else if (command === "telemetry") {
   await telemetry();
 } else {
-  throw new Error("use ensure, register <identity>, or telemetry");
+  throw new Error("use ensure [--staging], register <identity> [--staging], or telemetry [--staging]");
 }

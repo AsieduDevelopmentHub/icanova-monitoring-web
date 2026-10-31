@@ -1,7 +1,9 @@
 # Per-device ingest credential migration (Phase 8.0E)
 
-**Status:** Design COMPLETE. Backend dual-auth foundation **IMPLEMENTED — NOT VERIFIED** in production.  
-**Shared `INGEST_SECRET`:** Remains required for current ESP32/NCU1 fleets. **Do not remove** until cutover + rollback are proven.
+**Status:** Design COMPLETE. Backend dual-auth foundation **VERIFIED** on staging HTTP (`dapper-roadrunner-247`) via `scripts/staging-device-cred-http.mjs` (2026-10-31).  
+Local convex-test coverage expanded in Phase 8.1 (valid/invalid/wrong-device/rotate/revoke/inactive).  
+**Shared `INGEST_SECRET`:** Remains required for current ESP32/NCU1 fleets. **Do not remove** until cutover + rollback are proven.  
+**Phase 8.1:** Synthetic staging devices only; no fleet migration; firmware/collector unchanged.
 
 ---
 

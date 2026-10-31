@@ -18,18 +18,20 @@ describe("sessionView", () => {
 });
 
 describe("ops overview permissions", () => {
-  test("matches server requireAnyPermission allowlist", () => {
+  test("matches section allowlist; manage.devices alone is not enough", () => {
     expect([...OPS_OVERVIEW_PERMISSIONS]).toEqual([
       "view.diagnostics",
       "view.audit",
-      "manage.devices",
+      "view.alarms",
+      "configure.notifications",
     ]);
     expect(canViewOpsOverview([])).toBe(false);
     expect(canViewOpsOverview(undefined)).toBe(false);
-    expect(canViewOpsOverview(["view.alarms", "view.dashboard"])).toBe(false);
+    expect(canViewOpsOverview(["manage.devices", "view.dashboard"])).toBe(false);
+    expect(canViewOpsOverview(["view.alarms"])).toBe(true);
     expect(canViewOpsOverview(["view.diagnostics"])).toBe(true);
     expect(canViewOpsOverview(["view.audit"])).toBe(true);
-    expect(canViewOpsOverview(["manage.devices"])).toBe(true);
+    expect(canViewOpsOverview(["configure.notifications"])).toBe(true);
   });
 
   test("denial copy refuses treating nav as authorization", () => {

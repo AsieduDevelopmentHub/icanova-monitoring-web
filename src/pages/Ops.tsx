@@ -11,14 +11,29 @@ import { useBearerToken } from "../fleet/useBearer";
 import { Metric } from "../ui/Metric";
 import { StatusMark } from "../ui/StatusMark";
 
+type Denied = { denied: true; required: string; note: string };
+
+function isDenied(section: unknown): section is Denied {
+  return Boolean(
+    section &&
+      typeof section === "object" &&
+      "denied" in section &&
+      (section as { denied: boolean }).denied,
+  );
+}
+
+function asRecord(section: unknown): Record<string, any> {
+  return section as Record<string, any>;
+}
+
 export function Ops() {
   return (
     <section className="page">
       <header className="page-head">
         <h1>Operations</h1>
         <p>
-          Platform observability for authorized operators. Gateway, Modbus, freshness and engine
-          stay separate. Missing is not zero.
+          Platform observability for authorized operators. Each section requires its own permission.
+          Gateway, Modbus, freshness and engine stay separate. Missing is not zero.
         </p>
       </header>
       {import.meta.env.VITE_CONVEX_URL ? (
@@ -71,6 +86,17 @@ function OpsBoard() {
   );
 }
 
+function SectionDenied({ title, section }: { title: string; section: { required: string; note: string } }) {
+  return (
+    <>
+      <h2>{title}</h2>
+      <div className="notice" role="note">
+        <strong>Permission denied.</strong> Requires <code>{section.required}</code>. {section.note}
+      </div>
+    </>
+  );
+}
+
 function Overview({ organizationId, orgName }: { organizationId: string; orgName: string }) {
   const data = useQuery(api.ops.overview, {
     organizationId: id<"organizations">(organizationId),
@@ -78,113 +104,199 @@ function Overview({ organizationId, orgName }: { organizationId: string; orgName
   if (data === undefined) {
     return <p className="empty">Loading operational overview.</p>;
   }
-  const fleet = data.fleet;
-  const ingest = data.ingest.organization;
-  const jobsOk = data.jobs.filter((j) => j.status === "ok" || j.status === "partial").length;
-  const jobsStale = data.jobs.filter((j) => j.stale).length;
-  const jobsFailed = data.jobs.filter((j) => j.status === "failed").length;
 
   return (
     <div className="stack">
       <p className="meta">
-        Organization {orgName}. Incremental fleet tallies and the current ingest hour.{" "}
-        {data.dimensionsNote}
+        Organization {orgName}. Sections are independent. {data.dimensionsNote}
       </p>
 
-      <h2>Fleet health</h2>
-      {!fleet.ready ? (
-        <p className="empty">
-          No fleet health summary yet. It appears after the first heartbeat or ingest.
-        </p>
+      {isDenied(data.fleet) ? (
+        <SectionDenied title="Fleet health" section={data.fleet} />
       ) : (
-        <div className="metric-grid">
-          <Metric label="Tracked devices" value={String(fleet.devicesTracked)} />
-          <Metric
-            label="Active devices"
-            value={fleet.devicesActive === null ? "—" : String(fleet.devicesActive)}
-            note="Null means the counter was not backfilled"
-          />
-          <Metric
-            label="Inactive devices"
-            value={fleet.devicesInactive === null ? "—" : String(fleet.devicesInactive)}
-          />
-          <Metric label="Gateways online" value={String(fleet.gatewayOnline)} note="Cloud contact" />
-          <Metric label="Gateways offline" value={String(fleet.gatewayOffline)} />
-          <Metric label="Gateways unknown" value={String(fleet.gatewayUnknown)} />
-          <Metric label="Modbus ok" value={String(fleet.modbusOk)} note="Sample link" />
-          <Metric label="Modbus fail" value={String(fleet.modbusFail)} />
-          <Metric label="Telemetry fresh" value={String(fleet.telemetryFresh)} />
-          <Metric label="Telemetry stale" value={String(fleet.telemetryStale)} />
-          <Metric label="Telemetry missing" value={String(fleet.telemetryMissing)} />
-          <Metric label="Comm problems" value={String(fleet.activeCommProblems)} />
-        </div>
+        (() => {
+          const fleet = asRecord(data.fleet);
+          return (
+            <>
+              <h2>Fleet health</h2>
+              {!fleet.ready ? (
+                <p className="empty">
+                  No fleet health summary yet. It appears after the first heartbeat or ingest.
+                </p>
+              ) : (
+                <div className="metric-grid">
+                  <Metric label="Tracked devices" value={String(fleet.devicesTracked)} />
+                  <Metric
+                    label="Active devices"
+                    value={fleet.devicesActive === null ? "—" : String(fleet.devicesActive)}
+                    note="Null means the counter was not backfilled"
+                  />
+                  <Metric
+                    label="Inactive devices"
+                    value={fleet.devicesInactive === null ? "—" : String(fleet.devicesInactive)}
+                  />
+                  <Metric label="Gateways online" value={String(fleet.gatewayOnline)} note="Cloud contact" />
+                  <Metric label="Gateways offline" value={String(fleet.gatewayOffline)} />
+                  <Metric label="Gateways unknown" value={String(fleet.gatewayUnknown)} />
+                  <Metric label="Modbus ok" value={String(fleet.modbusOk)} note="Sample link" />
+                  <Metric label="Modbus fail" value={String(fleet.modbusFail)} />
+                  <Metric label="Telemetry fresh" value={String(fleet.telemetryFresh)} />
+                  <Metric label="Telemetry stale" value={String(fleet.telemetryStale)} />
+                  <Metric label="Telemetry missing" value={String(fleet.telemetryMissing)} />
+                  <Metric label="Comm problems" value={String(fleet.activeCommProblems)} />
+                </div>
+              )}
+            </>
+          );
+        })()
       )}
 
-      <h2>Ingestion (current hour)</h2>
-      <div className="metric-grid">
-        <Metric label="Accepted batches" value={String(ingest.accepted)} />
-        <Metric label="Heartbeats ok" value={String(ingest.heartbeatOk)} />
-        <Metric label="Duplicates / stale" value={String(ingest.duplicate)} />
-        <Metric label="Inactive rejects" value={String(ingest.inactive)} />
-        <Metric label="Rate limited" value={String(ingest.rateLimited)} />
-        <Metric label="Auth failed" value={String(ingest.authFailed)} note="Global auth may dominate" />
-        <Metric label="Invalid / oversized" value={String(ingest.invalid + ingest.oversized)} />
-        <Metric
-          label="Last accepted"
-          value={ingest.lastAcceptedAt ? new Date(ingest.lastAcceptedAt).toISOString() : "—"}
-        />
-        <Metric
-          label="Last ingest error"
-          value={
-            ingest.lastErrorAt
-              ? `${ingest.lastErrorKind ?? "error"} @ ${new Date(ingest.lastErrorAt).toISOString()}`
-              : "—"
-          }
-        />
-      </div>
-
-      <h2>Scheduled jobs</h2>
-      <div className="metric-grid">
-        <Metric label="Jobs reporting" value={String(data.jobs.length)} />
-        <Metric label="Ok / partial" value={String(jobsOk)} />
-        <Metric label="Failed" value={String(jobsFailed)} />
-        <Metric label="Stale hint" value={String(jobsStale)} note="No recent attempt while pending" />
-      </div>
-      {data.jobs.length === 0 ? (
-        <p className="empty">
-          No job runs recorded yet. Cron ticks populate this after the first interval.
-        </p>
+      {isDenied(data.ingest) ? (
+        <SectionDenied title="Ingestion (current hour)" section={data.ingest} />
       ) : (
-        <ul>
-          {data.jobs.map((job) => (
-            <li key={job.jobName}>
-              <StatusMark tone={job.status === "failed" ? "alarm" : job.stale ? "warn" : "ok"}>
-                {job.jobName}
-              </StatusMark>{" "}
-              {job.status} · processed {job.processed}
-              {job.lastError ? ` · ${job.lastError}` : ""}
-            </li>
-          ))}
-        </ul>
+        (() => {
+          const org = asRecord(data.ingest).organization as Record<string, any>;
+          return (
+            <>
+              <h2>Ingestion (current hour)</h2>
+              <div className="metric-grid">
+                <Metric label="Accepted batches" value={String(org.accepted)} />
+                <Metric label="Heartbeats ok" value={String(org.heartbeatOk)} />
+                <Metric label="Duplicates / stale" value={String(org.duplicate)} />
+                <Metric label="Inactive rejects" value={String(org.inactive)} />
+                <Metric label="Rate limited" value={String(org.rateLimited)} />
+                <Metric label="Auth failed" value={String(org.authFailed)} note="Global auth may dominate" />
+                <Metric label="Invalid / oversized" value={String(org.invalid + org.oversized)} />
+                <Metric
+                  label="Last accepted"
+                  value={org.lastAcceptedAt ? new Date(org.lastAcceptedAt).toISOString() : "—"}
+                />
+                <Metric
+                  label="Last ingest error"
+                  value={
+                    org.lastErrorAt
+                      ? `${org.lastErrorKind ?? "error"} @ ${new Date(org.lastErrorAt).toISOString()}`
+                      : "—"
+                  }
+                />
+              </div>
+            </>
+          );
+        })()
       )}
 
-      <h2>Notifications (recent sample)</h2>
-      <p className="meta">{data.notifications.note}</p>
-      <div className="metric-grid">
-        <Metric label="Pending" value={String(data.notifications.pending)} />
-        <Metric label="Sent" value={String(data.notifications.sent)} />
-        <Metric label="Failed" value={String(data.notifications.failed)} />
-        <Metric label="Uncertain" value={String(data.notifications.uncertain)} note="Not auto-duplicated" />
-        <Metric label="Email sent (sample)" value={String(data.notifications.emailSent)} />
-        <Metric label="SMS sent (sample)" value={String(data.notifications.smsSent)} />
-      </div>
+      {isDenied(data.jobs) ? (
+        <SectionDenied title="Scheduled jobs" section={data.jobs} />
+      ) : (
+        (() => {
+          const jobs = data.jobs as Array<Record<string, any>>;
+          return (
+            <>
+              <h2>Scheduled jobs</h2>
+              <div className="metric-grid">
+                <Metric label="Jobs reporting" value={String(jobs.length)} />
+                <Metric
+                  label="Ok / partial"
+                  value={String(jobs.filter((j) => j.status === "ok" || j.status === "partial").length)}
+                />
+                <Metric label="Failed" value={String(jobs.filter((j) => j.status === "failed").length)} />
+                <Metric
+                  label="Stale hint"
+                  value={String(jobs.filter((j) => j.stale).length)}
+                  note="No recent attempt while pending"
+                />
+              </div>
+              {jobs.length === 0 ? (
+                <p className="empty">
+                  No job runs recorded yet. Cron ticks populate this after the first interval.
+                </p>
+              ) : (
+                <ul>
+                  {jobs.map((job) => (
+                    <li key={job.jobName}>
+                      <StatusMark tone={job.status === "failed" ? "alarm" : job.stale ? "warn" : "ok"}>
+                        {job.jobName}
+                      </StatusMark>{" "}
+                      {job.status} · processed {job.processed}
+                      {job.lastError ? ` · ${job.lastError}` : ""}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          );
+        })()
+      )}
 
-      <h2>Alarms</h2>
-      <Metric
-        label="Active/ack in recent page"
-        value={String(data.alarms.activeOrAckInRecentPage)}
-        note={data.alarms.note}
-      />
+      {isDenied(data.notifications) ? (
+        <SectionDenied title="Notifications (recent sample)" section={data.notifications} />
+      ) : (
+        (() => {
+          const notifications = asRecord(data.notifications);
+          return (
+            <>
+              <h2>Notifications (recent sample)</h2>
+              <p className="meta">{notifications.note}</p>
+              <div className="metric-grid">
+                <Metric label="Pending" value={String(notifications.pending)} />
+                <Metric label="Sent" value={String(notifications.sent)} />
+                <Metric label="Failed" value={String(notifications.failed)} />
+                <Metric
+                  label="Uncertain"
+                  value={String(notifications.uncertain)}
+                  note="Not auto-duplicated"
+                />
+                <Metric label="Email sent (sample)" value={String(notifications.emailSent)} />
+                <Metric label="SMS sent (sample)" value={String(notifications.smsSent)} />
+              </div>
+            </>
+          );
+        })()
+      )}
+
+      {isDenied(data.alarms) ? (
+        <SectionDenied title="Alarms" section={data.alarms} />
+      ) : (
+        (() => {
+          const alarms = asRecord(data.alarms);
+          return (
+            <>
+              <h2>Alarms</h2>
+              <Metric
+                label="Active/ack in recent page"
+                value={String(alarms.activeOrAckInRecentPage)}
+                note={alarms.note}
+              />
+            </>
+          );
+        })()
+      )}
+
+      {isDenied(data.audit) ? (
+        <SectionDenied title="Audit sample" section={data.audit} />
+      ) : (
+        (() => {
+          const audit = asRecord(data.audit);
+          const rows = (audit.rows ?? []) as Array<{ action: string; target: string; at: number }>;
+          return (
+            <>
+              <h2>Audit sample</h2>
+              <p className="meta">{audit.note}</p>
+              {rows.length === 0 ? (
+                <p className="empty">No audit rows yet.</p>
+              ) : (
+                <ul>
+                  {rows.map((row, index) => (
+                    <li key={`${row.at}-${index}`}>
+                      {row.action} · {row.target} · {new Date(row.at).toISOString()}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          );
+        })()
+      )}
     </div>
   );
 }

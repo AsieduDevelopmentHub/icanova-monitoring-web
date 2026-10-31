@@ -95,8 +95,10 @@ describe("ops overview and health independence", () => {
     await t.mutation(internal.deviceHealth.recordHeartbeat, { identity: "aabbccddeeff" });
     await t.mutation(internal.telemetry.pruneBuckets, {});
     const overview = await asOwner.query(api.ops.overview, { organizationId });
-    expect(overview.fleet.gatewayOnline).toBeGreaterThanOrEqual(0);
-    expect(overview.fleet.modbusOk).toBeGreaterThanOrEqual(0);
+    expect(overview.fleet).not.toMatchObject({ denied: true });
+    const fleet = overview.fleet as { gatewayOnline: number; modbusOk: number };
+    expect(fleet.gatewayOnline).toBeGreaterThanOrEqual(0);
+    expect(fleet.modbusOk).toBeGreaterThanOrEqual(0);
     expect(overview.dimensionsNote).toMatch(/independent/i);
     expect(engineView(null, "unavailable").label).toBe("Unreported");
     expect(engineView(null, "unavailable").label).not.toBe("Stopped");
@@ -107,7 +109,7 @@ describe("ops overview and health independence", () => {
     await expect(asStranger.query(api.ops.overview, { organizationId })).rejects.toThrow();
   });
 
-  test("role lacking diagnostics audit and manage.devices is denied ops overview", async () => {
+  test("manage.devices alone cannot open ops; section perms are independent", async () => {
     const { t, asOwner, organizationId } = await seeded();
     const limited = {
       subject: "viewer",
@@ -116,25 +118,56 @@ describe("ops overview and health independence", () => {
     };
     const asViewer = t.withIdentity(limited);
     await asViewer.mutation(api.organizations.create, { name: "ViewerOrg" });
-    const viewerOrgs = await asViewer.query(api.organizations.mine, {});
-    const viewerOrgId = viewerOrgs[0]!.organizationId;
-    // Seed a membership on the owner's org with a narrow role.
-    const readerRole = await asOwner.mutation(api.organizations.createRole, {
-      organizationId,
-      name: "Alarms only",
-      permissions: ["view.alarms", "view.dashboard"],
-    });
     const me = await asViewer.query(api.users.me, {});
     expect(me).not.toBeNull();
+
+    const devicesOnly = await asOwner.mutation(api.organizations.createRole, {
+      organizationId,
+      name: "Devices only",
+      permissions: ["manage.devices", "view.dashboard"],
+    });
     await asOwner.mutation(api.organizations.grant, {
       organizationId,
       userId: me!._id,
-      roleId: readerRole,
+      roleId: devicesOnly,
     });
     await expect(asViewer.query(api.ops.overview, { organizationId })).rejects.toThrow();
-    // Control: owner still allowed.
-    await expect(asOwner.query(api.ops.overview, { organizationId })).resolves.toBeTruthy();
-    void viewerOrgId;
+
+    const alarmsOnly = await asOwner.mutation(api.organizations.createRole, {
+      organizationId,
+      name: "Alarms ops",
+      permissions: ["view.alarms", "view.dashboard"],
+    });
+    await asOwner.mutation(api.organizations.grant, {
+      organizationId,
+      userId: me!._id,
+      roleId: alarmsOnly,
+    });
+    const alarmsView = await asViewer.query(api.ops.overview, { organizationId });
+    expect(alarmsView.alarms).toMatchObject({ activeOrAckInRecentPage: expect.any(Number) });
+    expect(alarmsView.fleet).toMatchObject({ denied: true, required: "view.diagnostics" });
+    expect(alarmsView.audit).toMatchObject({ denied: true, required: "view.audit" });
+    expect(alarmsView.notifications).toMatchObject({
+      denied: true,
+      required: "configure.notifications",
+    });
+
+    const diagOnly = await asOwner.mutation(api.organizations.createRole, {
+      organizationId,
+      name: "Diagnostics ops",
+      permissions: ["view.diagnostics", "view.dashboard"],
+    });
+    await asOwner.mutation(api.organizations.grant, {
+      organizationId,
+      userId: me!._id,
+      roleId: diagOnly,
+    });
+    const diagView = await asViewer.query(api.ops.overview, { organizationId });
+    expect(diagView.sections.diagnostics).toBe(true);
+    expect(diagView.fleet).not.toMatchObject({ denied: true });
+    expect(diagView.audit).toMatchObject({ denied: true, required: "view.audit" });
+    expect(diagView.notifications).toMatchObject({ denied: true });
+    expect(diagView.alarms).toMatchObject({ denied: true, required: "view.alarms" });
   });
 
   test("10k fleet tallies remain incremental without a scan", async () => {

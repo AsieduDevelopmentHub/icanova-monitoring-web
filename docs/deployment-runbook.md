@@ -28,7 +28,7 @@ There is **no** checked-in `convex.json` at repo root; the CLI uses the linked p
 |---|---|---|---|
 | Local | `convex dev` | `pnpm dev` + `.env.local` | Dev-only |
 | Development | `effervescent-kangaroo-10` | Build with that `VITE_CONVEX_URL` | Dev secrets; never copy to prod |
-| Staging | **Not provisioned** — OPERATOR | Separate build | Distinct `INGEST_SECRET`, Auth, notify |
+| Staging | `dapper-roadrunner-247` (lab JWKS) | `.env.staging.local` | Distinct `INGEST_SECRET`, lab Auth JWKS, lab notify; real OIDC IdP still OPERATOR |
 | Production | **Not started** — OPERATOR | Separate HTTPS host | Operator-supplied only |
 
 Required operator values for production/staging (never invented by agents):

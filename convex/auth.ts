@@ -89,6 +89,42 @@ export async function requireAnyPermission(
   throw new Error("Forbidden");
 }
 
+/** Role permission strings for the signed-in member, or null if no membership. */
+export async function memberPermissions(
+  ctx: DbCtx,
+  organizationId: Id<"organizations">,
+): Promise<Permission[] | null> {
+  const identity = await requireIdentity(ctx);
+  const user = await userByToken(ctx, identity.tokenIdentifier);
+  if (!user) {
+    return null;
+  }
+  const membership = await ctx.db
+    .query("memberships")
+    .withIndex("by_org_user", (q) =>
+      q.eq("organizationId", organizationId).eq("userId", user._id),
+    )
+    .unique();
+  if (!membership) {
+    return null;
+  }
+  const role = await ctx.db.get(membership.roleId);
+  if (!role || role.organizationId !== organizationId) {
+    return null;
+  }
+  if (!role.permissions.every(isPermission)) {
+    return null;
+  }
+  return role.permissions as Permission[];
+}
+
+export function roleHasPermission(
+  permissions: readonly Permission[] | null | undefined,
+  need: Permission,
+): boolean {
+  return Boolean(permissions?.includes(need));
+}
+
 export function assertSameOrg<T extends string>(actual: T, expected: T) {
   if (actual !== expected) {
     throw new Error("Forbidden");

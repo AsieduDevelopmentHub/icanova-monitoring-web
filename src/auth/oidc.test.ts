@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   createPkceChallenge,
   decodeJwtPayload,
+  selectConvexBearer,
   validateIdTokenClaims,
 } from "./oidc";
 
@@ -84,5 +85,47 @@ describe("OIDC helpers (mocked)", () => {
       nonce: "abc",
     });
     expect(decodeJwtPayload(token).nonce).toBe("abc");
+  });
+
+  test("selectConvexBearer requires API audience on access token (mocked)", () => {
+    const now = 1_700_000_000;
+    const idToken = fakeJwt({
+      iss: "https://idp.example",
+      aud: "spa-client",
+      exp: now + 60,
+      nonce: "n1",
+    });
+    const badAccess = fakeJwt({
+      iss: "https://idp.example",
+      aud: "spa-client",
+      exp: now + 60,
+    });
+    const goodAccess = fakeJwt({
+      iss: "https://idp.example",
+      aud: "dse-gateway",
+      exp: now + 60,
+    });
+    expect(
+      selectConvexBearer({
+        accessToken: badAccess,
+        idToken,
+        issuer: "https://idp.example",
+        audience: "dse-gateway",
+        clientId: "spa-client",
+        nonce: "n1",
+        nowSec: now,
+      }).ok,
+    ).toBe(false);
+    expect(
+      selectConvexBearer({
+        accessToken: goodAccess,
+        idToken,
+        issuer: "https://idp.example",
+        audience: "dse-gateway",
+        clientId: "spa-client",
+        nonce: "n1",
+        nowSec: now,
+      }),
+    ).toEqual({ ok: true, token: goodAccess });
   });
 });

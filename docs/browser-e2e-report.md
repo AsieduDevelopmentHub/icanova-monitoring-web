@@ -30,8 +30,9 @@ Credentials stay in `.env.e2e` (gitignored). Template: `.env.e2e.example`.
 | Invalid auth / session expiry | **BLOCKED** | IdP |
 | Logout end-session | **BLOCKED** | IdP |
 | Tenant isolation in browser | **BLOCKED** | Needs synthetic signed-in accounts |
-| Fleet / alarms / notify / ops authenticated | **BLOCKED** | Same |
+| Fleet / alarms / notify / ops authenticated | **BLOCKED** | Spec scaffold: `e2e/authenticated.spec.ts` (skipped) |
 | Reports export auth | **BLOCKED** | Same |
+| Convex JWT after OIDC | **BLOCKED** | Access token must match `AUTH_JWT_*` (see identity-provider-setup) |
 
 Mocked Vitest OIDC claim tests are **not** browser IdP proof (`src/auth/oidc.test.ts`).
 
@@ -41,5 +42,7 @@ Mocked Vitest OIDC claim tests are **not** browser IdP proof (`src/auth/oidc.tes
 
 | Item | Value |
 |---|---|
-| Staging base URL | Not provisioned — OPERATOR |
+| Staging Convex | `dapper-roadrunner-247` (backend ready) |
+| Staging SPA host | OPERATOR — local preview or future host; Vercel absent |
 | Production | Forbidden as E2E target |
+| Guide | `docs/browser-e2e.md` |

@@ -1,9 +1,11 @@
 /** Shared session/permission UX helpers. Server `requirePermission` remains authoritative. */
 
+/** Must match convex/ops.ts OPS_SECTION_PERMISSIONS. manage.devices alone is not enough. */
 export const OPS_OVERVIEW_PERMISSIONS = [
   "view.diagnostics",
   "view.audit",
-  "manage.devices",
+  "view.alarms",
+  "configure.notifications",
 ] as const;
 
 export type OpsOverviewPermission = (typeof OPS_OVERVIEW_PERMISSIONS)[number];
@@ -13,6 +15,14 @@ export function canViewOpsOverview(permissions: readonly string[] | undefined | 
     return false;
   }
   return OPS_OVERVIEW_PERMISSIONS.some((need) => permissions.includes(need));
+}
+
+export function canViewOpsDiagnostics(permissions: readonly string[] | undefined | null): boolean {
+  return Boolean(permissions?.includes("view.diagnostics"));
+}
+
+export function canViewOpsAudit(permissions: readonly string[] | undefined | null): boolean {
+  return Boolean(permissions?.includes("view.audit"));
 }
 
 export function convexConfigured(): boolean {
