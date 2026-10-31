@@ -3,7 +3,9 @@
 **Date:** 2026-10-31  
 **Overall status:** **NOT READY**  
 **Closest software label:** **READY FOR OPERATOR REVIEW**  
-**8.5C:** Production Convex provisioning **BLOCKED** — Pages still on staging Auth0/Convex; sturgeon empty.  
+**8.5C:** Production Convex provisioning **BLOCKED** — sturgeon empty.  
+**8.5D:** Shared Auth0 tenant acceptance recorded (superseded for active login by 8.5E).  
+**8.5E:** Convex Auth is the active login provider in code; Auth0 retained inactive.  
 **Must remain:** `PRODUCTION DEPLOYMENT NOT AUTHORIZED` until written approval.
 
 Mandatory gates must each be independently green. Staging success ≠ production readiness.
@@ -11,8 +13,9 @@ Mandatory gates must each be independently green. Staging success ≠ production
 | Gate | Status | Evidence / doc |
 |---|---|---|
 | **1 — Recovery / restore drill** | **VERIFIED** | `docs/guide/backup-restore-verification.md` §6 — `vivid-mosquito-28` quarantined |
-| **2 — Security** | **READY FOR OPERATOR REVIEW** | `docs/status/production-security-audit.md` |
-| **3 — Production Auth0** | **NOT VERIFIED** | Pages still uses staging Auth0 issuer — `docs/status/phase-8.5c-production-convex-provisioning.md` |
+| **2 — Security** | **READY FOR OPERATOR REVIEW** | `docs/status/production-security-audit.md` (S9 temporary shared-tenant exception) |
+| **3 — Auth provider** | **Convex Auth (code)** | `docs/status/phase-8.5e-convex-auth-transition.md` — Auth0 inactive by default |
+| **3b — Staging Convex Auth keys** | **OPERATOR** | Set `JWT_PRIVATE_KEY` / `JWKS` on roadrunner before live Password login |
 | **4 — Production Convex secrets** | **BLOCKED** | Sturgeon empty; staging secrets not copied (8.5C) |
 | **5 — SPA hosting** | **VERIFIED (Pages)** | `https://icanova.pages.dev`; still pointed at **staging** Convex |
 | **6 — Notifications** | **OPERATOR CONFIGURATION REQUIRED** | Controlled test in `docs/guide/production-environment-setup.md` §9 |

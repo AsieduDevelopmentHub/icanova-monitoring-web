@@ -4,6 +4,8 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { OrgGate } from "../admin/OrgGate";
 import { accessMessage } from "../fleet/access";
+import { Panel } from "../ui/Panel";
+import { Skeleton } from "../ui/Skeleton";
 
 export function UsersAdmin() {
   return (
@@ -26,7 +28,7 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   if (roster === undefined || roles === undefined) {
-    return <p className="empty">Loading members.</p>;
+    return <Skeleton lines={5} />;
   }
   const selectedUser = roster.some((row) => row.userId === userId) ? userId : (roster[0]?.userId ?? "");
   const selectedRole = roles.some((role) => role.roleId === roleId) ? roleId : (roles[0]?.roleId ?? "");
@@ -52,7 +54,10 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
   }
 
   return (
-    <div className="stack">
+    <Panel
+      title="Membership"
+      description="Granting a role requires manage.users and refuses roles from another organization."
+    >
       {roster.length === 0 ? <p className="empty">No members in this page.</p> : null}
       <ul>
         {roster.map((row) => (
@@ -61,33 +66,35 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
           </li>
         ))}
       </ul>
-      <form className="filter-bar" onSubmit={onSubmit}>
-        <label className="filter-field">
-          <span>Member</span>
-          <select value={selectedUser} onChange={(event) => setUserId(event.target.value)}>
-            {roster.map((row) => (
-              <option key={row.userId} value={row.userId}>
-                {row.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="filter-field">
-          <span>Role</span>
-          <select value={selectedRole} onChange={(event) => setRoleId(event.target.value)}>
-            {roles.map((role) => (
-              <option key={role.roleId} value={role.roleId}>
-                {role.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="submit" disabled={pending}>
-          {pending ? "Granting…" : "Grant role"}
-        </button>
+      <form className="form-section" onSubmit={onSubmit}>
+        <h2>Grant role</h2>
+        <div className="filter-bar">
+          <label className="filter-field">
+            <span>Member</span>
+            <select value={selectedUser} onChange={(event) => setUserId(event.target.value)}>
+              {roster.map((row) => (
+                <option key={row.userId} value={row.userId}>
+                  {row.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="filter-field">
+            <span>Role</span>
+            <select value={selectedRole} onChange={(event) => setRoleId(event.target.value)}>
+              {roles.map((role) => (
+                <option key={role.roleId} value={role.roleId}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="submit" className="btn btn-primary" disabled={pending}>
+            {pending ? "Granting…" : "Grant role"}
+          </button>
+        </div>
       </form>
       {error ? <p className="err">{error}</p> : null}
-      <p className="meta">Grant checks manage.users and refuses a role from another organization.</p>
-    </div>
+    </Panel>
   );
 }

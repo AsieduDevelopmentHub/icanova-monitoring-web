@@ -3,8 +3,11 @@ import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
- * Authenticated browser E2E against staging Auth0 / Convex.
- * Requires E2E_OIDC=1 and Auth0 access token (aud=icanova).
+ * LEGACY Auth0 bearer E2E — inactive after Phase 8.5E (Convex Auth is primary).
+ * These tests still inject sessionStorage Auth0 access tokens and will not
+ * authenticate against Convex Auth deployments. Keep gated behind E2E_OIDC=1
+ * until a Convex Auth Password E2E harness replaces them.
+ *
  * Token: E2E_ACCESS_TOKEN or .jwt/staging/auth0.access.token
  * Build: `pnpm exec vite build --mode staging` before preview.
  */

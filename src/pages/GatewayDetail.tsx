@@ -14,7 +14,10 @@ import {
   modbusView,
   overallView,
 } from "../telemetry/deviceHealthView";
+import { Button } from "../ui/Button";
 import { DataTable } from "../ui/DataTable";
+import { Panel } from "../ui/Panel";
+import { Skeleton } from "../ui/Skeleton";
 import { StatusMark } from "../ui/StatusMark";
 import { DiagnosticPanel } from "./DiagnosticPanel";
 
@@ -81,7 +84,7 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
   if (detail === undefined) {
     return (
       <section className="page">
-        <p className="empty">Loading the device.</p>
+        <Skeleton lines={8} />
       </section>
     );
   }
@@ -119,12 +122,11 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
         <p>
           <Link to="/gateways">Gateways</Link>
           {" · "}
-          <Link to="/">Dashboard</Link>
+          <Link to="/app">Dashboard</Link>
         </p>
       </header>
 
-      <section className="ops-section" aria-labelledby="gw-overview-title">
-        <h2 id="gw-overview-title">Gateway overview</h2>
+      <Panel title="Identity" description="Cloud registration metadata. Soft-AP configuration is local-only.">
         <dl className="facts">
           <dt>Product</dt>
           <dd>iCanOva Edge Gateway</dd>
@@ -140,20 +142,14 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
         <div className="status-row">
           <StatusMark tone={active ? "ok" : "alarm"}>{active ? "Active" : "Inactive"}</StatusMark>
           <StatusMark tone={overall.tone}>{overall.label}</StatusMark>
-          <StatusMark tone={gateway.tone}>Gateway {gateway.label}</StatusMark>
+          <StatusMark tone={gateway.tone}>Cloud {gateway.label}</StatusMark>
           <StatusMark tone={modbus.tone}>{modbus.label}</StatusMark>
           <StatusMark tone={fresh.tone}>{fresh.label}</StatusMark>
         </div>
-        <p className="meta">
-          Remote register writes and start/stop are not enabled on this page.
-        </p>
-      </section>
+        <p className="meta">Remote register writes and start/stop are not enabled on this page.</p>
+      </Panel>
 
-      <section className="ops-section" aria-labelledby="gw-connect-title">
-        <h2 id="gw-connect-title">Connectivity</h2>
-        <p className="meta">
-          Cloud contact is separate from Modbus link and from telemetry freshness.
-        </p>
+      <Panel title="Connectivity" description="Cloud contact is separate from Modbus link and from telemetry freshness.">
         <dl className="facts">
           <dt>Last heartbeat</dt>
           <dd>{contactAgeLabel(health?.lastHeartbeatAt, now)}</dd>
@@ -171,24 +167,22 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
           </dd>
         </dl>
         <p>
-          <button
-            type="button"
-            className="btn btn-secondary"
+          <Button
+            variant="secondary"
             disabled={pending}
             onClick={() => void onLifecycle()}
           >
             {pending ? "Updating…" : active ? "Deactivate device" : "Reactivate device"}
-          </button>
+          </Button>
         </p>
         <p className="meta">
           Deactivation stops ingest and heartbeat writes. Historical telemetry is kept. Soft-AP
           credentials are never shown here.
         </p>
         {error ? <p className="err">{error}</p> : null}
-      </section>
+      </Panel>
 
-      <section className="ops-section" aria-labelledby="gw-config-title">
-        <h2 id="gw-config-title">Configuration</h2>
+      <Panel title="Configuration" description="Honest boundaries between cloud metadata and local Soft-AP setup.">
         <div className="notice" role="note">
           <strong>Cloud does not deliver Modbus settings.</strong> Desired Soft-AP baud, parity, slave
           ID, and GenComm writes are applied on the gateway itself (USB CLI or local Configure at the
@@ -207,7 +201,7 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
             <Link to="/local/configure">Live Configure (Soft-AP / LAN proxy)</Link>
           </dd>
         </dl>
-      </section>
+      </Panel>
 
       <section className="ops-section" aria-labelledby="gw-equipment-title">
         <h2 id="gw-equipment-title">Connected equipment</h2>

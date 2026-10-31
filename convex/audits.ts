@@ -3,7 +3,7 @@ import type { MutationCtx } from "./_generated/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
-import { requirePermission } from "./auth";
+import { requirePermission } from "./identity";
 import { boundedPage } from "./limits";
 
 export async function writeAudit(

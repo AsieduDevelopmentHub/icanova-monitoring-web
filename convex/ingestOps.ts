@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, query, type MutationCtx } from "./_generated/server";
-import { requireAnyPermission } from "./auth";
+import { requireAnyPermission } from "./identity";
 import {
   INGEST_OPS_PRUNE_BATCH,
   INGEST_OPS_RETENTION_MS,

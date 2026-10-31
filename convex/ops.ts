@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
-import { memberPermissions, roleHasPermission } from "./auth";
+import { memberPermissions, roleHasPermission } from "./identity";
 import { HEALTH_STALE_MS } from "./limits";
 import type { Permission } from "./permissions";
 

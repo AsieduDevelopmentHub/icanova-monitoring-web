@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, query } from "./_generated/server";
-import { requirePermission } from "./auth";
+import { requirePermission } from "./identity";
 import { MAX_PAGE } from "./limits";
 
 const nullableText = v.union(v.string(), v.null());

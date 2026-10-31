@@ -1,21 +1,25 @@
-import { useLocation } from "react-router";
+import { Link, useLocation } from "react-router";
 import { itemForPath } from "../shell/nav";
+import { EmptyState } from "../ui/EmptyState";
 
 export function Unavailable() {
   const { pathname } = useLocation();
   const item = itemForPath(pathname);
-  const title = item?.label ?? "Unknown";
+  const title = item?.label ?? "Unavailable";
   const detail =
-    item?.unavailable ??
-    "This path is not a screen in the control center.";
+    item?.unavailable ?? "This path is not a screen in iCanOva Monitoring.";
 
   return (
     <section className="page">
       <header className="page-head">
         <h1>{title}</h1>
-        <p>No backend is connected for this area.</p>
+        <p>No operational screen is connected for this route.</p>
       </header>
-      <div className="notice">{detail}</div>
+      <EmptyState
+        title="Nothing to show here"
+        body={detail}
+        action={<Link to="/app">Return to dashboard</Link>}
+      />
     </section>
   );
 }

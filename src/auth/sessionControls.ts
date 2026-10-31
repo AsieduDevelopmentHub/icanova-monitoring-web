@@ -1,6 +1,6 @@
 /**
  * Pure helpers for header/session auth entry-point UX.
- * Does not invent Auth0 config; oidcConfigured() remains fail-closed.
+ * Active provider is Convex Auth; Auth0 OIDC is inactive by default.
  */
 
 export type SessionChrome = {
@@ -8,20 +8,20 @@ export type SessionChrome = {
   showSignIn: boolean;
   showSignOut: boolean;
   signOutLabel: "Sign out" | "Clear session";
-  oidcReady: boolean;
+  authReady: boolean;
 };
 
 export function sessionChrome(args: {
-  hasBearer: boolean;
-  oidcReady: boolean;
+  isAuthenticated: boolean;
+  authReady: boolean;
 }): SessionChrome {
-  if (args.hasBearer) {
+  if (args.isAuthenticated) {
     return {
       label: "Signed in",
       showSignIn: false,
       showSignOut: true,
-      signOutLabel: args.oidcReady ? "Sign out" : "Clear session",
-      oidcReady: args.oidcReady,
+      signOutLabel: "Sign out",
+      authReady: args.authReady,
     };
   }
   return {
@@ -29,6 +29,6 @@ export function sessionChrome(args: {
     showSignIn: true,
     showSignOut: false,
     signOutLabel: "Sign out",
-    oidcReady: args.oidcReady,
+    authReady: args.authReady,
   };
 }

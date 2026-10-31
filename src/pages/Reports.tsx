@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { OrgGate } from "../admin/OrgGate";
 import { accessMessage } from "../fleet/access";
+import { Panel } from "../ui/Panel";
 
 type ReportKind = "alarms" | "maintenance" | "devices" | "deliveries" | "telemetry" | "health";
 type ReportFormat = "csv" | "xlsx" | "pdf";
@@ -59,16 +60,10 @@ function ExportForm({ organizationId }: { organizationId: Id<"organizations"> })
   }
 
   return (
-    <div className="stack">
-      <section className="ops-section">
-        <h2>Operational reports</h2>
-        <p className="meta">{KIND_HELP[kind]}</p>
-        <p className="meta">
-          Coverage: exports reflect the rows available when the file is built. They are not a complete
-          archive of every historical sample. Telemetry bucket retention is about 7 days; health events
-          about 14 days.
-        </p>
-      </section>
+    <Panel
+      title="Build export"
+      description={`${KIND_HELP[kind]} Coverage is bounded (~200 rows). Telemetry buckets ~7 days; health events ~14 days — not full-history archives.`}
+    >
       <form className="filter-bar" onSubmit={onSubmit}>
         <label className="filter-field">
           <span>Kind</span>
@@ -111,7 +106,7 @@ function ExportForm({ organizationId }: { organizationId: Id<"organizations"> })
         {" · "}
         <Link to="/alarms">Alarm center</Link>
       </p>
-    </div>
+    </Panel>
   );
 }
 

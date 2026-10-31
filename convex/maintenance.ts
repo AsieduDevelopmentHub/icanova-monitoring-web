@@ -2,7 +2,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
-import { requireAnyPermission, requireName, requirePermission } from "./auth";
+import { requireAnyPermission, requireName, requirePermission } from "./identity";
 import { boundedPage } from "./limits";
 
 export const list = query({

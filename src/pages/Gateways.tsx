@@ -1,11 +1,10 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { accessMessage, id } from "../fleet/access";
 import { FleetBoundary } from "../fleet/boundary";
 import { gatewayIdentityError, normalizeGatewayIdentity } from "../fleet/gatewayIdentity";
-import { useBearerToken } from "../fleet/useBearer";
 import { demoFrames } from "../telemetry/demoLog";
 import { DEMO_GENERATOR_ID, DEMO_SOURCE } from "../telemetry/logModel";
 import {
@@ -25,8 +24,8 @@ export function Gateways() {
       <header className="page-head">
         <h1>Gateways</h1>
         <p>
-          Manage iCanOva Edge Gateway registrations for one organization. Inventory is cloud metadata —
-          this page does not push Modbus settings to the Soft-AP.
+          Edge Gateway inventory for one organization. Cloud registration only — this page does not
+          deliver Modbus settings to Soft-AP hardware.
         </p>
       </header>
       {import.meta.env.VITE_CONVEX_URL ? <SignedInventory /> : null}
@@ -62,8 +61,11 @@ function DemoInventory() {
 }
 
 function SignedInventory() {
-  const token = useBearerToken();
-  if (!token) {
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  if (isLoading) {
+    return <p className="empty">Checking session…</p>;
+  }
+  if (!isAuthenticated) {
     return (
       <div className="notice" role="note">
         <strong>Not signed in.</strong> No device query is running.{" "}

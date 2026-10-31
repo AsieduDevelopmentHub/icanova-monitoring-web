@@ -11,23 +11,20 @@ Never put Convex secrets in `VITE_` variables. Never commit real values.
 | `VITE_SENTRY_DSN` | Optional | No | build env | Browser error reporting |
 | `VITE_GA_MEASUREMENT_ID` | Optional | No | build env | GA4; skipped in mock mode |
 | `VITE_USE_MOCK` | Dev only | No | mode/`dev:mock` | Explicit mock fleet |
-| `VITE_OIDC_ISSUER` | Optional SPA login | No | build env | Public OIDC issuer (https) |
-| `VITE_OIDC_CLIENT_ID` | Optional SPA login | No | build env | Public SPA client id |
-| `VITE_OIDC_AUDIENCE` | Optional SPA login | No | build env | JWT audience |
-| `VITE_OIDC_REDIRECT_URI` | Optional SPA login | No | build env | `/auth/callback` |
-| `VITE_OIDC_LOGOUT_REDIRECT_URI` | Optional | No | build env | Post-logout URL |
-| `VITE_OIDC_*_ENDPOINT` | Optional | No | build env | Override authorize/token/end-session |
+| `VITE_OIDC_*` | Future Auth0 only | No | build env | **Not required** for Convex Auth login (Phase 8.5E) |
 
-Never put an OIDC client **secret** in `VITE_*`.
+Never put an OIDC client **secret** in `VITE_*`. Active SPA login uses Convex Auth (no Auth0 env).
 
 ## 2. Convex server (`pnpm exec convex env set`)
 
 | Variable | Required | Secret | Purpose |
 |---|---|---|---|
-| `AUTH_JWT_ISSUER` | Production | No (URL) | JWT issuer. Use `disabled` only in unlocked local experiments |
-| `AUTH_JWKS_URL` | Production | No (URL) | JWKS endpoint. Must be reachable |
-| `AUTH_JWT_AUDIENCE` | Production | No | Expected `aud` (staging/prod brand: `icanova`). **Required** — no code fallback |
-| `AUTH_JWT_JWKS` | If self-hosting JWKS | Public keys only | Body of `GET /.well-known/jwks.json` |
+| `JWT_PRIVATE_KEY` | Convex Auth (active) | **Yes** | RS256 private key for Convex Auth sessions |
+| `JWKS` | Convex Auth (active) | No (public JWK set JSON) | Public keys for JWT verification |
+| `AUTH_JWT_ISSUER` | Future Auth0 only | No (URL) | Not loaded by active `auth.config.ts` |
+| `AUTH_JWKS_URL` | Future Auth0 only | No (URL) | Not loaded by active `auth.config.ts` |
+| `AUTH_JWT_AUDIENCE` | Future Auth0 only | No | Not loaded by active `auth.config.ts` |
+| `AUTH_JWT_JWKS` | Future Auth0 only | Public keys only | Lab/self-host JWKS body |
 | `INGEST_SECRET` | Production ingest | **Yes** | Bearer shared with NCU collector |
 | `INGEST_RATE_LIMIT_DEVICE` | Optional | No | Max ingest requests per device identity per window (default 60) |
 | `INGEST_RATE_LIMIT_IP` | Optional | No | Max ingest requests per hashed source IP per window (default 600) |
@@ -36,6 +33,9 @@ Never put an OIDC client **secret** in `VITE_*`.
 | `RESEND_FROM` | Email | No | Verified from-address |
 | `ARKESEL_API_KEY` | SMS | **Yes** | Arkesel API |
 | `ARKESEL_SENDER` | SMS | No | Sender id |
+| `VAPID_PUBLIC_KEY` | Browser Web Push | No | Application server public key (safe to expose via authenticated query) |
+| `VAPID_PRIVATE_KEY` | Browser Web Push | **Yes** | Application server private key — Convex env only, never `VITE_*` |
+| `VAPID_SUBJECT` | Browser Web Push | No | Contact URI, preferably `mailto:ops@…` |
 | `TEST_NOTIFY_EMAIL` | Staging tests only | No | Override destination; never a production customer inbox |
 | `TEST_NOTIFY_PHONE` | Staging tests only | No | Override destination; never a production customer MSISDN |
 

@@ -1,4 +1,4 @@
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { id } from "../fleet/access";
 import { FleetBoundary } from "../fleet/boundary";
@@ -7,7 +7,6 @@ import {
   permissionDeniedNotice,
   unsignedNotice,
 } from "../fleet/sessionGates";
-import { useBearerToken } from "../fleet/useBearer";
 import { Metric } from "../ui/Metric";
 import { StatusMark } from "../ui/StatusMark";
 
@@ -46,8 +45,11 @@ export function Ops() {
 }
 
 function SignedOps() {
-  const token = useBearerToken();
-  if (!token) {
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  if (isLoading) {
+    return <p className="empty">Checking session…</p>;
+  }
+  if (!isAuthenticated) {
     const notice = unsignedNotice("No operational query is running.");
     return (
       <div className="notice" role="note">

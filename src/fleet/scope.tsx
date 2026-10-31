@@ -1,19 +1,18 @@
+import { useAuthActions } from "@convex-dev/auth/react";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Id } from "../../convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { FilterBar, FilterSelect } from "../ui/FilterBar";
-import { setBearerToken } from "../platform/bearer";
 import { sessionView } from "./session";
 import { rejectedSessionNotice, unsignedNotice } from "./sessionGates";
 import { FleetBoundary } from "./boundary";
 import { id } from "./access";
-import { useBearerToken } from "./useBearer";
 
 type OrgRow = { organizationId: string; name: string; permissions: string[] };
 
 export function LiveGate({ children }: { children: (org: OrgRow) => ReactNode }) {
-  const token = useBearerToken();
+  const { isAuthenticated, isLoading } = useConvexAuth();
   if (!import.meta.env.VITE_CONVEX_URL) {
     return (
       <div className="notice" role="note">
@@ -21,7 +20,10 @@ export function LiveGate({ children }: { children: (org: OrgRow) => ReactNode })
       </div>
     );
   }
-  if (!token) {
+  if (isLoading) {
+    return <p className="empty">Checking session…</p>;
+  }
+  if (!isAuthenticated) {
     const notice = unsignedNotice("No organization query is running.");
     return (
       <div className="notice" role="note">
@@ -40,10 +42,11 @@ function OrgBody({ children }: { children: (org: OrgRow) => ReactNode }) {
   const me = useQuery(api.users.me, {});
   const orgs = useQuery(api.organizations.mine, {});
   const ensure = useMutation(api.users.ensure);
+  const { signOut } = useAuthActions();
   const [ensureError, setEnsureError] = useState(false);
   const [picked, setPicked] = useState("");
 
-  // Valid JWT with no users row yet → provision once (login used to skip this).
+  // Authenticated session with no users row yet → provision once (email-rebind safe).
   useEffect(() => {
     if (me !== null || ensureError) {
       return;
@@ -69,11 +72,10 @@ function OrgBody({ children }: { children: (org: OrgRow) => ReactNode }) {
     const notice = rejectedSessionNotice();
     return (
       <div className="notice" role="note">
-        <strong>{notice.title}</strong> {notice.detail} The SPA’s{" "}
-        <code>VITE_CONVEX_URL</code> deployment must have matching{" "}
-        <code>AUTH_JWT_*</code> (production <code>tremendous-sturgeon-449</code> is still empty).{" "}
-        <button type="button" onClick={() => setBearerToken(null)}>
-          Clear session
+        <strong>{notice.title}</strong> {notice.detail} Convex Auth must be configured on the{" "}
+        <code>VITE_CONVEX_URL</code> deployment (<code>JWT_PRIVATE_KEY</code> / <code>JWKS</code>).{" "}
+        <button type="button" onClick={() => void signOut()}>
+          Sign out
         </button>
       </div>
     );

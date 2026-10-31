@@ -1,7 +1,13 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
-import { ensureUser, requireAnyPermission, requireName, requirePermission, userByToken } from "./auth";
+import {
+  ensureUser,
+  requireAnyPermission,
+  requireName,
+  requirePermission,
+  resolveAppUser,
+} from "./identity";
 import { PERMISSIONS, isPermission } from "./permissions";
 import { MAX_PAGE } from "./limits";
 
@@ -12,10 +18,11 @@ export const mine = query({
     if (!identity) {
       return [];
     }
-    const user = await userByToken(ctx, identity.tokenIdentifier);
-    if (!user) {
+    const resolved = await resolveAppUser(ctx);
+    if (!resolved) {
       return [];
     }
+    const { user } = resolved;
     const memberships = await ctx.db
       .query("memberships")
       .withIndex("by_user", (q) => q.eq("userId", user._id))

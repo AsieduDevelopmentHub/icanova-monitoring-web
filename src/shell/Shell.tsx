@@ -1,19 +1,24 @@
-import { useEffect, useState } from "react";
-import { useQuery } from "convex/react";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useEffect, useMemo, useState } from "react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { NavLink, Outlet, useLocation } from "react-router";
 import { api } from "../../convex/_generated/api";
 import { Drawer } from "../ui/Overlay";
 import { Icon } from "../ui/icons";
-import { logout, oidcConfigured, readOidcConfig } from "../auth/oidc";
 import { sessionChrome } from "../auth/sessionControls";
-import { setBearerToken } from "../platform/bearer";
-import { useBearerToken } from "../fleet/useBearer";
 import { applyTheme, persistTheme, resolveTheme, type ThemeMode } from "../theme/theme";
-import { NAV, NAV_GROUPS, crumbsFor } from "./nav";
+import {
+  NAV,
+  NAV_COLLAPSE_DEFAULT,
+  NAV_GROUPS,
+  crumbsFor,
+  pageTitleFor,
+  type NavGroup,
+} from "./nav";
 
 function UnreadBadge() {
-  const token = useBearerToken();
-  const live = Boolean(import.meta.env.VITE_CONVEX_URL) && Boolean(token);
+  const { isAuthenticated } = useConvexAuth();
+  const live = Boolean(import.meta.env.VITE_CONVEX_URL) && isAuthenticated;
   const orgs = useQuery(api.organizations.mine, live ? {} : "skip");
   const organizationId = orgs?.[0]?.organizationId;
   const unread = useQuery(
@@ -23,39 +28,90 @@ function UnreadBadge() {
   if (!unread) {
     return null;
   }
-  return <span className="nav-badge" aria-label={`${unread} unread notifications`}>{unread}</span>;
+  return (
+    <span className="nav-badge" aria-label={`${unread} unread notifications`}>
+      {unread}
+    </span>
+  );
 }
 
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
+  const { pathname } = useLocation();
+  const [collapsed, setCollapsed] = useState<Record<NavGroup, boolean>>(() => {
+    const initial = {} as Record<NavGroup, boolean>;
+    for (const group of NAV_GROUPS) {
+      initial[group] = NAV_COLLAPSE_DEFAULT[group] === true;
+    }
+    return initial;
+  });
+
+  useEffect(() => {
+    const active = NAV.find((item) => {
+      if (item.end) {
+        return pathname === item.to;
+      }
+      return pathname === item.to || pathname.startsWith(`${item.to}/`);
+    });
+    if (!active) {
+      return;
+    }
+    setCollapsed((prev) =>
+      prev[active.group] ? { ...prev, [active.group]: false } : prev,
+    );
+  }, [pathname]);
+
   return (
     <nav className="side-nav" aria-label="Primary">
-      {NAV_GROUPS.map((group) => (
-        <div key={group} className="nav-group">
-          <div className="nav-label">{group}</div>
-          {NAV.filter((item) => item.group === group).map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => (isActive ? "nav-link on" : "nav-link")}
-              onClick={onNavigate}
+      {NAV_GROUPS.map((group) => {
+        const items = NAV.filter((item) => item.group === group);
+        if (items.length === 0) {
+          return null;
+        }
+        const expanded = !collapsed[group];
+        return (
+          <div key={group} className="nav-group">
+            <button
+              type="button"
+              className="nav-group-toggle"
+              aria-expanded={expanded}
+              onClick={() =>
+                setCollapsed((prev) => ({
+                  ...prev,
+                  [group]: !prev[group],
+                }))
+              }
             >
-              <Icon name={item.icon} />
-              <span>{item.label}</span>
-              {item.to === "/notifications" ? <UnreadBadge /> : null}
-            </NavLink>
-          ))}
-        </div>
-      ))}
+              <span>{group}</span>
+              <span aria-hidden="true">{expanded ? "−" : "+"}</span>
+            </button>
+            <div className="nav-group-links">
+              {items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) => (isActive ? "nav-link on" : "nav-link")}
+                  onClick={onNavigate}
+                >
+                  <Icon name={item.icon} />
+                  <span>{item.label}</span>
+                  {item.to === "/notifications" ? <UnreadBadge /> : null}
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </nav>
   );
 }
 
 function SessionActions({ onNavigate }: { onNavigate?: () => void }) {
-  const token = useBearerToken();
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { signOut } = useAuthActions();
   const chrome = sessionChrome({
-    hasBearer: Boolean(token),
-    oidcReady: oidcConfigured(),
+    isAuthenticated: isAuthenticated && !isLoading,
+    authReady: Boolean(import.meta.env.VITE_CONVEX_URL),
   });
 
   return (
@@ -64,12 +120,7 @@ function SessionActions({ onNavigate }: { onNavigate?: () => void }) {
         {chrome.label}
       </span>
       {chrome.showSignIn ? (
-        <NavLink
-          to="/auth/login"
-          className="text-btn"
-          aria-label="Sign in with identity provider"
-          onClick={onNavigate}
-        >
+        <NavLink to="/auth/login" className="text-btn" aria-label="Sign in" onClick={onNavigate}>
           Sign in
         </NavLink>
       ) : null}
@@ -79,12 +130,7 @@ function SessionActions({ onNavigate }: { onNavigate?: () => void }) {
           className="text-btn"
           aria-label={chrome.signOutLabel}
           onClick={() => {
-            if (chrome.oidcReady) {
-              logout(readOidcConfig());
-              return;
-            }
-            setBearerToken(null);
-            onNavigate?.();
+            void signOut().finally(() => onNavigate?.());
           }}
         >
           {chrome.signOutLabel}
@@ -109,12 +155,27 @@ function ThemeToggle({ mode, onToggle }: { mode: ThemeMode; onToggle: () => void
   );
 }
 
+function OrgContext() {
+  const { isAuthenticated } = useConvexAuth();
+  const live = Boolean(import.meta.env.VITE_CONVEX_URL) && isAuthenticated;
+  const orgs = useQuery(api.organizations.mine, live ? {} : "skip");
+  const name = orgs?.[0]?.name;
+  if (!name) {
+    return null;
+  }
+  return (
+    <span className="session org-context" title={name}>
+      {name}
+    </span>
+  );
+}
+
 export function Shell() {
   const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>(() => resolveTheme());
-  const crumbs = crumbsFor(pathname);
-  const here = crumbs[crumbs.length - 1]?.label ?? "iCanOva Monitoring";
+  const crumbs = useMemo(() => crumbsFor(pathname), [pathname]);
+  const here = pageTitleFor(pathname);
 
   useEffect(() => {
     applyTheme(theme);
@@ -139,12 +200,12 @@ export function Shell() {
       <a className="skip" href="#main">
         Skip to content
       </a>
-      <aside className="sidebar">
-        <div className="brand-lockup">
+      <aside className="sidebar" aria-label="Application">
+        <NavLink to="/" className="brand-lockup">
           <span className="brand-mark">iCanOva</span>
           <span className="brand-name">Monitoring</span>
           <p className="brand-tag">Industrial operations visibility</p>
-        </div>
+        </NavLink>
         <NavList />
         <p className="sidebar-foot">ASIEDU DEVELOPMENT HUB (ADH)</p>
       </aside>
@@ -160,34 +221,51 @@ export function Shell() {
           >
             <Icon name="menu" />
           </button>
-          <nav className="crumbs" aria-label="Breadcrumb">
-            <ol>
-              {crumbs.map((crumb, index) => {
-                const last = index === crumbs.length - 1;
-                return (
-                  <li key={crumb.to}>
-                    {last ? (
-                      <span aria-current="page">{crumb.label}</span>
-                    ) : (
-                      <NavLink to={crumb.to}>{crumb.label}</NavLink>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
-          </nav>
-          <ThemeToggle mode={theme} onToggle={cycleTheme} />
-          <SessionActions />
+          <div className="crumbs">
+            <h1 className="topbar-title">{here}</h1>
+            <nav aria-label="Breadcrumb">
+              <ol>
+                {crumbs.map((crumb, index) => {
+                  const last = index === crumbs.length - 1;
+                  return (
+                    <li key={`${crumb.to}-${crumb.label}`}>
+                      {last ? (
+                        <span aria-current="page">{crumb.label}</span>
+                      ) : (
+                        <NavLink to={crumb.to}>{crumb.label}</NavLink>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </nav>
+          </div>
+          <div className="topbar-cluster">
+            <OrgContext />
+            <NavLink
+              to="/notifications"
+              className="icon-btn"
+              aria-label="Notifications"
+              title="Notifications"
+            >
+              <Icon name="bell" />
+              <UnreadBadge />
+            </NavLink>
+            <ThemeToggle mode={theme} onToggle={cycleTheme} />
+            <SessionActions />
+          </div>
         </header>
         <main id="main" className="canvas">
           <Outlet />
         </main>
       </div>
       <Drawer open={menuOpen} title="Navigation" side="left" onClose={() => setMenuOpen(false)}>
-        <NavList onNavigate={() => setMenuOpen(false)} />
-        <div className="drawer-session">
-          <ThemeToggle mode={theme} onToggle={cycleTheme} />
-          <SessionActions onNavigate={() => setMenuOpen(false)} />
+        <div id="app-navigation">
+          <NavList onNavigate={() => setMenuOpen(false)} />
+          <div className="drawer-session">
+            <ThemeToggle mode={theme} onToggle={cycleTheme} />
+            <SessionActions onNavigate={() => setMenuOpen(false)} />
+          </div>
         </div>
       </Drawer>
     </div>

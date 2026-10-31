@@ -1,33 +1,16 @@
-import { ConvexProvider, ConvexReactClient } from "convex/react";
-import { useEffect, useState, type ReactNode } from "react";
-import { getBearerToken, onBearerChange } from "./bearer";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { ConvexReactClient } from "convex/react";
+import { useState, type ReactNode } from "react";
 
-function ConvexBoundary({
-  url,
-  children,
-}: {
-  url: string;
-  children: ReactNode;
-}) {
-  const [client] = useState(() => {
-    const next = new ConvexReactClient(url);
-    next.setAuth(async () => getBearerToken());
-    return next;
-  });
-
-  useEffect(() => {
-    return onBearerChange(() => {
-      client.setAuth(async () => getBearerToken());
-    });
-  }, [client]);
-
-  return <ConvexProvider client={client}>{children}</ConvexProvider>;
-}
-
+/**
+ * Active auth: Convex Auth via ConvexAuthProvider.
+ * Auth0 OIDC bearer wiring is inactive (see src/auth/integrations/auth0/).
+ */
 export function Platform({ children }: { children: ReactNode }) {
   const url = import.meta.env.VITE_CONVEX_URL;
-  if (!url) {
+  const [client] = useState(() => (url ? new ConvexReactClient(url) : null));
+  if (!url || !client) {
     return children;
   }
-  return <ConvexBoundary url={url}>{children}</ConvexBoundary>;
+  return <ConvexAuthProvider client={client}>{children}</ConvexAuthProvider>;
 }

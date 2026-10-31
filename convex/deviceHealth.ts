@@ -9,7 +9,7 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
-import { requireAnyPermission, requirePermission } from "./auth";
+import { requireAnyPermission, requirePermission } from "./identity";
 import {
   EMPTY_HEALTH_TALLIES,
   deriveOverall,

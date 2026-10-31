@@ -4,6 +4,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, type MutationCtx } from "./_generated/server";
 import { DELIVERY_LEASE_MS, MAX_ATTEMPTS } from "./limits";
 import { isPermission, type Permission } from "./permissions";
+import { pushPayloadPath, vapidConfigured } from "./delivery";
 import {
   alarmEmailHtml,
   alarmEmailSubject,
@@ -234,6 +235,12 @@ export async function emitNotificationEvent(
   const inappOn = await policyEnabled(ctx, args.organizationId, args.event, "inapp");
   const emailOn = await policyEnabled(ctx, args.organizationId, args.event, "email");
   const smsOn = await policyEnabled(ctx, args.organizationId, args.event, "sms");
+  const pushOn = await policyEnabled(ctx, args.organizationId, args.event, "push");
+  const pushPath = pushPayloadPath({
+    alarmId: args.alarmId ? String(args.alarmId) : null,
+    deviceId: args.deviceId ? String(args.deviceId) : null,
+    generatorId: args.generatorId ? String(args.generatorId) : null,
+  });
   for (const recipient of recipients) {
     const preference = recipient.preference;
     if (inappOn && preference?.inAppEnabled === true) {
@@ -299,6 +306,43 @@ export async function emitNotificationEvent(
         messageIds.push(id);
       }
     }
+    if (pushOn && preference?.pushEnabled === true) {
+      const subscriptions = await ctx.db
+        .query("pushSubscriptions")
+        .withIndex("by_org_user", (q) =>
+          q.eq("organizationId", args.organizationId).eq("userId", recipient.user._id),
+        )
+        .take(20);
+      const pushBody = JSON.stringify({
+        title: args.title.slice(0, 80),
+        body: args.body.slice(0, 140),
+        severity: args.severity,
+        event: args.event,
+        path: pushPath,
+      });
+      for (const subscription of subscriptions) {
+        if (subscription.status !== "active") {
+          continue;
+        }
+        const id = await queueMessage(ctx, {
+          organizationId: args.organizationId,
+          channel: "push",
+          to: `push:${subscription._id}`,
+          userId: recipient.user._id,
+          event: args.event,
+          subject: args.title.slice(0, 80),
+          body: pushBody,
+          idempotencyKey: `${args.idempotencyKey}:push:${subscription._id}`,
+          alarmId: args.alarmId,
+          siteId: args.siteId ?? undefined,
+          generatorId: args.generatorId ?? undefined,
+          deviceId: args.deviceId ?? undefined,
+        });
+        if (id) {
+          messageIds.push(id);
+        }
+      }
+    }
   }
   for (const messageId of messageIds) {
     const row = await ctx.db.get(messageId);
@@ -330,7 +374,7 @@ async function queueMessage(
   ctx: MutationCtx,
   args: {
     organizationId: Id<"organizations">;
-    channel: "email" | "sms";
+    channel: "email" | "sms" | "push";
     to: string;
     userId: Id<"users">;
     event: string;
@@ -354,8 +398,23 @@ async function queueMessage(
   }
   const resend = Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM);
   const arkesel = Boolean(process.env.ARKESEL_API_KEY && process.env.ARKESEL_SENDER);
+  const vapid = vapidConfigured({
+    publicKey: process.env.VAPID_PUBLIC_KEY,
+    privateKey: process.env.VAPID_PRIVATE_KEY,
+    subject: process.env.VAPID_SUBJECT,
+  });
   const configured =
-    args.channel === "email" ? resend : args.channel === "sms" ? arkesel : false;
+    args.channel === "email"
+      ? resend
+      : args.channel === "sms"
+        ? arkesel
+        : vapid;
+  const notConfigured =
+    args.channel === "email"
+      ? "Resend is not configured"
+      : args.channel === "sms"
+        ? "Arkesel is not configured"
+        : "VAPID is not configured";
   return await ctx.db.insert("messages", {
     organizationId: args.organizationId,
     channel: args.channel,
@@ -364,7 +423,8 @@ async function queueMessage(
     body: args.body,
     status: configured ? "pending" : "not_configured",
     attempt: 0,
-    error: configured ? undefined : args.channel === "email" ? "Resend is not configured" : "Arkesel is not configured",
+    error: configured ? undefined : notConfigured,
+    failureCategory: configured ? undefined : "not_configured",
     event: args.event,
     createdAt: Date.now(),
     userId: args.userId,

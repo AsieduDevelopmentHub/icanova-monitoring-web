@@ -4,7 +4,7 @@ import { storedReading } from "../fleet/access";
 import { DEMO_GENERATOR_ID } from "./logModel";
 import { NAV } from "../shell/nav";
 import { sessionView } from "../fleet/session";
-import { authProviderReady } from "../../convex/auth.config";
+import { authProviderReady } from "../../convex/productionConfig";
 import {
   auditActor,
   engineView,

@@ -31,30 +31,21 @@ const DEPLOYMENT = {
   production: { arg: "production", cloud: "tremendous-sturgeon-449.convex.cloud", ref: "tremendous-sturgeon-449" },
 };
 
+/** Convex Auth (Password) — active. Auth0 AUTH_JWT_* retained for future IdP cutover only. */
 const REQUIRED_CONVEX = {
-  development: ["AUTH_JWT_ISSUER", "AUTH_JWKS_URL", "AUTH_JWT_AUDIENCE", "INGEST_SECRET"],
-  staging: ["AUTH_JWT_ISSUER", "AUTH_JWKS_URL", "AUTH_JWT_AUDIENCE", "INGEST_SECRET"],
-  recovery: ["AUTH_JWT_ISSUER", "AUTH_JWKS_URL", "AUTH_JWT_AUDIENCE", "INGEST_SECRET"],
-  production: ["AUTH_JWT_ISSUER", "AUTH_JWKS_URL", "AUTH_JWT_AUDIENCE", "INGEST_SECRET"],
+  development: ["JWT_PRIVATE_KEY", "JWKS", "INGEST_SECRET"],
+  staging: ["JWT_PRIVATE_KEY", "JWKS", "INGEST_SECRET"],
+  recovery: ["JWT_PRIVATE_KEY", "JWKS", "INGEST_SECRET"],
+  // Production not cut over in 8.5E — still empty; require Convex Auth keys when provisioning.
+  production: ["JWT_PRIVATE_KEY", "JWKS", "INGEST_SECRET"],
 };
 
 const REQUIRED_VITE = {
   development: ["VITE_CONVEX_URL"],
-  staging: [
-    "VITE_CONVEX_URL",
-    "VITE_OIDC_ISSUER",
-    "VITE_OIDC_CLIENT_ID",
-    "VITE_OIDC_AUDIENCE",
-    "VITE_OIDC_REDIRECT_URI",
-  ],
+  staging: ["VITE_CONVEX_URL"],
   recovery: ["VITE_CONVEX_URL"],
-  production: [
-    "VITE_CONVEX_URL",
-    "VITE_OIDC_ISSUER",
-    "VITE_OIDC_CLIENT_ID",
-    "VITE_OIDC_AUDIENCE",
-    "VITE_OIDC_REDIRECT_URI",
-  ],
+  // Auth0 VITE_OIDC_* no longer required for SPA login (Convex Auth).
+  production: ["VITE_CONVEX_URL"],
 };
 
 /** Lab-only destinations — never on recovery or production. */

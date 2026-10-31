@@ -4,7 +4,7 @@
  * Claim checks here are a client guard; Convex customJwt remains authoritative.
  */
 
-import { getBearerToken, setBearerToken } from "../platform/bearer";
+import { getBearerToken, setBearerToken } from "../../../platform/bearer";
 
 const PKCE_VERIFIER = "dse.oidc.pkce";
 const OIDC_STATE = "dse.oidc.state";

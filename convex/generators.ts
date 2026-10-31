@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
-import { assertSameOrg, requireName, requirePermission } from "./auth";
+import { assertSameOrg, requireName, requirePermission } from "./identity";
 import { requireDevice } from "./devices";
 import { boundedPage } from "./limits";
 import { noteGenerator } from "./siteSummary";

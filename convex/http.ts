@@ -1,6 +1,7 @@
 import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
+import { auth } from "./auth";
 import { decodeBatch } from "./ingestDecode";
 import { extractBearer, ingestAuthorized, isIngestHeartbeat } from "./ingestAuth";
 import type { IngestOpKind } from "./ingestOps";
@@ -13,6 +14,7 @@ import {
 } from "./limits";
 
 const http = httpRouter();
+auth.addHttpRoutes(http);
 
 function rateEnv(name: string, fallback: number): number {
   const raw = process.env[name]?.trim();
@@ -59,23 +61,8 @@ async function note(ctx: any, kind: IngestOpKind, organizationId?: string | null
   }
 }
 
-http.route({
-  path: "/.well-known/jwks.json",
-  method: "GET",
-  handler: httpAction(async () => {
-    const body = process.env.AUTH_JWT_JWKS?.trim() ?? "";
-    if (!body.startsWith("{")) {
-      return Response.json({ error: "JWKS is not configured" }, { status: 503 });
-    }
-    return new Response(body, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=300",
-      },
-    });
-  }),
-});
+// /.well-known/jwks.json is registered by Convex Auth (auth.addHttpRoutes) from JWKS env.
+// Do not re-register the legacy AUTH_JWT_JWKS lab route — it conflicts with Convex Auth.
 
 http.route({
   path: "/me",

@@ -40,10 +40,10 @@ export function Alarms() {
   return (
     <section className="page">
       <header className="page-head">
-        <h1>Alarms</h1>
+        <h1>Alarm centre</h1>
         <p>
-          Communication faults are link transitions. The controller alarm count is not a named
-          generator alarm.
+          Severity and lifecycle first. Communication faults are link transitions; acknowledgement
+          does not clear the condition.
         </p>
       </header>
       <LiveGate>

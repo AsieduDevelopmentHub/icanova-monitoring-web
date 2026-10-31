@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
-import { requirePermission } from "./auth";
+import { requirePermission } from "./identity";
 import { buildCsv, buildPdf, buildSpreadsheet, formatExportTime } from "./formats";
 import { MAX_EXPORT, MAX_EXPORT_BYTES } from "./limits";
 

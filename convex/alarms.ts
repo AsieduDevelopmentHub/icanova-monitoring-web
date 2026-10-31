@@ -4,7 +4,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
-import { requireAnyPermission, requirePermission } from "./auth";
+import { requireAnyPermission, requirePermission } from "./identity";
 import { requireDevice } from "./devices";
 import { MAX_PAGE, boundedPage } from "./limits";
 import { emitForAlarm } from "./notifyEmit";

@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalQuery } from "./_generated/server";
-import { requirePermission } from "./auth";
+import { requirePermission } from "./identity";
 import { isPermission } from "./permissions";
 
 /** Actions call this before any provider request. */

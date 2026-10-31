@@ -2,8 +2,11 @@
 
 import { v } from "convex/values";
 import { Resend } from "resend";
+import webpush from "web-push";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { action, internalAction } from "./_generated/server";
+import { vapidConfigured } from "./delivery";
 import { type DeliveryOutcome, isTimeoutError } from "./notifyDelivery";
 
 function providerId(data: unknown): string | undefined {
@@ -114,6 +117,113 @@ async function sendArkesel(to: string, message: string): Promise<DeliveryOutcome
   }
 }
 
+function parsePushSubscriptionId(to: string): Id<"pushSubscriptions"> | null {
+  if (!to.startsWith("push:")) {
+    return null;
+  }
+  return to.slice(5) as Id<"pushSubscriptions">;
+}
+
+async function sendWebPush(
+  ctx: { runMutation: Function; runQuery: Function },
+  args: {
+    to: string;
+    subject?: string;
+    body: string;
+  },
+): Promise<DeliveryOutcome> {
+  const publicKey = process.env.VAPID_PUBLIC_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  const subject = process.env.VAPID_SUBJECT;
+  if (!vapidConfigured({ publicKey, privateKey, subject })) {
+    return { kind: "not_configured", error: "VAPID is not configured" };
+  }
+  const subscriptionId = parsePushSubscriptionId(args.to);
+  if (!subscriptionId) {
+    return { kind: "rejected", error: "Push message has no subscription id" };
+  }
+  const subscription = await ctx.runQuery(internal.push.getSubscriptionInternal, {
+    subscriptionId,
+  });
+  if (!subscription || subscription.status !== "active") {
+    return { kind: "rejected", error: "Push subscription is inactive" };
+  }
+  webpush.setVapidDetails(subject!.trim(), publicKey!.trim(), privateKey!.trim());
+  let payload: string;
+  try {
+    const parsed = JSON.parse(args.body) as Record<string, unknown>;
+    payload = JSON.stringify({
+      title: typeof parsed.title === "string" ? parsed.title.slice(0, 80) : (args.subject ?? "iCanOva"),
+      body: typeof parsed.body === "string" ? parsed.body.slice(0, 140) : "",
+      severity: typeof parsed.severity === "string" ? parsed.severity : "informational",
+      event: typeof parsed.event === "string" ? parsed.event : undefined,
+      path: typeof parsed.path === "string" ? parsed.path : "/notifications",
+    });
+  } catch {
+    payload = JSON.stringify({
+      title: args.subject ?? "iCanOva",
+      body: args.body.slice(0, 140),
+      severity: "informational",
+      path: "/notifications",
+    });
+  }
+  try {
+    const result = await webpush.sendNotification(
+      {
+        endpoint: subscription.endpoint,
+        keys: { p256dh: subscription.p256dh, auth: subscription.auth },
+        expirationTime: subscription.expirationTime ?? undefined,
+      },
+      payload,
+      { TTL: 60 * 60, urgency: "normal" },
+    );
+    await ctx.runMutation(internal.push.recordSubscriptionDelivery, {
+      subscriptionId,
+      ok: true,
+    });
+    return {
+      kind: "sent",
+      id: result.statusCode ? `webpush:${result.statusCode}` : "webpush:accepted",
+    };
+  } catch (error) {
+    const statusCode =
+      error && typeof error === "object" && "statusCode" in error
+        ? Number((error as { statusCode?: number }).statusCode)
+        : undefined;
+    const message =
+      error instanceof Error ? error.message.slice(0, 300) : "Web Push send failed";
+    if (statusCode === 404 || statusCode === 410) {
+      await ctx.runMutation(internal.push.markSubscriptionInvalid, {
+        subscriptionId,
+        reason: message,
+        expired: statusCode === 410,
+      });
+      return { kind: "rejected", error: message };
+    }
+    if (isTimeoutError(error)) {
+      await ctx.runMutation(internal.push.recordSubscriptionDelivery, {
+        subscriptionId,
+        ok: false,
+        reason: message,
+      });
+      return { kind: "uncertain", error: message };
+    }
+    await ctx.runMutation(internal.push.recordSubscriptionDelivery, {
+      subscriptionId,
+      ok: false,
+      reason: message,
+    });
+    // 4xx (except already handled) are definite rejections; 5xx may be uncertain.
+    if (statusCode !== undefined && statusCode >= 400 && statusCode < 500) {
+      return { kind: "rejected", error: message };
+    }
+    if (statusCode !== undefined && statusCode >= 500) {
+      return { kind: "uncertain", error: message };
+    }
+    return { kind: "rejected", error: message };
+  }
+}
+
 async function finish(
   ctx: { runMutation: Function },
   messageId: unknown,
@@ -180,6 +290,15 @@ export const deliverMessage = internalAction({
       }
       if (claimed.channel === "sms") {
         const outcome = await sendArkesel(claimed.to, claimed.body);
+        await finish(ctx, args.messageId, claimed.claimGeneration, outcome);
+        return { status: outcome.kind };
+      }
+      if (claimed.channel === "push") {
+        const outcome = await sendWebPush(ctx, {
+          to: claimed.to,
+          subject: claimed.subject,
+          body: claimed.body,
+        });
         await finish(ctx, args.messageId, claimed.claimGeneration, outcome);
         return { status: outcome.kind };
       }

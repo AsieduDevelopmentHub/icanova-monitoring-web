@@ -5,23 +5,52 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { OrgGate } from "../admin/OrgGate";
 import { accessMessage } from "../fleet/access";
+import {
+  createBrowserPushSubscription,
+  detectBrowserPushSupport,
+  dropLocalPushSubscription,
+  permissionState,
+} from "../notify/webPush";
 import { DataTable } from "../ui/DataTable";
+import { EmptyState } from "../ui/EmptyState";
 import { FilterSelect } from "../ui/FilterBar";
+import { Panel } from "../ui/Panel";
 import { StatusMark } from "../ui/StatusMark";
+import { Tabs } from "../ui/Tabs";
 
 const EVENTS = [
   "alarm.raised",
   "alarm.acknowledged",
   "alarm.cleared",
   "device.registered",
+  "health.gateway.offline",
+  "health.gateway.recovered",
+  "health.telemetry.stale",
+  "health.telemetry.recovered",
 ] as const;
 const CHANNELS = ["inapp", "email", "sms", "push"] as const;
+
+function categoryFor(event: string): string {
+  if (event.startsWith("alarm.")) {
+    return "Alarm";
+  }
+  if (event.startsWith("health.gateway.")) {
+    return "Gateway connectivity";
+  }
+  if (event.startsWith("health.telemetry.")) {
+    return "Measurement freshness";
+  }
+  if (event === "device.registered") {
+    return "Administrative";
+  }
+  return "System";
+}
 
 export function Notifications() {
   return (
     <OrgGate
       title="Notifications"
-      lede="In-app notices, organization policies, and delivery history. Email uses Resend and SMS uses Arkesel when those server credentials are set. Push has no VAPID sender."
+      lede="In-app centre, organization policies, and delivery history. Email uses Resend and SMS uses Arkesel when configured. Browser push is optional VAPID Web Push — not FCM."
       offline="No notification query is running."
     >
       {(organizationId) => <Desk organizationId={organizationId} />}
@@ -33,25 +62,16 @@ function Desk({ organizationId }: { organizationId: Id<"organizations"> }) {
   const [tab, setTab] = useState<"inbox" | "settings" | "delivery">("inbox");
   return (
     <div className="stack">
-      <div className="filter-bar">
-        <button type="button" className={tab === "inbox" ? "on" : undefined} onClick={() => setTab("inbox")}>
-          Inbox
-        </button>
-        <button
-          type="button"
-          className={tab === "settings" ? "on" : undefined}
-          onClick={() => setTab("settings")}
-        >
-          Settings
-        </button>
-        <button
-          type="button"
-          className={tab === "delivery" ? "on" : undefined}
-          onClick={() => setTab("delivery")}
-        >
-          Delivery history
-        </button>
-      </div>
+      <Tabs
+        label="Notification sections"
+        value={tab}
+        onChange={setTab}
+        items={[
+          { id: "inbox", label: "Inbox" },
+          { id: "settings", label: "Settings" },
+          { id: "delivery", label: "Delivery history" },
+        ]}
+      />
       {tab === "inbox" ? <Inbox organizationId={organizationId} /> : null}
       {tab === "settings" ? <Settings organizationId={organizationId} /> : null}
       {tab === "delivery" ? <Delivery organizationId={organizationId} /> : null}
@@ -60,7 +80,7 @@ function Desk({ organizationId }: { organizationId: Id<"organizations"> }) {
 }
 
 function Inbox({ organizationId }: { organizationId: Id<"organizations"> }) {
-  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [readFilter, setReadFilter] = useState<"all" | "unread" | "read">("all");
   const [event, setEvent] = useState<string>("all");
   const [severity, setSeverity] = useState<"all" | "critical" | "warning" | "informational">("all");
   const [siteId, setSiteId] = useState<string>("all");
@@ -71,19 +91,23 @@ function Inbox({ organizationId }: { organizationId: Id<"organizations"> }) {
   const unread = useQuery(api.notifications.unreadCount, { organizationId });
   const inbox = useQuery(api.notifications.listInbox, {
     organizationId,
-    unreadOnly,
+    unreadOnly: readFilter === "unread",
     event: event === "all" ? null : event,
     severity,
     siteId: siteId === "all" ? null : (siteId as Id<"sites">),
     paginationOpts: { numItems: 30, cursor: null },
   });
   const markRead = useMutation(api.notifications.markRead);
+  const markUnread = useMutation(api.notifications.markUnread);
   const markAllRead = useMutation(api.notifications.markAllRead);
   const [error, setError] = useState<string | null>(null);
 
   if (inbox === undefined || sites === undefined || unread === undefined) {
-    return <p className="empty">Loading inbox.</p>;
+    return <EmptyState title="Loading inbox" body="Fetching notifications for this organization." />;
   }
+
+  const rows =
+    readFilter === "read" ? inbox.page.filter((row) => row.readAt != null) : inbox.page;
 
   async function run(action: () => Promise<unknown>) {
     setError(null);
@@ -95,19 +119,29 @@ function Inbox({ organizationId }: { organizationId: Id<"organizations"> }) {
   }
 
   return (
-    <div className="stack">
+    <Panel
+      title="Inbox"
+      description="In-app notices are created independently of email, SMS, or browser push delivery."
+      actions={
+        <button type="button" className="btn btn-secondary" onClick={() => run(() => markAllRead({ organizationId }))}>
+          Mark all read
+        </button>
+      }
+    >
       <p className="meta">
         Unread <StatusMark tone={unread > 0 ? "warn" : "ok"}>{unread}</StatusMark>
       </p>
       <div className="filter-bar">
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={unreadOnly}
-            onChange={(eventChange) => setUnreadOnly(eventChange.target.checked)}
-          />
-          Unread only
-        </label>
+        <FilterSelect
+          label="State"
+          value={readFilter}
+          onChange={(value) => setReadFilter(value as typeof readFilter)}
+          options={[
+            { value: "all", label: "All" },
+            { value: "unread", label: "Unread" },
+            { value: "read", label: "Read" },
+          ]}
+        />
         <FilterSelect
           label="Event"
           value={event}
@@ -137,24 +171,49 @@ function Inbox({ organizationId }: { organizationId: Id<"organizations"> }) {
             ...sites.page.map((site) => ({ value: site._id, label: site.name })),
           ]}
         />
-        <button type="button" onClick={() => run(() => markAllRead({ organizationId }))}>
-          Mark page unread as read
-        </button>
       </div>
       <DataTable
         caption="In-app notifications"
-        rows={inbox.page}
+        rows={rows}
         getRowKey={(row) => row._id}
         empty="No notifications match these filters."
         columns={[
           {
             key: "state",
             header: "State",
-            render: (row) => (row.readAt == null ? <StatusMark tone="warn">unread</StatusMark> : "read"),
+            render: (row) =>
+              row.readAt == null ? <StatusMark tone="warn">unread</StatusMark> : "read",
+          },
+          {
+            key: "category",
+            header: "Category",
+            render: (row) => categoryFor(row.event),
           },
           { key: "event", header: "Event", render: (row) => row.event },
-          { key: "severity", header: "Severity", render: (row) => row.severity },
-          { key: "title", header: "Title", render: (row) => row.title },
+          {
+            key: "severity",
+            header: "Severity",
+            render: (row) => (
+              <StatusMark
+                tone={
+                  row.severity === "critical" ? "alarm" : row.severity === "warning" ? "warn" : "ok"
+                }
+              >
+                {row.severity}
+              </StatusMark>
+            ),
+          },
+          {
+            key: "title",
+            header: "Title",
+            render: (row) => (
+              <span>
+                <strong>{row.title}</strong>
+                <br />
+                <span className="meta">{row.body}</span>
+              </span>
+            ),
+          },
           {
             key: "at",
             header: "When",
@@ -168,6 +227,7 @@ function Inbox({ organizationId }: { organizationId: Id<"organizations"> }) {
                 {row.alarmId ? <Link to={`/alarms/${row.alarmId}`}>Alarm</Link> : null}
                 {row.generatorId ? <Link to={`/generators/${row.generatorId}`}>Generator</Link> : null}
                 {row.deviceId ? <Link to={`/gateways/${row.deviceId}`}>Gateway</Link> : null}
+                {row.siteId ? <Link to={`/sites/${row.siteId}`}>Site</Link> : null}
                 {row.readAt == null ? (
                   <button
                     type="button"
@@ -177,14 +237,23 @@ function Inbox({ organizationId }: { organizationId: Id<"organizations"> }) {
                   >
                     Mark read
                   </button>
-                ) : null}
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      run(() => markUnread({ organizationId, notificationId: row._id }))
+                    }
+                  >
+                    Mark unread
+                  </button>
+                )}
               </span>
             ),
           },
         ]}
       />
       {error ? <p className="err">{error}</p> : null}
-    </div>
+    </Panel>
   );
 }
 
@@ -218,6 +287,7 @@ function Settings({ organizationId }: { organizationId: Id<"organizations"> }) {
         preference={preference}
         onSave={(fields) => run(() => savePreference({ organizationId, ...fields }))}
       />
+      <BrowserPushPanel organizationId={organizationId} />
       {settings ? (
         <form
           className="stack"
@@ -237,7 +307,8 @@ function Settings({ organizationId }: { organizationId: Id<"organizations"> }) {
             Current minimum severity {settings.minSeverity}. Escalation{" "}
             {settings.escalateAfterMinutes == null
               ? "disabled"
-              : `${settings.escalateAfterMinutes} min`}.
+              : `${settings.escalateAfterMinutes} min`}
+            .
           </p>
           <FilterSelect
             label="Minimum severity"
@@ -259,7 +330,9 @@ function Settings({ organizationId }: { organizationId: Id<"organizations"> }) {
         <p className="meta">Organization settings require configure.notifications.</p>
       )}
       <h2>Policies</h2>
-      <p className="meta">Channels stay off until enabled. Push always records not configured.</p>
+      <p className="meta">
+        Channel × event matrix. Push delivery requires VAPID env plus an active browser subscription.
+      </p>
       {EVENTS.map((eventName) => (
         <div key={eventName} className="filter-bar">
           <span>{eventName}</span>
@@ -293,6 +366,125 @@ function Settings({ organizationId }: { organizationId: Id<"organizations"> }) {
   );
 }
 
+function BrowserPushPanel({ organizationId }: { organizationId: Id<"organizations"> }) {
+  const vapid = useQuery(api.push.vapidPublicKey, { organizationId });
+  const status = useQuery(api.push.mySubscriptionStatus, { organizationId });
+  const subscribe = useMutation(api.push.subscribe);
+  const unsubscribeAll = useMutation(api.push.unsubscribeAll);
+  const savePreference = useMutation(api.notifications.savePreference);
+  const preference = useQuery(api.notifications.myPreference, { organizationId });
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const support = detectBrowserPushSupport();
+  const permission = permissionState();
+
+  if (vapid === undefined || status === undefined || preference === undefined) {
+    return <p className="empty">Loading browser push settings.</p>;
+  }
+
+  async function enablePush() {
+    setError(null);
+    setBusy(true);
+    try {
+      if (!vapid?.configured || !vapid.publicKey) {
+        throw new Error("Browser push is not configured on this deployment yet");
+      }
+      const payload = await createBrowserPushSubscription(vapid.publicKey);
+      await subscribe({
+        organizationId,
+        endpoint: payload.endpoint,
+        p256dh: payload.p256dh,
+        auth: payload.auth,
+        expirationTime: payload.expirationTime,
+        userAgentLabel: payload.userAgentLabel,
+      });
+      await savePreference({
+        organizationId,
+        email: preference?.email ?? null,
+        phone: preference?.phone ?? null,
+        emailEnabled: preference?.emailEnabled ?? false,
+        smsEnabled: preference?.smsEnabled ?? false,
+        pushEnabled: true,
+        inAppEnabled: preference?.inAppEnabled ?? true,
+        minSeverity: preference?.minSeverity ?? "informational",
+        subscribedSiteIds: preference?.subscribedSiteIds,
+      });
+    } catch (caught) {
+      setError(accessMessage(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function disablePush() {
+    setError(null);
+    setBusy(true);
+    try {
+      await unsubscribeAll({ organizationId });
+      await dropLocalPushSubscription();
+      await savePreference({
+        organizationId,
+        email: preference?.email ?? null,
+        phone: preference?.phone ?? null,
+        emailEnabled: preference?.emailEnabled ?? false,
+        smsEnabled: preference?.smsEnabled ?? false,
+        pushEnabled: false,
+        inAppEnabled: preference?.inAppEnabled ?? true,
+        minSeverity: preference?.minSeverity ?? "informational",
+        subscribedSiteIds: preference?.subscribedSiteIds,
+      });
+    } catch (caught) {
+      setError(accessMessage(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Panel
+      title="Browser notifications"
+      description="Optional VAPID Web Push — not FCM. Permission is requested only when you enable it. Inbox works without browser push."
+    >
+      <p className="meta">
+        Support: {support.supported ? "available" : support.reason}. Permission: {permission}. Server
+        VAPID: {vapid.configured ? "configured" : "not configured"}. Active subscriptions:{" "}
+        {status.activeCount}.
+      </p>
+      <div className="filter-bar">
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={busy || !support.supported}
+          onClick={() => void enablePush()}
+        >
+          Enable browser notifications
+        </button>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          disabled={busy || status.activeCount === 0}
+          onClick={() => void disablePush()}
+        >
+          Disable on this account
+        </button>
+      </div>
+      {status.subscriptions.length > 0 ? (
+        <ul className="meta">
+          {status.subscriptions.map((row) => (
+            <li key={row.id}>
+              Browser · registered {new Date(row.createdAt).toISOString()}
+              {row.lastSuccessAt
+                ? ` · last accepted ${new Date(row.lastSuccessAt).toISOString()}`
+                : ""}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {error ? <p className="err">{error}</p> : null}
+    </Panel>
+  );
+}
+
 function Delivery({ organizationId }: { organizationId: Id<"organizations"> }) {
   const deliveries = useQuery(api.notifications.listDeliveries, {
     organizationId,
@@ -318,6 +510,10 @@ function Delivery({ organizationId }: { organizationId: Id<"organizations"> }) {
   return (
     <div className="stack">
       <h2>Delivery history</h2>
+      <p className="meta">
+        Outbox outcomes for email, SMS, and browser push. Accepted by a push service does not mean the
+        notification was displayed or read.
+      </p>
       <DataTable
         caption="Notification attempts"
         rows={deliveries.page}
@@ -350,7 +546,6 @@ function Delivery({ organizationId }: { organizationId: Id<"organizations"> }) {
             render: (row) => (row.nextAttemptAt ? new Date(row.nextAttemptAt).toISOString() : "—"),
           },
           { key: "provider", header: "Provider id", render: (row) => row.providerId ?? "—" },
-          { key: "parent", header: "Parent", render: (row) => row.parentMessageId ?? "—" },
           { key: "error", header: "Failure", render: (row) => row.error ?? "—" },
           {
             key: "retry",
@@ -363,7 +558,7 @@ function Delivery({ organizationId }: { organizationId: Id<"organizations"> }) {
           },
         ]}
       />
-      <p className="meta">Retries stop after 3 attempts. Provider keys are never shown here.</p>
+      <p className="meta">Retries stop after 3 attempts. Provider keys and push endpoints are never shown.</p>
       {error ? <p className="err">{error}</p> : null}
       <RequestButton
         onRequest={(userId) =>
@@ -421,6 +616,9 @@ function PreferenceForm({
       }}
     >
       <h2>Your destinations</h2>
+      <p className="meta">
+        Creating an in-app notification is separate from delivering email, SMS, or browser push.
+      </p>
       <label className="check">
         <input
           type="checkbox"
@@ -459,7 +657,7 @@ function PreferenceForm({
           checked={pushEnabled}
           onChange={(event) => setPushEnabled(event.target.checked)}
         />
-        Push preference. Delivery stays not configured until a VAPID sender exists.
+        Browser push preference (delivery still needs an active subscription below)
       </label>
       <FilterSelect
         label="Personal minimum severity"

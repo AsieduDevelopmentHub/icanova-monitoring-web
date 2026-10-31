@@ -1,85 +1,138 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router";
-import { beginLogin, oidcConfigured, readOidcConfig } from "./oidc";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useConvexAuth } from "convex/react";
+import { useEffect, useState, type FormEvent } from "react";
+import { Link, Navigate, useLocation } from "react-router";
+import { safeReturnPath } from "./returnPath";
 
-type Phase = "checking" | "redirecting" | "not_configured" | "error";
+type Mode = "signIn" | "signUp";
 
-/** Starts the OIDC authorization redirect when public OIDC env is configured. */
+/** Convex Auth email + password login / registration (active provider). */
 export function AuthLogin() {
-  const [phase, setPhase] = useState<Phase>(() => (oidcConfigured() ? "checking" : "not_configured"));
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { signIn } = useAuthActions();
+  const location = useLocation();
+  const [mode, setMode] = useState<Mode>("signIn");
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const returnTo = safeReturnPath(
+    (location.state as { from?: unknown } | null)?.from,
+    "/app",
+  );
 
-  async function startLogin() {
-    const config = readOidcConfig();
-    if (!config) {
-      setPhase("not_configured");
-      setError("Sign-in is not configured. Operator must supply VITE_OIDC_* values at build time.");
-      return;
-    }
-    setPhase("redirecting");
+  useEffect(() => {
+    document.title = "Sign in · iCanOva Monitoring";
+  }, []);
+
+  if (!import.meta.env.VITE_CONVEX_URL) {
+    return (
+      <div className="auth-shell">
+        <section className="auth-panel auth-card" aria-labelledby="auth-login-title">
+          <header className="page-head">
+            <p className="brand-mark">iCanOva</p>
+            <p className="brand-name">Monitoring</p>
+            <h1 id="auth-login-title">Sign in</h1>
+            <div className="notice" role="alert">
+              <strong>No deployment URL.</strong>
+              <p>
+                Set <code className="tech">VITE_CONVEX_URL</code> to use Convex Auth. Auth0 is not
+                required for login.
+              </p>
+            </div>
+            <Link to="/" className="btn btn-secondary">
+              Back to home
+            </Link>
+          </header>
+        </section>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="auth-shell">
+        <section className="auth-panel auth-card">
+          <p role="status">Checking session…</p>
+        </section>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to={returnTo} replace />;
+  }
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setError(null);
+    setPending(true);
+    const form = new FormData(event.currentTarget);
+    form.set("flow", mode);
     try {
-      const url = await beginLogin(config);
-      window.location.assign(url);
+      await signIn("password", form);
     } catch {
-      setPhase("error");
-      setError("Could not start sign-in.");
+      setError(
+        mode === "signIn"
+          ? "Sign-in failed. Check email and password."
+          : "Could not create the account. The email may already be registered.",
+      );
+    } finally {
+      setPending(false);
     }
   }
 
-  useEffect(() => {
-    if (!oidcConfigured()) {
-      setPhase("not_configured");
-      return;
-    }
-    void startLogin();
-  }, []);
-
   return (
-    <div className="auth-screen">
-      <section className="auth-panel" aria-labelledby="auth-login-title">
+    <div className="auth-shell">
+      <section className="auth-panel auth-card" aria-labelledby="auth-login-title">
         <header className="page-head">
           <p className="brand-mark">iCanOva</p>
-          <p className="brand-name">iCanOva Monitoring</p>
-          <h1 id="auth-login-title">Sign in</h1>
+          <p className="brand-name">Monitoring</p>
+          <h1 id="auth-login-title">{mode === "signIn" ? "Sign in" : "Create account"}</h1>
           <p>Imagine. Connect. Innovate.</p>
-          {phase === "checking" || phase === "redirecting" ? (
-            <p role="status">Redirecting to the identity provider…</p>
-          ) : null}
-          {phase === "not_configured" ? (
-            <div className="notice" role="alert">
-              <strong>Sign-in is not configured for this build.</strong>
-              <p>
-                Public OIDC variables are missing or incomplete (
-                <code className="tech">VITE_OIDC_ISSUER</code>,{" "}
-                <code className="tech">VITE_OIDC_CLIENT_ID</code>,{" "}
-                <code className="tech">VITE_OIDC_AUDIENCE</code>,{" "}
-                <code className="tech">VITE_OIDC_REDIRECT_URI</code>
-                ). Rebuild the SPA after they are set. Audience must be{" "}
-                <code className="tech">icanova</code> (no lab fallback).
-              </p>
-            </div>
-          ) : null}
-          {error && phase === "error" ? (
+        </header>
+        <form className="stack" onSubmit={(event) => void onSubmit(event)}>
+          <label className="field">
+            <span>Email</span>
+            <input name="email" type="email" autoComplete="username" required disabled={pending} />
+          </label>
+          <label className="field">
+            <span>Password</span>
+            <input
+              name="password"
+              type="password"
+              autoComplete={mode === "signIn" ? "current-password" : "new-password"}
+              required
+              minLength={8}
+              disabled={pending}
+            />
+          </label>
+          {error ? (
             <p className="notice" role="alert">
               {error}
             </p>
           ) : null}
           <div className="btn-row">
-            {phase === "not_configured" || phase === "error" ? (
-              <button type="button" className="btn btn-primary" onClick={() => void startLogin()}>
-                Try sign-in again
-              </button>
-            ) : (
-              <button type="button" className="btn btn-primary" onClick={() => void startLogin()}>
-                Continue to sign-in
-              </button>
-            )}
-            <Link to="/" className="btn btn-secondary">
-              Back to dashboard
-            </Link>
+            <button type="submit" className="btn btn-primary" disabled={pending}>
+              {pending ? "Working…" : mode === "signIn" ? "Sign in" : "Create account"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={pending}
+              onClick={() => {
+                setError(null);
+                setMode((current) => (current === "signIn" ? "signUp" : "signIn"));
+              }}
+            >
+              {mode === "signIn" ? "Create an account" : "Have an account? Sign in"}
+            </button>
           </div>
-        </header>
+        </form>
+        <p className="empty">
+          Signing in does not grant organization access. An admin must add a membership.
+        </p>
+        <Link to="/" className="btn btn-secondary">
+          Back to home
+        </Link>
       </section>
     </div>
   );

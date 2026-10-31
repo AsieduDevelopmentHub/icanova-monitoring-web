@@ -4,7 +4,7 @@ import type { Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
-import { assertSameOrg, requireName, requirePermission } from "./auth";
+import { assertSameOrg, requireName, requirePermission } from "./identity";
 import { boundedPage } from "./limits";
 
 export async function requireSite(

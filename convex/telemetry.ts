@@ -2,7 +2,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, query } from "./_generated/server";
-import { requirePermission } from "./auth";
+import { requirePermission } from "./identity";
 import { internal } from "./_generated/api";
 import { BUCKET_MS, BUCKET_RETENTION_MS, CHART_POINTS, MAX_PAGE, PRUNE_BATCH, PRUNE_ROUNDS, SERIES_READ, boundedPage } from "./limits";
 import { METRIC_KEYS } from "./metrics";

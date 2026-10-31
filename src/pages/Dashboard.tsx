@@ -19,8 +19,11 @@ import {
   overallView,
 } from "../telemetry/deviceHealthView";
 import { DataTable, type Column } from "../ui/DataTable";
+import { EmptyState } from "../ui/EmptyState";
 import { FilterBar, FilterSearch } from "../ui/FilterBar";
 import { Metric } from "../ui/Metric";
+import { Panel } from "../ui/Panel";
+import { Skeleton } from "../ui/Skeleton";
 import { StatusMark } from "../ui/StatusMark";
 
 type BoardRow = LiveRow & {
@@ -41,10 +44,10 @@ export function Dashboard() {
   return (
     <section className="page">
       <header className="page-head">
-        <h1>Dashboard</h1>
+        <h1>Operations overview</h1>
         <p>
-          Operational overview for one site: gateway contact, Modbus health, telemetry freshness, and
-          active alarms. This board does not invent live values.
+          Attention first. Then cloud contact, Modbus health, measurement freshness and readings —
+          from stored telemetry only.
         </p>
       </header>
       <LiveGate>
@@ -105,7 +108,7 @@ function SiteBoard({
   }, [data, query]);
 
   if (data === undefined || summary === undefined) {
-    return <p className="empty">Loading operational overview.</p>;
+    return <Skeleton lines={6} className="panel" />;
   }
 
   const loaded = (Array.isArray(data.rows) ? data.rows : []) as BoardRow[];
@@ -187,105 +190,106 @@ function SiteBoard({
   ];
 
   return (
-    <div className="stack">
+    <div className="dash-layout">
       <div className="ops-banner">
         <div>
           <p className="meta">
             Site <strong>{siteName}</strong>
-            {moreSites ? " · use the site selector above for other sites" : ""}
+            {moreSites ? " · switch sites above" : ""}
           </p>
           <p className="meta">
             Last stored contact{" "}
             <span className="tech">{formatContact(lastUpdate)}</span>
-            {lastUpdate != null ? ` (${contactAgeLabel(lastUpdate, Date.now())})` : ""}. Gateway Online
-            is cloud contact within 3 min — not Modbus.
+            {lastUpdate != null ? ` (${contactAgeLabel(lastUpdate, Date.now())})` : ""}. Cloud
+            contact ≠ Modbus ≠ freshness.
           </p>
         </div>
         <div className="ops-links">
+          <Link to="/alarms">Alarms</Link>
           <Link to="/gateways">Gateways</Link>
           <Link to="/local">Live readings</Link>
-          <Link to="/alarms">Alarms</Link>
           <Link to="/events">Events</Link>
-          <Link to="/reports">Reports</Link>
         </div>
       </div>
 
       {loaded.length === 0 ? (
-        <p className="empty">
-          No generators are registered on this site. Register a device and a generator on Generators.
-          The device identity is the 12-character efuse MAC.
-        </p>
+        <EmptyState
+          title="No generators on this site"
+          body="Register a gateway and generator to populate this board. Device identity is the 12-character eFuse MAC."
+          action={<Link to="/generators">Open generators</Link>}
+        />
       ) : scope.reporting === 0 ? (
         <div className="notice" role="note">
-          <strong>No live telemetry.</strong> Generators are registered, and none has a stored reading.
-          Check that the gateway identity matches the registered device.
+          <strong>No stored telemetry yet.</strong> Generators are registered, but none has a reading.
+          Confirm the gateway identity matches the registered device.
         </div>
       ) : null}
 
-      <section className="ops-section" aria-labelledby="ops-summary-title">
-        <h2 id="ops-summary-title">Operational summary</h2>
-        <p className="meta">
-          {siteReady
-            ? "Stored site tallies. Freshness ages without a new sample."
-            : scope.note}
-        </p>
-        <div className="metric-grid">
-          <Metric
-            label="Gateways online"
-            value={siteReady ? String(summary.gatewayOnline ?? 0) : "—"}
-            note="Heartbeat or accepted ingest ≤ 3 min"
+      <div className="dash-hero">
+        <FleetBoundary>
+          <OperationalAttention
+            organizationId={organizationId}
+            siteId={siteId}
+            permissions={permissions}
           />
-          <Metric
-            label="Gateways offline"
-            value={siteReady ? String(summary.gatewayOffline ?? 0) : "—"}
-            note="No gateway contact within 3 min"
-          />
-          <Metric
-            label="Devices tracked"
-            value={siteReady ? String(summary.devicesTracked ?? 0) : "—"}
-            note="Health rows for this site"
-          />
-          <Metric
-            label="Generators"
-            value={
-              siteReady && summary.generators !== null
-                ? String(summary.generators)
-                : String(scope.generators)
-            }
-            note={siteReady ? "Registered on this site" : scope.note}
-          />
-          <Metric
-            label="Reporting"
-            value={siteReady ? String(summary.reporting) : String(scope.reporting)}
-            note="Generators with a stored reading"
-          />
-          <Metric
-            label="Modbus fail"
-            value={siteReady ? String(summary.linkFail) : String(scope.modbusFail)}
-            note="Sample link fail — not engine stop"
-          />
-          <Metric
-            label="Comm problems"
-            value={siteReady ? String(summary.activeCommProblems ?? 0) : "—"}
-            note="Active communication problems"
-          />
-          <Metric
-            label="Fresh telemetry"
-            value={siteReady ? String(summary.telemetryFresh ?? freshness.fresh) : String(freshness.fresh)}
-            note="Age of stored reading"
-          />
-          <Metric
-            label="Stale telemetry"
-            value={siteReady ? String(summary.telemetryStale ?? freshness.stale) : String(freshness.stale)}
-            note="Not the same as Modbus fail"
-          />
-          <Metric
-            label="Overall unhealthy"
-            value={siteReady ? String(summary.overallUnhealthy ?? 0) : "—"}
-            note="Worst of gateway, Modbus, freshness"
-          />
-        </div>
-      </section>
+        </FleetBoundary>
+
+        <Panel
+          title="Site health at a glance"
+          description={
+            siteReady
+              ? "Secondary tallies from stored health. Freshness ages without a new sample."
+              : scope.note
+          }
+        >
+          <div className="metric-grid metric-grid-primary metric-grid-secondary">
+            <Metric
+              label="Cloud online"
+              value={siteReady ? String(summary.gatewayOnline ?? 0) : "—"}
+              note="Contact ≤ 3 min"
+              tone="ok"
+            />
+            <Metric
+              label="Cloud offline"
+              value={siteReady ? String(summary.gatewayOffline ?? 0) : "—"}
+              note="No contact ≤ 3 min"
+              tone={(summary.gatewayOffline ?? 0) > 0 ? "warn" : "ok"}
+            />
+            <Metric
+              label="Modbus fail"
+              value={siteReady ? String(summary.linkFail) : String(scope.modbusFail)}
+              note="Sample link — not engine stop"
+              tone={(summary.linkFail ?? scope.modbusFail) > 0 ? "alarm" : "ok"}
+            />
+            <Metric
+              label="Stale readings"
+              value={
+                siteReady
+                  ? String(summary.telemetryStale ?? freshness.stale)
+                  : String(freshness.stale)
+              }
+              note="Age of stored reading"
+              tone={(summary.telemetryStale ?? freshness.stale) > 0 ? "warn" : "ok"}
+            />
+            <Metric
+              label="Generators"
+              value={
+                siteReady && summary.generators !== null
+                  ? String(summary.generators)
+                  : String(scope.generators)
+              }
+              note={`${siteReady ? summary.reporting : scope.reporting} reporting`}
+            />
+            <Metric
+              label="Overall unhealthy"
+              value={siteReady ? String(summary.overallUnhealthy ?? 0) : "—"}
+              note="Worst of cloud, Modbus, freshness"
+              tone={(summary.overallUnhealthy ?? 0) > 0 ? "alarm" : "ok"}
+              emphasis={(summary.overallUnhealthy ?? 0) > 0}
+            />
+          </div>
+        </Panel>
+      </div>
 
       <FleetBoundary>
         <GatewayHealthSection organizationId={organizationId} siteId={siteId} />
@@ -301,12 +305,20 @@ function SiteBoard({
         <RecentActivitySection organizationId={organizationId} siteId={siteId} />
       </FleetBoundary>
 
-      <section className="ops-section" aria-labelledby="ops-readings-title">
-        <h2 id="ops-readings-title">Current generator readings</h2>
-        <p className="meta">{scope.note}</p>
-        <FilterBar label="Filter this site snapshot">
-          <FilterSearch label="Name" value={query} onChange={setQuery} placeholder="Generator name" />
-        </FilterBar>
+      <Panel
+        title="Current generator readings"
+        description={scope.note}
+        actions={
+          <FilterBar label="Filter this site snapshot">
+            <FilterSearch
+              label="Name"
+              value={query}
+              onChange={setQuery}
+              placeholder="Generator name"
+            />
+          </FilterBar>
+        }
+      >
         <DataTable
           columns={columns}
           rows={rows}
@@ -318,8 +330,118 @@ function SiteBoard({
           }
           caption={`Current readings for ${siteName}`}
         />
-      </section>
+      </Panel>
     </div>
+  );
+}
+
+function OperationalAttention({
+  organizationId,
+  siteId,
+  permissions,
+}: {
+  organizationId: string;
+  siteId: Id<"sites">;
+  permissions: readonly string[];
+}) {
+  const canAlarms = permissions.includes("view.alarms");
+  const canDash = permissions.includes("view.dashboard");
+  const alarms = useQuery(
+    api.alarms.forSite,
+    canAlarms
+      ? { organizationId: organizationId as Id<"organizations">, siteId }
+      : "skip",
+  );
+  const health = useQuery(
+    api.devices.siteHealth,
+    canDash
+      ? { organizationId: organizationId as Id<"organizations">, siteId }
+      : "skip",
+  );
+  const unreadCritical = useQuery(
+    api.notifications.unreadCriticalCount,
+    canAlarms || canDash
+      ? { organizationId: organizationId as Id<"organizations"> }
+      : "skip",
+  );
+
+  if (alarms === undefined || health === undefined || unreadCritical === undefined) {
+    return <Skeleton lines={5} />;
+  }
+
+  const alarmRows = Array.isArray(alarms?.rows) ? alarms.rows : [];
+  const active = alarmRows.filter(
+    (row: { state?: string }) => row.state === "active" || row.state === "acknowledged",
+  );
+  const critical = active.filter((row: { severity?: string }) => row.severity === "critical").length;
+  const warning = active.filter((row: { severity?: string }) => row.severity === "warning").length;
+  const gateways = Array.isArray(health?.rows) ? health.rows : [];
+  const offline = gateways.filter(
+    (row: { gatewayStatus?: string }) => row.gatewayStatus === "offline",
+  ).length;
+  const stale = gateways.filter(
+    (row: { telemetryFreshness?: string }) => row.telemetryFreshness === "stale",
+  ).length;
+
+  const items = [
+    {
+      key: "critical",
+      label: "Active critical alarms",
+      value: critical,
+      href: "/alarms",
+      className: critical > 0 ? "is-critical" : "",
+    },
+    {
+      key: "warning",
+      label: "Active warning alarms",
+      value: warning,
+      href: "/alarms",
+      className: warning > 0 ? "is-warning" : "",
+    },
+    {
+      key: "offline",
+      label: "Offline gateways",
+      value: offline,
+      href: "/gateways",
+      className: offline > 0 ? "is-warning" : "",
+    },
+    {
+      key: "stale",
+      label: "Stale measurements",
+      value: stale,
+      href: "/gateways",
+      className: stale > 0 ? "is-warning" : "",
+    },
+    {
+      key: "inbox",
+      label: "Unread critical notices",
+      value: unreadCritical,
+      href: "/notifications",
+      className: unreadCritical > 0 ? "is-critical" : "",
+    },
+  ];
+
+  const tone =
+    critical > 0 || unreadCritical > 0 ? "critical" : warning > 0 || offline > 0 ? "warning" : "default";
+
+  return (
+    <Panel
+      title="Needs attention"
+      description="Priority signals for this site. Creation in the inbox is not proof of push/email delivery."
+      tone={tone}
+    >
+      <ul className="attention-list">
+        {items.map((item) => (
+          <li key={item.key} className={`attention-item ${item.className}`.trim()}>
+            <div>
+              <div className="meta">{item.label}</div>
+              <div className="attention-value">{item.value}</div>
+            </div>
+            <Link to={item.href}>Inspect</Link>
+          </li>
+        ))}
+      </ul>
+    </Panel>
   );
 }
 
@@ -335,17 +457,17 @@ function GatewayHealthSection({
     siteId,
   });
   if (data === undefined) {
-    return <p className="empty">Loading gateway health.</p>;
+    return <Skeleton lines={4} />;
   }
   const now = Date.now();
   return (
-    <section className="ops-section" aria-labelledby="ops-gateway-title">
-      <h2 id="ops-gateway-title">Gateway health</h2>
-      <p className="meta">
-        iCanOva Edge devices on this site. Online/offline is cloud contact. Firmware version is not
-        stored yet.
-        {data.capped ? " First page only — not a complete inventory." : ""}
-      </p>
+    <Panel
+      title="Gateway health"
+      description={`Cloud contact, Modbus, and freshness stay separate. Firmware version is not stored yet.${
+        data.capped ? " First page only." : ""
+      }`}
+      actions={<Link to="/gateways">Full inventory</Link>}
+    >
       <DataTable
         caption="Gateways on this site"
         rows={data.rows}
@@ -407,10 +529,7 @@ function GatewayHealthSection({
           },
         ]}
       />
-      <p className="meta">
-        <Link to="/gateways">Open full gateway inventory</Link>
-      </p>
-    </section>
+    </Panel>
   );
 }
 
@@ -426,16 +545,15 @@ function RecentActivitySection({
     siteId,
   });
   if (data === undefined) {
-    return <p className="empty">Loading recent activity.</p>;
+    return <Skeleton lines={4} />;
   }
   return (
-    <section className="ops-section" aria-labelledby="ops-activity-title">
-      <h2 id="ops-activity-title">Recent activity</h2>
-      <p className="meta">
-        Stored health transitions for this site (heartbeat, ingest, sweep). Not a fabricated event
-        feed.
-        {data.capped ? " Newest page only." : ""}
-      </p>
+    <Panel
+      title="Recent activity"
+      description={`Stored health transitions (heartbeat, ingest, sweep). Not a fabricated feed.${
+        data.capped ? " Newest page only." : ""
+      }`}
+    >
       <DataTable
         caption="Recent health transitions"
         rows={data.rows}
@@ -468,6 +586,6 @@ function RecentActivitySection({
           },
         ]}
       />
-    </section>
+    </Panel>
   );
 }

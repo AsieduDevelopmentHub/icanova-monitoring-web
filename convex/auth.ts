@@ -1,140 +1,100 @@
+import { Password } from "@convex-dev/auth/providers/Password";
+import { convexAuth } from "@convex-dev/auth/server";
+import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { isPermission, type Permission } from "./permissions";
 
-type DbCtx = QueryCtx | MutationCtx;
-
-export async function requireIdentity(ctx: DbCtx) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) {
-    throw new Error("Unauthorized");
-  }
-  return identity;
-}
-
-export async function userByToken(ctx: DbCtx, tokenIdentifier: string) {
-  return await ctx.db
-    .query("users")
-    .withIndex("by_token", (q) => q.eq("tokenIdentifier", tokenIdentifier))
-    .unique();
-}
-
-export async function ensureUser(ctx: MutationCtx) {
-  const identity = await requireIdentity(ctx);
-  const existing = await userByToken(ctx, identity.tokenIdentifier);
-  if (existing) {
-    return { identity, user: existing };
-  }
-  const userId = await ctx.db.insert("users", {
-    tokenIdentifier: identity.tokenIdentifier,
-    email: identity.email,
-    phone: identity.phoneNumber,
-    name: identity.name,
-  });
-  const user = await ctx.db.get(userId);
-  if (!user) {
-    throw new Error("Unauthorized");
-  }
-  return { identity, user };
+function normalizeEmail(email: string | undefined): string | null {
+  const trimmed = email?.trim().toLowerCase() ?? "";
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 /**
- * Membership and the role permission are checked here.
- * A hidden button is not a substitute for this function.
+ * Reuse an existing application users row when the email matches so Auth0-era
+ * memberships are preserved. Never delete or recreate org memberships here.
  */
-export async function requirePermission(
-  ctx: DbCtx,
-  organizationId: Id<"organizations">,
-  permission: Permission,
-) {
-  const identity = await requireIdentity(ctx);
-  const user = await userByToken(ctx, identity.tokenIdentifier);
-  if (!user) {
-    throw new Error("Forbidden");
+async function createOrUpdateUser(
+  ctx: MutationCtx,
+  args: {
+    existingUserId: Id<"users"> | null;
+    profile: Record<string, unknown> & {
+      email?: string;
+      phone?: string;
+      emailVerified?: boolean;
+      phoneVerified?: boolean;
+    };
+  },
+): Promise<Id<"users">> {
+  const email = normalizeEmail(
+    typeof args.profile.email === "string" ? args.profile.email : undefined,
+  );
+  const name = typeof args.profile.name === "string" ? args.profile.name : undefined;
+  const phone =
+    typeof args.profile.phone === "string" ? args.profile.phone.trim() : undefined;
+  const patch: {
+    email?: string;
+    name?: string;
+    phone?: string;
+    emailVerificationTime?: number;
+    phoneVerificationTime?: number;
+    image?: string;
+  } = {};
+  if (email) {
+    patch.email = email;
   }
-  const membership = await ctx.db
-    .query("memberships")
-    .withIndex("by_org_user", (q) =>
-      q.eq("organizationId", organizationId).eq("userId", user._id),
-    )
-    .unique();
-  if (!membership) {
-    throw new Error("Forbidden");
+  if (name) {
+    patch.name = name;
   }
-  const role = await ctx.db.get(membership.roleId);
-  if (!role || role.organizationId !== organizationId) {
-    throw new Error("Forbidden");
+  if (phone) {
+    patch.phone = phone;
   }
-  if (!role.permissions.every(isPermission) || !role.permissions.includes(permission)) {
-    throw new Error("Forbidden");
+  if (args.profile.emailVerified) {
+    patch.emailVerificationTime = Date.now();
   }
-  return { identity, user, membership, role };
-}
+  if (args.profile.phoneVerified) {
+    patch.phoneVerificationTime = Date.now();
+  }
+  if (typeof args.profile.image === "string") {
+    patch.image = args.profile.image;
+  }
 
-/** The caller needs one of these permissions. A miss is Forbidden. */
-export async function requireAnyPermission(
-  ctx: DbCtx,
-  organizationId: Id<"organizations">,
-  permissions: Permission[],
-) {
-  for (const permission of permissions) {
-    try {
-      return await requirePermission(ctx, organizationId, permission);
-    } catch (error) {
-      if (!(error instanceof Error) || error.message !== "Forbidden") {
-        throw error;
-      }
+  if (args.existingUserId) {
+    await ctx.db.patch(args.existingUserId, patch);
+    return args.existingUserId;
+  }
+
+  if (email) {
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", email))
+      .unique();
+    if (existing) {
+      await ctx.db.patch(existing._id, patch);
+      return existing._id;
     }
   }
-  throw new Error("Forbidden");
+
+  return await ctx.db.insert("users", patch);
 }
 
-/** Role permission strings for the signed-in member, or null if no membership. */
-export async function memberPermissions(
-  ctx: DbCtx,
-  organizationId: Id<"organizations">,
-): Promise<Permission[] | null> {
-  const identity = await requireIdentity(ctx);
-  const user = await userByToken(ctx, identity.tokenIdentifier);
-  if (!user) {
-    return null;
-  }
-  const membership = await ctx.db
-    .query("memberships")
-    .withIndex("by_org_user", (q) =>
-      q.eq("organizationId", organizationId).eq("userId", user._id),
-    )
-    .unique();
-  if (!membership) {
-    return null;
-  }
-  const role = await ctx.db.get(membership.roleId);
-  if (!role || role.organizationId !== organizationId) {
-    return null;
-  }
-  if (!role.permissions.every(isPermission)) {
-    return null;
-  }
-  return role.permissions as Permission[];
-}
-
-export function roleHasPermission(
-  permissions: readonly Permission[] | null | undefined,
-  need: Permission,
-): boolean {
-  return Boolean(permissions?.includes(need));
-}
-
-export function assertSameOrg<T extends string>(actual: T, expected: T) {
-  if (actual !== expected) {
-    throw new Error("Forbidden");
-  }
-}
-
-export function requireName(value: string, label: string) {
-  const name = value.trim();
-  if (name.length < 1 || name.length > 80) {
-    throw new Error(`${label} must be 1 to 80 characters`);
-  }
-  return name;
-}
+export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
+  providers: [
+    Password({
+      profile(params) {
+        const email = normalizeEmail(
+          typeof params.email === "string" ? params.email : undefined,
+        );
+        if (!email) {
+          throw new Error("Email is required");
+        }
+        const name =
+          typeof params.name === "string" && params.name.trim().length > 0
+            ? params.name.trim()
+            : undefined;
+        return { email, ...(name ? { name } : {}) };
+      },
+    }),
+  ],
+  callbacks: {
+    createOrUpdateUser,
+  },
+});

@@ -8,8 +8,8 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx } from "./_generated/server";
 import { writeAudit } from "./audits";
-import { requireAnyPermission, requirePermission, userByToken } from "./auth";
-import { notConfiguredError, providerDecision } from "./delivery";
+import { requireAnyPermission, requirePermission } from "./identity";
+import { notConfiguredError, providerDecision, vapidConfigured } from "./delivery";
 import { MAX_ATTEMPTS, boundedPage } from "./limits";
 import { requireSite } from "./sites";
 
@@ -45,6 +45,11 @@ function currentDecision(kind: Channel) {
   return providerDecision(kind === "push" ? "push" : kind, {
     resend: Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM),
     arkesel: Boolean(process.env.ARKESEL_API_KEY && process.env.ARKESEL_SENDER),
+    vapid: vapidConfigured({
+      publicKey: process.env.VAPID_PUBLIC_KEY,
+      privateKey: process.env.VAPID_PRIVATE_KEY,
+      subject: process.env.VAPID_SUBJECT,
+    }),
   });
 }
 
@@ -207,18 +212,10 @@ export const savePreference = mutation({
 export const myPreference = query({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthorized");
-    }
-    await requireAnyPermission(ctx, args.organizationId, [
+    const { user } = await requireAnyPermission(ctx, args.organizationId, [
       "view.dashboard",
       "configure.notifications",
     ]);
-    const user = await userByToken(ctx, identity.tokenIdentifier);
-    if (!user) {
-      throw new Error("Forbidden");
-    }
     return await ctx.db
       .query("notificationPreferences")
       .withIndex("by_org_user", (q) =>
@@ -336,6 +333,46 @@ export const markAllRead = mutation({
   },
 });
 
+export const markUnread = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    notificationId: v.id("userNotifications"),
+  },
+  handler: async (ctx, args) => {
+    const { user } = await requireAnyPermission(ctx, args.organizationId, [
+      "view.dashboard",
+      "view.alarms",
+    ]);
+    const row = await ctx.db.get(args.notificationId);
+    if (!row || row.organizationId !== args.organizationId || row.userId !== user._id) {
+      throw new Error("Forbidden");
+    }
+    if (row.readAt != null) {
+      await ctx.db.patch(row._id, { readAt: null });
+    }
+    return row._id;
+  },
+});
+
+/** Compact unread critical count for dashboard attention (creation ≠ delivery). */
+export const unreadCriticalCount = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const { user } = await requireAnyPermission(ctx, args.organizationId, [
+      "view.dashboard",
+      "view.alarms",
+    ]);
+    const rows = await ctx.db
+      .query("userNotifications")
+      .withIndex("by_org_user_created", (q) =>
+        q.eq("organizationId", args.organizationId).eq("userId", user._id),
+      )
+      .order("desc")
+      .take(100);
+    return rows.filter((row) => row.readAt == null && row.severity === "critical").length;
+  },
+});
+
 export const listDeliveries = query({
   args: {
     organizationId: v.id("organizations"),
@@ -353,7 +390,8 @@ export const listDeliveries = query({
       page: page.page.map((row) => ({
         _id: row._id,
         channel: row.channel,
-        to: row.to,
+        // Never surface raw push endpoints; keep opaque label for push outbox rows.
+        to: row.channel === "push" ? "browser subscription" : row.to,
         event: row.event ?? null,
         status: row.status,
         attempt: row.attempt,
@@ -407,6 +445,58 @@ export const requestDelivery = mutation({
         continue;
       }
       if (policy.channel === "inapp") {
+        continue;
+      }
+      if (policy.channel === "push") {
+        if (!preference?.pushEnabled) {
+          continue;
+        }
+        const subscriptions = await ctx.db
+          .query("pushSubscriptions")
+          .withIndex("by_org_user", (q) =>
+            q.eq("organizationId", args.organizationId).eq("userId", args.userId),
+          )
+          .take(20);
+        const active = subscriptions.filter((row) => row.status === "active");
+        const pushBody = JSON.stringify({
+          title: "iCanOva notification",
+          body: args.event,
+          severity: "informational",
+          event: args.event,
+          path: "/notifications",
+        });
+        if (active.length === 0) {
+          // Preference on but no browser subscription — record not_configured / rejected path for operators.
+          const id = await insertAttempt(ctx, {
+            organizationId: args.organizationId,
+            channel: "push",
+            to: "push",
+            userId: args.userId,
+            event: args.event,
+            attempt: 1,
+            body: pushBody,
+            subject: "iCanOva notification",
+          });
+          ids.push(id);
+          continue;
+        }
+        for (const subscription of active) {
+          const id = await insertAttempt(ctx, {
+            organizationId: args.organizationId,
+            channel: "push",
+            to: `push:${subscription._id}`,
+            userId: args.userId,
+            event: args.event,
+            attempt: 1,
+            body: pushBody,
+            subject: "iCanOva notification",
+          });
+          ids.push(id);
+          const row = await ctx.db.get(id);
+          if (row?.status === "pending") {
+            await ctx.scheduler.runAfter(0, internal.notify.deliverMessage, { messageId: id });
+          }
+        }
         continue;
       }
       const destination = destinationFor(policy.channel, preference);
@@ -475,6 +565,20 @@ export const retryDelivery = mutation({
     if (!destination.allowed) {
       throw new Error("Recipient preference disables this channel");
     }
+    let retryTo = destination.to;
+    if (previous.channel === "push") {
+      if (previous.to.startsWith("push:")) {
+        const subscriptionId = previous.to.slice(5) as Id<"pushSubscriptions">;
+        const subscription = await ctx.db.get(subscriptionId);
+        if (!subscription || subscription.status !== "active" || subscription.userId !== previous.userId) {
+          throw new Error("Push subscription is no longer active");
+        }
+        retryTo = previous.to;
+      } else {
+        // Placeholder destination when preference is on but no browser subscription was stored.
+        retryTo = "push";
+      }
+    }
     if (previous.event) {
       const policies = await ctx.db
         .query("notificationPolicies")
@@ -509,7 +613,7 @@ export const retryDelivery = mutation({
     const id = await insertAttempt(ctx, {
       organizationId: previous.organizationId,
       channel: previous.channel,
-      to: destination.to,
+      to: retryTo,
       userId: previous.userId,
       event: previous.event,
       attempt: previous.attempt + 1,

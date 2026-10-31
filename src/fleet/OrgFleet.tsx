@@ -2,7 +2,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import type { Id } from "../../convex/_generated/dataModel";
 import { Link } from "react-router";
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { FilterBar, FilterSelect } from "../ui/FilterBar";
 import { StatusMark } from "../ui/StatusMark";
@@ -11,7 +11,6 @@ import { storedFreshness } from "../telemetry/freshness";
 import { accessMessage, id, storedReading } from "./access";
 import { FleetBoundary } from "./boundary";
 import { gatewayIdentityError, normalizeGatewayIdentity } from "./gatewayIdentity";
-import { useBearerToken } from "./useBearer";
 
 type OrgRow = { organizationId: string; name: string; permissions: string[] };
 type Named = { _id: string; name: string };
@@ -19,8 +18,11 @@ type Named = { _id: string; name: string };
 const firstPage = { numItems: 50, cursor: null };
 
 export function OrgFleet() {
-  const token = useBearerToken();
-  if (!token) {
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  if (isLoading) {
+    return <p className="empty">Checking session…</p>;
+  }
+  if (!isAuthenticated) {
     return (
       <div className="notice" role="note">
         <strong>Not signed in.</strong> No organization query is running. The demo log below is not a

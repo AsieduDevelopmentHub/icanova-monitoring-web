@@ -4,7 +4,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
-import { assertSameOrg, requireName, requirePermission } from "./auth";
+import { assertSameOrg, requireName, requirePermission } from "./identity";
 import { lifecycleLabel } from "./deviceLifecycle";
 export { deviceIsActive, lifecycleLabel } from "./deviceLifecycle";
 import {

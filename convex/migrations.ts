@@ -6,7 +6,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
-import { requirePermission } from "./auth";
+import { requirePermission } from "./identity";
 import { lifecycleLabel } from "./deviceLifecycle";
 
 const BATCH = 40;

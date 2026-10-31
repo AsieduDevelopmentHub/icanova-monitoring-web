@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from "react";
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { FleetBoundary } from "../fleet/boundary";
 import { unsignedNotice } from "../fleet/sessionGates";
-import { useBearerToken } from "../fleet/useBearer";
+import { EmptyState } from "../ui/EmptyState";
 import { FilterSelect } from "../ui/FilterBar";
+import { Skeleton } from "../ui/Skeleton";
 
 export function OrgGate({
   title,
@@ -42,8 +43,11 @@ function Signed({
   offline: string;
   children: (organizationId: Id<"organizations">) => ReactNode;
 }) {
-  const token = useBearerToken();
-  if (!token) {
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  if (isLoading) {
+    return <Skeleton lines={4} />;
+  }
+  if (!isAuthenticated) {
     const notice = unsignedNotice(offline);
     return (
       <div className="notice" role="note">
@@ -62,10 +66,15 @@ function Picker({ children }: { children: (organizationId: Id<"organizations">) 
   const orgs = useQuery(api.organizations.mine, {});
   const [picked, setPicked] = useState("");
   if (orgs === undefined) {
-    return <p className="empty">Loading organizations.</p>;
+    return <Skeleton lines={3} />;
   }
   if (!Array.isArray(orgs) || orgs.length === 0) {
-    return <p className="empty">This account has no organization membership.</p>;
+    return (
+      <EmptyState
+        title="No organization membership"
+        body="This account is not a member of an organization yet."
+      />
+    );
   }
   const organizationId = orgs.some((org) => org.organizationId === picked)
     ? picked

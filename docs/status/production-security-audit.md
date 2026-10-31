@@ -20,8 +20,8 @@ Severity: CRITICAL | HIGH | MEDIUM | LOW | INFORMATIONAL
 | S6 | **MEDIUM** | SMS (Arkesel) has no provider idempotency key | `convex/notify.ts` / `notifyDelivery.ts` | **Accepted residual risk**: treat uncertain timeouts as possible duplicates; prefer email (Resend) for critical alerts; avoid blind SMS retry storms |
 | S7 | **MEDIUM** | Ingest IP rate limit trusts `X-Forwarded-For` / `CF-Connecting-IP` | `convex/http.ts` `ipKeyFromRequest` | **Accepted residual risk**: spoofing weakens IP bucket only; device identity bucket still applies |
 | S8 | **LOW → CLOSED** | Code default audience fallback `dse-gateway` | Removed 2026-10-31 | `auth.config.ts` requires `AUTH_JWT_AUDIENCE`; `readOidcConfig` requires `VITE_OIDC_AUDIENCE` (null if missing) |
-| S9 | **LOW** | Production Auth0 tenant not provisioned in-repo | Staging Auth0 only | Separate prod SPA + API; never copy staging client secrets |
-| S10 | **INFORMATIONAL** | Frontend hosting undecided | No `vercel.json` / CI | Operator chooses static HTTPS host — see hosting checklist in `docs/guide/production-environment-setup.md` |
+| S9 | **MEDIUM** (accepted temporary) | Production shares **staging Auth0 tenant**; separate production SPA Client ID **required** but not yet verified | Operator acceptance recorded in `docs/status/phase-8.5d-shared-auth0-acceptance.md`; live Pages still uses staging SPA Client ID | Create `iCanOva Production` SPA; leave staging SPA unchanged; share audience `icanova`; migrate to dedicated prod tenant later; never put SPA secrets in `VITE_*` |
+| S10 | **INFORMATIONAL** → **CLOSED** | Frontend hosting undecided | Cloudflare Pages live at `https://icanova.pages.dev` | Host selected; keep SPA on roadrunner until sturgeon cutover authorized |
 | S11 | **INFORMATIONAL** | Lab self-hosted JWKS pattern still documented for offline mint | `.jwt/` gitignored | Prod should use Auth0 JWKS only |
 | S12 | **INFORMATIONAL** | Hardware/SIM/RS485 not in software threat model for this audit | Hardware ATP separate | Do not claim physical security from this audit |
 

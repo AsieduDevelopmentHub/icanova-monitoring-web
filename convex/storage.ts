@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requirePermission } from "./auth";
+import { requirePermission } from "./identity";
 
 export const createUploadUrl = mutation({
   args: { organizationId: v.id("organizations") },

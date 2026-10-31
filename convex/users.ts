@@ -1,5 +1,5 @@
 import { mutation, query } from "./_generated/server";
-import { ensureUser } from "./auth";
+import { ensureUser, resolveAppUser } from "./identity";
 
 export const me = query({
   args: {},
@@ -8,10 +8,8 @@ export const me = query({
     if (!identity) {
       return null;
     }
-    return await ctx.db
-      .query("users")
-      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
-      .unique();
+    const resolved = await resolveAppUser(ctx);
+    return resolved?.user ?? null;
   },
 });
 

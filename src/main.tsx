@@ -1,10 +1,11 @@
 import "./instrument";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Route, Routes } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { Configure } from "./Configure";
 import { startAnalytics } from "./analytics";
 import { Monitor } from "./local/Monitor";
+import { Landing } from "./marketing/Landing";
 import { AlarmDetail } from "./pages/AlarmDetail";
 import { Alarms } from "./pages/Alarms";
 import { Dashboard } from "./pages/Dashboard";
@@ -14,8 +15,9 @@ import { GeneratorDetail } from "./pages/GeneratorDetail";
 import { Generators } from "./pages/Generators";
 import { Maintenance } from "./pages/Maintenance";
 import { Notifications } from "./pages/Notifications";
-import { AuthCallback } from "./auth/AuthCallback";
 import { AuthLogin } from "./auth/AuthLogin";
+import { RequireAuth } from "./auth/RequireAuth";
+import { AuthCallback } from "./auth/integrations/auth0/AuthCallback";
 import { Ops } from "./pages/Ops";
 import { Reports } from "./pages/Reports";
 import { RolesAdmin } from "./pages/RolesAdmin";
@@ -49,29 +51,33 @@ createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <AppErrorBoundary>
           <Routes>
-            <Route element={<Shell />}>
-              <Route index element={<Dashboard />} />
-              <Route path="local" element={<Monitor />} />
-              <Route path="local/configure" element={<ConfigurePage />} />
-              <Route path="alarms" element={<Alarms />} />
-              <Route path="alarms/:id" element={<AlarmDetail />} />
-              <Route path="sites" element={<Sites />} />
-              <Route path="generators" element={<Generators />} />
-              <Route path="generators/:id" element={<GeneratorDetail />} />
-              <Route path="generators/:id/:section" element={<GeneratorDetail />} />
-              <Route path="gateways" element={<Gateways />} />
-              <Route path="gateways/:id" element={<GatewayDetail />} />
-              <Route path="events" element={<Events />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="maintenance" element={<Maintenance />} />
-              <Route path="notifications" element={<Notifications />} />
-              <Route path="admin/ops" element={<Ops />} />
-              <Route path="admin/users" element={<UsersAdmin />} />
-              <Route path="admin/roles" element={<RolesAdmin />} />
-              <Route path="admin/settings" element={<Settings />} />
-              <Route path="auth/login" element={<AuthLogin />} />
-              <Route path="auth/callback" element={<AuthCallback />} />
-              <Route path="*" element={<Unavailable />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Navigate to="/auth/login" replace />} />
+            <Route path="/auth/login" element={<AuthLogin />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route element={<RequireAuth />}>
+              <Route element={<Shell />}>
+                <Route path="app" element={<Dashboard />} />
+                <Route path="local" element={<Monitor />} />
+                <Route path="local/configure" element={<ConfigurePage />} />
+                <Route path="alarms" element={<Alarms />} />
+                <Route path="alarms/:id" element={<AlarmDetail />} />
+                <Route path="sites" element={<Sites />} />
+                <Route path="generators" element={<Generators />} />
+                <Route path="generators/:id" element={<GeneratorDetail />} />
+                <Route path="generators/:id/:section" element={<GeneratorDetail />} />
+                <Route path="gateways" element={<Gateways />} />
+                <Route path="gateways/:id" element={<GatewayDetail />} />
+                <Route path="events" element={<Events />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="maintenance" element={<Maintenance />} />
+                <Route path="notifications" element={<Notifications />} />
+                <Route path="admin/ops" element={<Ops />} />
+                <Route path="admin/users" element={<UsersAdmin />} />
+                <Route path="admin/roles" element={<RolesAdmin />} />
+                <Route path="admin/settings" element={<Settings />} />
+                <Route path="*" element={<Unavailable />} />
+              </Route>
             </Route>
           </Routes>
         </AppErrorBoundary>

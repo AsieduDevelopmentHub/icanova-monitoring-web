@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation, query } from "./_generated/server";
-import { requireAnyPermission } from "./auth";
+import { requireAnyPermission } from "./identity";
 
 const status = v.union(
   v.literal("ok"),

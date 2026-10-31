@@ -123,11 +123,19 @@ function StoredAlarm({ alarmId }: { alarmId: string }) {
       </p>
       <p>{alarm.detail}</p>
       <p className="meta">
-        First {alarmTime(alarm.firstOccurredAt)}. Last {alarmTime(alarm.lastOccurredAt)}. Occurrences{" "}
-        {alarm.occurrenceCount}. {acknowledgementLabel({
+        Raised {alarmTime(alarm.raisedAt ?? alarm.firstOccurredAt)}. First{" "}
+        {alarmTime(alarm.firstOccurredAt)}. Last {alarmTime(alarm.lastOccurredAt)}. Occurrences{" "}
+        {alarm.occurrenceCount}.{" "}
+        {acknowledgementLabel({
           acknowledged: alarm.acknowledgedAt !== null,
           acknowledgedBy: alarm.acknowledgedByName,
         })}
+        {alarm.acknowledgedAt ? ` at ${alarmTime(alarm.acknowledgedAt)}` : ""}.
+        {alarm.clearedAt ? ` Cleared ${alarmTime(alarm.clearedAt)}.` : ""} Site{" "}
+        {alarm.siteName ?? "—"}
+        {alarm.generatorName && alarm.generatorName !== "—"
+          ? ` · ${alarm.generatorName}`
+          : ""}
         . Source {alarm.source}. These actions do not write to the controller. Acknowledgement does
         not clear the condition.
       </p>

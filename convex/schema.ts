@@ -1,3 +1,4 @@
+import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
@@ -43,12 +44,25 @@ const sampleFields = {
 };
 
 export default defineSchema({
+  ...authTables,
+  /**
+   * Convex Auth users table (overridden) plus app fields.
+   * tokenIdentifier remains for Auth0 legacy rows and post-login ensure patches.
+   * Email index enables non-destructive rebind of memberships across IdP changes.
+   */
   users: defineTable({
-    tokenIdentifier: v.string(),
-    email: v.optional(v.string()),
-    phone: v.optional(v.string()),
     name: v.optional(v.string()),
-  }).index("by_token", ["tokenIdentifier"]),
+    image: v.optional(v.string()),
+    email: v.optional(v.string()),
+    emailVerificationTime: v.optional(v.number()),
+    phone: v.optional(v.string()),
+    phoneVerificationTime: v.optional(v.number()),
+    isAnonymous: v.optional(v.boolean()),
+    tokenIdentifier: v.optional(v.string()),
+  })
+    .index("email", ["email"])
+    .index("phone", ["phone"])
+    .index("by_token", ["tokenIdentifier"]),
 
   organizations: defineTable({
     name: v.string(),
@@ -529,6 +543,29 @@ export default defineSchema({
     ),
     subscribedSiteIds: v.optional(v.array(v.id("sites"))),
   }).index("by_org_user", ["organizationId", "userId"]),
+
+  /** Browser Push API subscriptions (VAPID). Endpoints/keys are sensitive — never list raw in UI. */
+  pushSubscriptions: defineTable({
+    organizationId: v.id("organizations"),
+    userId: v.id("users"),
+    endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
+    expirationTime: v.union(v.number(), v.null()),
+    userAgentLabel: v.optional(v.string()),
+    status: v.union(
+      v.literal("active"),
+      v.literal("disabled"),
+      v.literal("expired"),
+    ),
+    createdAt: v.number(),
+    lastSuccessAt: v.optional(v.number()),
+    lastFailureAt: v.optional(v.number()),
+    lastFailureReason: v.optional(v.string()),
+  })
+    .index("by_org_user", ["organizationId", "userId"])
+    .index("by_user_endpoint", ["userId", "endpoint"])
+    .index("by_endpoint", ["endpoint"]),
 
   userNotifications: defineTable({
     organizationId: v.id("organizations"),

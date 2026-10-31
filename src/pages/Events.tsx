@@ -8,7 +8,7 @@ import { LiveGate, SiteSelect } from "../fleet/scope";
 import { FleetBoundary } from "../fleet/boundary";
 import { auditActor, auditTime } from "../telemetry/fleetView";
 import { DataTable } from "../ui/DataTable";
-import { FilterBar, FilterSelect } from "../ui/FilterBar";
+import { Tabs } from "../ui/Tabs";
 
 type AuditRow = {
   _id: string;
@@ -25,23 +25,20 @@ export function Events() {
   return (
     <section className="page">
       <header className="page-head">
-        <h1>Events</h1>
+        <h1>Event timeline</h1>
         <p>
-          Operational timeline from stored records. Health transitions are not the same as audit
-          actions, and neither invents missing gateway uptime.
+          Stored health transitions and organization audit actions — not an invented uptime feed.
         </p>
       </header>
-      <FilterBar label="Timeline source">
-        <FilterSelect
-          label="Source"
-          value={mode}
-          onChange={(value) => setMode(value === "audit" ? "audit" : "health")}
-          options={[
-            { value: "health", label: "Gateway health transitions" },
-            { value: "audit", label: "Organization audit log" },
-          ]}
-        />
-      </FilterBar>
+      <Tabs
+        label="Timeline source"
+        value={mode}
+        onChange={setMode}
+        items={[
+          { id: "health", label: "Health transitions" },
+          { id: "audit", label: "Audit log" },
+        ]}
+      />
       <LiveGate>
         {(org) =>
           mode === "health" ? (

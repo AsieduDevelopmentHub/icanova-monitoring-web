@@ -1,40 +1,45 @@
 # Production Auth0 + SPA hosting (Phase 8.5A / 8.5B)
 
 **Date:** 2026-10-31  
-**Status (8.5C):** Host live; Pages OIDC complete but **issuer is still staging Auth0**; SPA still targets **staging Convex**. Production Convex env **not provisioned** (dedicated prod Auth0 not verified).  
-**Audience:** `icanova`  
-**Staging Auth0 (live on Pages today):** `dev-notfczud6xx8hhxf.us.auth0.com`
+**Status (8.5D):** Host live; operator **accepted temporary shared Auth0 tenant**; production requires a **separate SPA** (`iCanOva Production`) — not yet verified. SPA still targets **staging Convex**. Production Convex env **empty**.  
+**Audience:** `icanova` (shared API — do not duplicate)  
+**Auth0 tenant (accepted for production temporarily):** `dev-notfczud6xx8hhxf.us.auth0.com`  
+**Acceptance record:** `docs/status/phase-8.5d-shared-auth0-acceptance.md`  
+**SPA create guide:** `docs/guide/production-auth0-spa-setup.md`
 
-### Hosting / Auth0 / Convex checkpoint (8.5C evidence)
+### Hosting / Auth0 / Convex checkpoint (8.5D evidence)
 
 | Field | Status |
 |---|---|
 | Selected provider | **Cloudflare Pages** |
 | Current SPA URL | `https://icanova.pages.dev` |
-| Pages `VITE_OIDC_*` | **SET** (issuer/client/audience/redirect/logout) |
-| Auth0 tenant on Pages | **Staging** `dev-notfczud6xx8hhxf…` — dedicated prod tenant **NOT VERIFIED** |
+| Verified callback | `https://icanova.pages.dev/auth/callback` |
+| Pages `VITE_OIDC_*` | **SET** (issuer/audience/redirect/logout); **Client ID still staging SPA** |
+| Auth0 tenant on Pages | Staging tenant — **temporary production exception accepted** |
+| Production Auth0 SPA | **OPEN** — create `iCanOva Production`; leave staging SPA unchanged |
 | Pages `VITE_CONVEX_URL` | **Staging** `dapper-roadrunner-247` — **not** sturgeon |
 | Production Convex `tremendous-sturgeon-449` | Identity OK; **0 env vars**; `/me` → **404** (functions likely undeployed) |
-| Convex prod secrets | **BLOCKED** until dedicated Auth0 (or written interim acceptance) + deploy authorization |
+| Convex prod secrets | **BLOCKED** until production SPA Client ID verified + written deploy authorization |
 
 SPA entry-point UX (Phase 8.2G): header always shows **Sign in** when unsigned (no longer gated on `oidcConfigured()`).
 
 ---
 
-## 1. Auth0 design (production ≠ staging)
+## 1. Auth0 design (shared tenant exception + separate SPA)
 
 ### Tenant
 
-| Item | Production requirement |
+| Item | Production requirement (8.5D) |
 |---|---|
-| Tenant / domain | **Separate** from staging (`dev-notfczud6xx8hhxf…`) |
+| Tenant / domain | **Temporarily shared** with staging: `dev-notfczud6xx8hhxf.us.auth0.com` |
 | Ownership | Named admin + backup admin |
-| Environment | Production only — no shared clients with staging |
+| Future migration | Dedicated production Auth0 tenant remains required |
+| SPA isolation | **Mandatory** separate production SPA Client ID |
 
-Placeholder issuer (fill after creation):
+Verified issuer / JWKS (shared tenant):
 
-- Issuer: `https://<prod-tenant>.<region>.auth0.com/` (trailing slash must match JWT `iss`)
-- JWKS: `https://<prod-tenant>.<region>.auth0.com/.well-known/jwks.json`
+- Issuer: `https://dev-notfczud6xx8hhxf.us.auth0.com/` (trailing slash must match JWT `iss`)
+- JWKS: `https://dev-notfczud6xx8hhxf.us.auth0.com/.well-known/jwks.json`
 
 ### Application (SPA)
 
@@ -47,16 +52,16 @@ Placeholder issuer (fill after creation):
 | Client ID | Public → `VITE_OIDC_CLIENT_ID` |
 | Client secret | **Must not exist in SPA / `VITE_*` / git** |
 
-### Allowed URLs (after host/domain chosen)
+### Allowed URLs (production host verified)
 
 | Setting | Value |
 |---|---|
-| Callback | `https://<production-domain>/auth/callback` |
-| Logout | `https://<production-domain>/` |
-| Web origins | `https://<production-domain>` |
+| Callback | `https://icanova.pages.dev/auth/callback` |
+| Logout | `https://icanova.pages.dev` and `https://icanova.pages.dev/` |
+| Web origins | `https://icanova.pages.dev` |
 | CORS / Allowed Origins (Auth0) | Same as web origins |
 
-Do **not** set Auth0 URLs until `<production-domain>` is decided.
+No wildcards. Apply these on the **production** SPA only; do not change the staging SPA.
 
 ### API / audience
 
@@ -82,22 +87,24 @@ Authorize the production SPA client for the production API (`icanova`).
 
 ---
 
-## 2. Operator Auth0 checklist (do not execute without authorization)
+## 2. Operator Auth0 checklist (shared tenant — separate SPA)
 
-1. Create or select a **production** Auth0 tenant (≠ staging).  
-2. Create production **SPA** application (public, PKCE).  
-3. Create production **API** with identifier `icanova` (or approved alternate).  
-4. Authorize SPA → API.  
-5. Set callback: `https://<production-domain>/auth/callback`.  
-6. Set logout: `https://<production-domain>/`.  
-7. Set allowed web origins: `https://<production-domain>`.  
-8. Confirm Authorization Code + PKCE.  
+Canonical steps: `docs/guide/production-auth0-spa-setup.md`.
+
+1. Stay on the **existing** Auth0 tenant (do not create a new tenant in 8.5D).  
+2. Create production **SPA** `iCanOva Production` (public, PKCE). **Do not** edit the staging SPA.  
+3. Reuse existing API identifier `icanova` — **do not** create a duplicate API.  
+4. Authorize production SPA → API `icanova`.  
+5. Set callback: `https://icanova.pages.dev/auth/callback`.  
+6. Set logout: `https://icanova.pages.dev` (+ `/` if needed).  
+7. Set allowed web origins: `https://icanova.pages.dev`.  
+8. Confirm Authorization Code + PKCE; no SPA client secret.  
 9. Obtain a test access token; confirm `aud` includes `icanova`, `iss` matches issuer, RS256.  
 10. Confirm JWKS URL returns keys.  
-11. Record **non-secret** identifiers (tenant domain, client id, audience, issuer, JWKS URL) in the operator vault inventory.  
+11. Record **non-secret** identifiers (tenant domain, **new** client id, audience, issuer, JWKS URL) in the operator vault inventory.  
 12. Store any management secrets **only** in the approved secret store.  
 13. Never commit secrets; never put client secrets in `VITE_*`.  
-14. Do **not** set Convex production `AUTH_*` until host + Auth0 URLs are confirmed (see §6).
+14. Do **not** set Convex production `AUTH_*` / retarget Pages to sturgeon until written authorization (see frontend plan).
 
 ---
 

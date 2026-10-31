@@ -8,8 +8,11 @@ import { LiveGate, SiteSelect } from "../fleet/scope";
 import { engineView, linkView } from "../telemetry/fleetView";
 import { storedFreshness } from "../telemetry/freshness";
 import { formatReading } from "../telemetry/readings";
+import { EmptyState } from "../ui/EmptyState";
 import { FilterBar, FilterSearch } from "../ui/FilterBar";
 import { Metric } from "../ui/Metric";
+import { Panel } from "../ui/Panel";
+import { Skeleton } from "../ui/Skeleton";
 import { StatusMark } from "../ui/StatusMark";
 
 type LiveRow = {
@@ -36,8 +39,8 @@ export function Monitor() {
       <header className="page-head">
         <h1>Live readings</h1>
         <p>
-          Stored telemetry from Convex for one site. Values are not polled from the gateway Soft-AP on
-          this page. Stale means the stored sample aged out — not a fabricated live feed.
+          Stored site telemetry from Convex. Not Soft-AP polling. Stale means the stored sample aged —
+          not a fabricated live stream.
         </p>
       </header>
       <LiveGate>
@@ -77,7 +80,7 @@ function SiteReadings({
   }, [data, query]);
 
   if (data === undefined) {
-    return <p className="empty">Loading current readings.</p>;
+    return <Skeleton lines={5} />;
   }
   const loaded = (Array.isArray(data.rows) ? data.rows : []) as LiveRow[];
   return (
@@ -88,31 +91,38 @@ function SiteReadings({
           {data.capped ? " First page of generators only." : ""}
         </p>
         <div className="ops-links">
-          <Link to="/">Dashboard</Link>
+          <Link to="/app">Dashboard</Link>
           <Link to="/gateways">Gateways</Link>
           <Link to="/local/configure">Configure (local)</Link>
         </div>
       </div>
       {loaded.length === 0 ? (
-        <p className="empty">No generators are registered on this site.</p>
+        <EmptyState
+          title="No generators on this site"
+          body="Register equipment to see stored readings here."
+          action={<Link to="/generators">Open generators</Link>}
+        />
       ) : (
-        <>
-          <FilterBar label="Filter readings">
-            <FilterSearch
-              label="Generator"
-              value={query}
-              onChange={setQuery}
-              placeholder="Generator name"
-            />
-          </FilterBar>
+        <Panel
+          title="Equipment readings"
+          description="Technical values use monospace. Missing measurements are not shown as zero."
+          actions={
+            <FilterBar label="Filter readings">
+              <FilterSearch
+                label="Generator"
+                value={query}
+                onChange={setQuery}
+                placeholder="Generator name"
+              />
+            </FilterBar>
+          }
+        >
           {rows.length === 0 ? (
-            <p className="empty">No generators match this filter.</p>
+            <EmptyState title="No matches" body="No generators match this filter." />
           ) : (
-            rows.map((row) => (
-              <ReadingRow key={row.generatorId ?? row.name} row={row} />
-            ))
+            rows.map((row) => <ReadingRow key={row.generatorId ?? row.name} row={row} />)
           )}
-        </>
+        </Panel>
       )}
     </div>
   );
@@ -128,7 +138,7 @@ function ReadingRow({ row }: { row: LiveRow }) {
     row.name
   );
   return (
-    <section className={`section reading-card${freshness.stale ? " is-stale" : ""}`}>
+    <article className={`reading-card${freshness.stale ? " is-stale" : ""}`}>
       <h2>{heading}</h2>
       <div className="status-row">
         <StatusMark tone={link.tone}>{link.label}</StatusMark>
@@ -152,9 +162,12 @@ function ReadingRow({ row }: { row: LiveRow }) {
         {row.alarmCount === null ? "" : ` · alarm count ${row.alarmCount}`}
       </p>
       {row.updatedAt == null ? (
-        <p className="empty">No measurement values are available until a sample is stored.</p>
+        <EmptyState
+          title="No sample stored"
+          body="Measurement values appear after the gateway delivers a reading."
+        />
       ) : (
-        <div className="metric-grid">
+        <div className="metric-grid metric-grid-primary">
           <Metric
             label="Battery"
             value={formatReading(storedReading(row.batteryV, row.batteryQuality, "V"))}
@@ -184,6 +197,6 @@ function ReadingRow({ row }: { row: LiveRow }) {
           <Link to={`/generators/${row.generatorId}/trends`}>Trends</Link>
         </p>
       ) : null}
-    </section>
+    </article>
   );
 }
