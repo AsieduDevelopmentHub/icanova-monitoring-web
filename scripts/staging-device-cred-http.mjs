@@ -12,8 +12,13 @@ const root = new URL("../", import.meta.url);
 const site = "https://dapper-roadrunner-247.convex.site";
 const cloud = "https://dapper-roadrunner-247.convex.cloud";
 const ingestUrl = `${site}/ncu/ingest`;
-const identityA = "a1b2c3d4e5f6";
-const identityB = "b2c3d4e5f6a7";
+// Unique per-run 12-hex identities avoid by_identity collisions across staging orgs.
+const suffix = Date.now().toString(16).padStart(10, "0").slice(-10);
+const identityA = `a1${suffix}`; // 12 hex chars
+const identityB = `b2${suffix}`;
+if (!/^[0-9a-f]{12}$/.test(identityA) || !/^[0-9a-f]{12}$/.test(identityB)) {
+  throw new Error(`bad test identities ${identityA} ${identityB}`);
+}
 const credA1 = "staging-device-a-secret01";
 const credA2 = "staging-device-a-secret02";
 const credB = "staging-device-b-secret99";
@@ -61,7 +66,25 @@ const shared = env.INGEST_SECRET?.trim();
 if (!shared || shared.length < 32) {
   throw new Error("INGEST_SECRET missing from .env.staging.local");
 }
-const token = readFileSync(new URL(".jwt/staging/session.token", root), "utf8").trim();
+// Prefer Auth0 access token (aud=icanova); fall back to lab mint only if present.
+function loadOperatorToken() {
+  const auth0Path = new URL(".jwt/staging/auth0.access.token", root);
+  const labPath = new URL(".jwt/staging/session.token", root);
+  try {
+    const t = readFileSync(auth0Path, "utf8").trim();
+    if (t) return t;
+  } catch {
+    /* missing */
+  }
+  try {
+    return readFileSync(labPath, "utf8").trim();
+  } catch {
+    throw new Error(
+      "Need .jwt/staging/auth0.access.token (Auth0 access token, aud=icanova) for staging Convex mutations.",
+    );
+  }
+}
+const token = loadOperatorToken();
 const client = new ConvexHttpClient(cloud);
 client.setAuth(token);
 const page = { numItems: 20, cursor: null };

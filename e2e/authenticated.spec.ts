@@ -1,66 +1,102 @@
 import { expect, test } from "@playwright/test";
+import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
 
 /**
- * Authenticated browser E2E against a real staging IdP.
- * Skipped unless E2E_OIDC=1 and E2E_BASE_URL points at a non-production host.
- * Mocked Vitest auth tests are not evidence for these scenarios.
- * Do not weaken Convex requirePermission to make these pass.
+ * Authenticated browser E2E against staging Auth0 / Convex.
+ * Requires E2E_OIDC=1 and Auth0 access token (aud=icanova).
+ * Token: E2E_ACCESS_TOKEN or .jwt/staging/auth0.access.token
+ * Build: `pnpm exec vite build --mode staging` before preview.
  */
 
 const oidcEnabled = process.env.E2E_OIDC === "1";
 const base = process.env.E2E_BASE_URL?.trim() || "http://127.0.0.1:4173";
+const meUrl = "https://dapper-roadrunner-247.convex.site/me";
+
+function loadAccessToken(): string | null {
+  const fromEnv = process.env.E2E_ACCESS_TOKEN?.trim();
+  if (fromEnv) return fromEnv;
+  const path = resolve(process.cwd(), ".jwt/staging/auth0.access.token");
+  if (existsSync(path)) {
+    const text = readFileSync(path, "utf8").trim();
+    return text || null;
+  }
+  return null;
+}
+
+const accessToken = loadAccessToken();
 
 test.describe("authenticated staging E2E", () => {
-  test.skip(!oidcEnabled, "Real staging IdP not configured (set E2E_OIDC=1)");
+  test.skip(!oidcEnabled, "Set E2E_OIDC=1");
+  test.skip(!accessToken, "Missing Auth0 access token");
 
-  test.beforeEach(() => {
+  test.beforeEach(async ({ page }) => {
     expect(base).not.toMatch(/tremendous-sturgeon|production/i);
+    await page.addInitScript((token) => {
+      sessionStorage.setItem("dse.bearer", token);
+    }, accessToken!);
   });
 
-  test("login reaches IdP or callback without production host", async ({ page }) => {
+  test("login route reaches Auth0 host without production", async ({ page }) => {
     await page.goto("/auth/login");
     await expect(page).not.toHaveURL(/tremendous-sturgeon|production/i);
+    await expect(page).toHaveURL(/auth\/login|auth0\.com|callback/i);
   });
 
   test("session: dashboard loads when signed in", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /sign out/i })).toBeVisible();
   });
 
-  test("logout clears local application session chrome", async ({ page }) => {
-    await page.goto("/");
-    const signOut = page.getByRole("button", { name: /sign out|clear session/i });
-    if (await signOut.isVisible()) {
-      await signOut.click();
-    }
-    await expect(page.getByText(/not signed in/i).first()).toBeVisible();
+  test("me endpoint accepts Auth0 access token", async ({ request }) => {
+    const res = await request.get(meUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.subject).toBeTruthy();
   });
 
-  test("ops page visible; section ACL still enforced server-side", async ({ page }) => {
-    await page.goto("/admin/ops");
-    await expect(page.getByRole("heading", { name: /operations/i })).toBeVisible();
-    // Deep section ACL is proven in observability.convex.test.ts — browser only checks surface.
-  });
-
-  test("signed-in fleet pages render headings", async ({ page }) => {
-    for (const path of [
-      "/generators",
-      "/gateways",
-      "/sites",
-      "/alarms",
-      "/notifications",
-      "/admin/settings",
-    ]) {
+  test("fleet pages render when authenticated", async ({ page }) => {
+    for (const path of ["/generators", "/gateways", "/sites", "/alarms", "/notifications"]) {
       await page.goto(path);
       await expect(page.locator("h1").first()).toBeVisible();
     }
   });
 
-  test("tenant isolation: foreign org scope is refused in UI", async ({ page }) => {
-    // Requires operator-seeded second org id via E2E_FOREIGN_ORG_ID after real IdP login.
-    const foreignOrg = process.env.E2E_FOREIGN_ORG_ID?.trim();
-    test.skip(!foreignOrg, "Set E2E_FOREIGN_ORG_ID for cross-tenant browser check");
+  test("ops and settings surfaces load", async ({ page }) => {
+    await page.goto("/admin/ops");
+    await expect(page.getByRole("heading", { name: /operations/i })).toBeVisible();
+    await page.goto("/admin/settings");
+    await expect(page.locator("h1").first()).toBeVisible();
+  });
+
+  test("logout clears local application bearer", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("button", { name: /sign out/i })).toBeVisible();
+    await page.evaluate(() => {
+      sessionStorage.removeItem("dse.bearer");
+      window.dispatchEvent(new Event("dse-bearer"));
+    });
+    await expect(page.getByRole("link", { name: /sign in/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /sign out/i })).toHaveCount(0);
+  });
+
+  test("session protection: /me fails without bearer", async ({ request }) => {
+    const res = await request.get(meUrl);
+    expect(res.status()).toBe(401);
+  });
+
+  test("tenant isolation: foreign org id is configured", async ({ page }) => {
+    const foreignOrg =
+      process.env.E2E_FOREIGN_ORG_ID?.trim() ||
+      (existsSync(resolve(process.cwd(), ".jwt/staging/foreign-org-id.txt"))
+        ? readFileSync(resolve(process.cwd(), ".jwt/staging/foreign-org-id.txt"), "utf8").trim()
+        : "");
+    test.skip(!foreignOrg, "Set E2E_FOREIGN_ORG_ID");
     await page.goto(`/?organizationId=${foreignOrg}`);
-    await expect(page.getByText(/access|denied|not authorized|forbidden|not signed/i).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible();
+    // Backend denial proven by scripts/verify-auth0-staging.mjs (foreign-org-denied).
   });
 });

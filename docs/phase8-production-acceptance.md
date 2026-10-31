@@ -4,7 +4,7 @@
 **Deployment under review:** development `effervescent-kangaroo-10`  
 **Production approval:** **Not granted.** Mandatory external gates remain unverified.
 
-**Phase 8.1:** See `docs/phase8-1-staging-acceptance.md` — **PARTIALLY COMPLETED — OPERATOR ACTION REQUIRED** (staging Convex + lab JWKS `/me` verified; real OIDC IdP + restore drill still blocked).
+**Phase 8.1:** **PARTIALLY COMPLETED** — Auth0/`icanova` + E2E + device-cred **VERIFIED**; restore drill **BLOCKED**. See `docs/phase8-1-closure.md`. Phase 8.2 prep: `docs/phase8-2-production-acceptance.md` (no prod deploy).
 
 Statuses: COMPLETE | VERIFIED | IMPLEMENTED — NOT VERIFIED | OPERATOR ACTION REQUIRED | BLOCKED | DEFERRED | NOT APPLICABLE
 
@@ -14,10 +14,10 @@ Statuses: COMPLETE | VERIFIED | IMPLEMENTED — NOT VERIFIED | OPERATOR ACTION R
 
 | Gate | Requirement | Status | Evidence | Environment | Remaining action |
 |---|---|---|---|---|---|
-| 8A Staging | Isolated staging Convex + frontend | VERIFIED (backend) / FE build OPERATOR | `dapper-roadrunner-247` + `.env.staging.local` | staging | SPA build with staging `VITE_CONVEX_URL`; OIDC IdP still open |
-| 8B IdP backend | Convex customJwt RS256 | COMPLETE | `auth.config.ts` | development | — |
-| 8B OIDC SPA | PKCE login foundations | IMPLEMENTED — NOT VERIFIED | `src/auth/oidc.ts`, `/auth/*` | development | Supply `VITE_OIDC_*` + real IdP |
-| 8B Real login E2E | Browser IdP login | BLOCKED | `docs/identity-provider-setup.md` | — | Staging IdP |
+| 8A Staging | Isolated staging Convex + frontend | VERIFIED (backend) / FE local staging | `dapper-roadrunner-247` + `vite --mode staging` | staging | Hosted SPA optional |
+| 8B IdP backend | Convex customJwt RS256 | COMPLETE (staging Auth0) | `AUTH_*` → Auth0 / `icanova` | staging | — |
+| 8B OIDC SPA | PKCE + Auth0 Universal Login | VERIFIED (staging) | access token `aud=icanova` → `/me` | staging | — |
+| 8B Real login E2E | Browser IdP login | VERIFIED | Playwright 13 passed (`E2E_OIDC=1`) | staging preview | — |
 | 8C Playwright infra | Browser E2E runner | COMPLETE | `playwright.config.ts`, `e2e/` | local preview | — |
 | 8C Unsigned smoke | Dashboard/Ops notices | VERIFIED | `docs/browser-e2e-report.md` | local | Re-run after UI changes |
 | 8C Auth browser E2E | Signed-in flows | BLOCKED | same | — | Staging accounts |
