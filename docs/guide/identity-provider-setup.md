@@ -58,7 +58,7 @@ Refresh tokens / silent renew: **DEFERRED** (public SPA without client secret).
 |---|---|---|
 | `AUTH_JWT_ISSUER` | Convex env | `https://YOUR_TENANT.auth0.com/` |
 | `AUTH_JWKS_URL` | Convex env | `https://YOUR_TENANT.auth0.com/.well-known/jwks.json` |
-| `AUTH_JWT_AUDIENCE` | Convex env | `dse-gateway` |
+| `AUTH_JWT_AUDIENCE` | Convex env | `icanova` |
 | `VITE_OIDC_ISSUER` | Frontend build | same issuer https URL |
 | `VITE_OIDC_CLIENT_ID` | Frontend build | public SPA client id |
 | `VITE_OIDC_AUDIENCE` | Frontend build | **must match** `AUTH_JWT_AUDIENCE` |
@@ -86,7 +86,7 @@ Refresh tokens / silent renew: **DEFERRED** (public SPA without client secret).
 Do **not** mark VERIFIED until each step succeeds on staging infrastructure.
 
 1. Complete real OIDC login (`/auth/login` → IdP → `/auth/callback`).
-2. Confirm stored bearer is the **access token** with `aud=dse-gateway` (not `id_token`).
+2. Confirm stored bearer is the **access token** with `aud=icanova` (not `id_token`).
 3. `GET https://dapper-roadrunner-247.convex.site/me` with that bearer → 200 + expected `subject`.
 4. Execute an authenticated Convex query (e.g. `organizations.mine`).
 5. Verify authenticated subject matches IdP `sub`.

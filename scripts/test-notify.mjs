@@ -47,7 +47,7 @@ if (email) {
       organizationId,
       to: email,
       subject: `DSE notify demo ${stamp}`,
-      html: `<p>Demo Resend delivery from DSE Control Center at ${stamp}.</p><p>This is not an operational alarm.</p>`,
+      html: `<p>Demo Resend delivery from iCanOva Monitoring Platform at ${stamp}.</p><p>This is not an operational alarm.</p>`,
     });
     console.log(`email=sent providerId=${result.id ?? "null"}`);
   } catch (error) {

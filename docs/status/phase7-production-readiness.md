@@ -42,7 +42,7 @@ Tenancy is resolved from the registered device `identity` (12 hex chars of efuse
 |---|---|---|
 | `AUTH_JWT_ISSUER` | Yes | Real JWT `iss` (not `disabled`, not invented) |
 | `AUTH_JWKS_URL` | Yes | Reachable JWKS URL matching the issuer |
-| `AUTH_JWT_AUDIENCE` | Yes (default `dse-gateway`) | Must match token `aud` |
+| `AUTH_JWT_AUDIENCE` | Yes (required; no code default — staging uses `icanova`) | Must match token `aud` |
 | `AUTH_JWT_JWKS` | Only if self-hosting JWKS on this deployment | Public JWK set JSON for `GET /.well-known/jwks.json` |
 | `INGEST_SECRET` | Yes | Shared bearer for collector → Convex ingest |
 | `RESEND_API_KEY` / `RESEND_FROM` | If email alerts | Otherwise email stays `not_configured` |

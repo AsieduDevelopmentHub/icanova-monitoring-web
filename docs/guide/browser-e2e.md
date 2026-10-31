@@ -33,7 +33,7 @@ Copy `.env.e2e.example` → `.env.e2e` (gitignored). Never commit credentials.
 | `VITE_CONVEX_URL` | Build-time | Must be `https://dapper-roadrunner-247.convex.cloud` for staging |
 | `VITE_OIDC_ISSUER` | Build-time | Real https IdP issuer |
 | `VITE_OIDC_CLIENT_ID` | Build-time | Public SPA client |
-| `VITE_OIDC_AUDIENCE` | Build-time | Must equal Convex `AUTH_JWT_AUDIENCE` (`dse-gateway`) |
+| `VITE_OIDC_AUDIENCE` | Build-time | Must equal Convex `AUTH_JWT_AUDIENCE` (staging: `icanova`) |
 | `VITE_OIDC_REDIRECT_URI` | Build-time | `{E2E_BASE_URL}/auth/callback` |
 | IdP test user | Manual | Synthetic staging account with org membership |
 

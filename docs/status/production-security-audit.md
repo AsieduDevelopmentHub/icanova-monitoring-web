@@ -1,7 +1,7 @@
 # Production security audit (Phase 8.2A)
 
 **Date:** 2026-10-31 (remediation pass)  
-**Scope:** Code + configuration evidence in `dse-gateway-web`. No production deploy. No speculative CVEs without evidence.  
+**Scope:** Code + configuration evidence in `icanova-monitoring-web`. No production deploy. No speculative CVEs without evidence.  
 **Method:** Repository inspection, staging verification history, Convex prod/recovery env probe.
 
 Severity: CRITICAL | HIGH | MEDIUM | LOW | INFORMATIONAL
