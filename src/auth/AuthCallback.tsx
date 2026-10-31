@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../convex/_generated/api";
+import { getBearerToken } from "../platform/bearer";
 import { completeLoginFromCallback, readOidcConfig } from "./oidc";
 
 /** OIDC redirect target. Never renders tokens or raw IdP errors. */
@@ -15,14 +18,31 @@ export function AuthCallback() {
       return;
     }
     const params = new URLSearchParams(window.location.search);
-    void completeLoginFromCallback(config, params).then((result) => {
-      if (result.ok) {
-        window.location.replace("/");
+    void (async () => {
+      const result = await completeLoginFromCallback(config, params);
+      if (!result.ok) {
+        setFailed(true);
+        setMessage("Sign-in was refused. Clear the session and try again.");
         return;
       }
-      setFailed(true);
-      setMessage("Sign-in was refused. Clear the session and try again.");
-    });
+      const convexUrl = import.meta.env.VITE_CONVEX_URL?.trim();
+      const token = getBearerToken();
+      if (convexUrl && token) {
+        try {
+          const client = new ConvexHttpClient(convexUrl);
+          client.setAuth(token);
+          // Create the users row for this Auth0 subject so LiveGate does not treat a valid JWT as rejected.
+          await client.mutation(api.users.ensure, {});
+        } catch {
+          setFailed(true);
+          setMessage(
+            "Signed in at Auth0, but this Convex deployment did not accept the session. Check AUTH_JWT_* on the deployment that VITE_CONVEX_URL points to (staging vs production).",
+          );
+          return;
+        }
+      }
+      window.location.replace("/");
+    })();
   }, []);
 
   return (

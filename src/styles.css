@@ -1212,6 +1212,62 @@ table.cfg td.num {
   line-height: 1.4;
 }
 
+.ops-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow);
+}
+
+.ops-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  font-size: 13px;
+}
+
+.ops-links a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ops-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ops-section > h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.reading-card {
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow);
+}
+
+.reading-card.is-stale {
+  opacity: 0.78;
+}
+
+.reading-card h2 {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-display);
+  font-size: 16px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .stale .metric-grid,
   .stale .alarms,

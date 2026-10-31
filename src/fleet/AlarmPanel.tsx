@@ -55,12 +55,11 @@ function SiteAlarmBody({
     Boolean(data.capped),
   );
   return (
-    <div className="stack">
-      <h2>Alarms</h2>
+    <section className="ops-section stack" aria-labelledby="ops-alarms-title">
+      <h2 id="ops-alarms-title">Active alarms</h2>
       <p className="meta">
-        {summary.note} A failed link in the readings is communication status. A communication alarm
-        is stored only after a generator reports ok, then fail, on the same boot. Named generator
-        alarms are not in the gateway sample.
+        {summary.note} A failed Modbus link in readings is communication status. A communication alarm
+        is stored only after a generator reports ok, then fail, on the same boot.
       </p>
       {summary.banner ? <p className="empty">{summary.banner}</p> : null}
       <div className="metric-grid">
@@ -85,7 +84,24 @@ function SiteAlarmBody({
             render: (row) => <StatusMark tone={severityTone(row.severity)}>{row.severity}</StatusMark>,
           },
           { key: "category", header: "Category", render: (row) => categoryLabel(row) },
+          {
+            key: "asset",
+            header: "Asset",
+            render: (row) =>
+              row.generatorId ? (
+                <Link to={`/generators/${row.generatorId}`}>{row.generatorName}</Link>
+              ) : (
+                row.generatorName || "—"
+              ),
+          },
           { key: "status", header: "Status", render: (row) => row.status },
+          {
+            key: "when",
+            header: "Last seen",
+            render: (row) => (
+              <span className="tech">{new Date(row.lastOccurredAt).toISOString()}</span>
+            ),
+          },
           {
             key: "open",
             header: "",
@@ -93,10 +109,10 @@ function SiteAlarmBody({
           },
         ]}
       />
-      <p>
+      <p className="meta">
         <Link to="/alarms">Alarm management</Link>
       </p>
-    </div>
+    </section>
   );
 }
 

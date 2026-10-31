@@ -195,6 +195,54 @@ export const inventory = query({
   },
 });
 
+/** Site-scoped gateway/device health for the monitoring dashboard. Bounded. */
+export const siteHealth = query({
+  args: {
+    organizationId: v.id("organizations"),
+    siteId: v.id("sites"),
+  },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "view.dashboard");
+    await requireSite(ctx, args.organizationId, args.siteId);
+    const batch = await ctx.db
+      .query("devices")
+      .withIndex("by_org_site", (q) =>
+        q.eq("organizationId", args.organizationId).eq("siteId", args.siteId),
+      )
+      .take(MAX_PAGE + 1);
+    const capped = batch.length > MAX_PAGE;
+    const devices = batch.slice(0, MAX_PAGE);
+    const rows = [];
+    for (const device of devices) {
+      const health = await ctx.db
+        .query("deviceHealthCurrent")
+        .withIndex("by_device", (q) => q.eq("deviceId", device._id))
+        .unique();
+      if (health && health.organizationId !== args.organizationId) {
+        throw new Error("Forbidden");
+      }
+      const generators = await ctx.db
+        .query("generators")
+        .withIndex("by_device", (q) => q.eq("deviceId", device._id))
+        .take(20);
+      if (generators.some((generator) => generator.organizationId !== args.organizationId)) {
+        throw new Error("Forbidden");
+      }
+      rows.push({
+        ...publicDevice(device),
+        gatewayStatus: health?.gatewayStatus ?? "unknown",
+        modbusStatus: health?.modbusStatus ?? "unknown",
+        telemetryFreshness: health?.telemetryFreshness ?? "missing",
+        overallStatus: health?.overallStatus ?? "unknown",
+        lastGatewayContactAt: health?.lastGatewayContactAt ?? null,
+        lastTelemetryAt: health?.lastTelemetryAt ?? null,
+        generatorCount: generators.length,
+      });
+    }
+    return { rows, capped };
+  },
+});
+
 export const detail = query({
   args: { deviceId: v.id("devices") },
   handler: async (ctx, args) => {

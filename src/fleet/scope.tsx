@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { Id } from "../../convex/_generated/dataModel";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { FilterBar, FilterSelect } from "../ui/FilterBar";
 import { setBearerToken } from "../platform/bearer";
@@ -39,16 +39,39 @@ export function LiveGate({ children }: { children: (org: OrgRow) => ReactNode })
 function OrgBody({ children }: { children: (org: OrgRow) => ReactNode }) {
   const me = useQuery(api.users.me, {});
   const orgs = useQuery(api.organizations.mine, {});
+  const ensure = useMutation(api.users.ensure);
+  const [ensureError, setEnsureError] = useState(false);
   const [picked, setPicked] = useState("");
+
+  // Valid JWT with no users row yet → provision once (login used to skip this).
+  useEffect(() => {
+    if (me !== null || ensureError) {
+      return;
+    }
+    let cancelled = false;
+    void ensure({})
+      .then(() => {
+        if (!cancelled) setEnsureError(false);
+      })
+      .catch(() => {
+        if (!cancelled) setEnsureError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [me, ensure, ensureError]);
+
   const gate = sessionView(true, me === undefined ? undefined : me);
-  if (gate === "loading" || orgs === undefined) {
+  if (gate === "loading" || orgs === undefined || (gate === "rejected" && !ensureError)) {
     return <p className="empty">Loading organizations.</p>;
   }
   if (gate === "rejected") {
     const notice = rejectedSessionNotice();
     return (
       <div className="notice" role="note">
-        <strong>{notice.title}</strong> {notice.detail}{" "}
+        <strong>{notice.title}</strong> {notice.detail} The SPA’s{" "}
+        <code>VITE_CONVEX_URL</code> deployment must have matching{" "}
+        <code>AUTH_JWT_*</code> (production <code>tremendous-sturgeon-449</code> is still empty).{" "}
         <button type="button" onClick={() => setBearerToken(null)}>
           Clear session
         </button>
