@@ -59,7 +59,7 @@ async function seed() {
     organizationId: orgA,
     siteId: siteA,
     name: "Gateway A",
-    identity: "gw-a",
+    identity: "aaaaaaaaaaaa",
   });
   const generatorA = await asA.mutation(api.generators.create, {
     organizationId: orgA,

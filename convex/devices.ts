@@ -62,7 +62,10 @@ export const create = mutation({
     await requirePermission(ctx, args.organizationId, "manage.devices");
     await requireSite(ctx, args.organizationId, args.siteId);
     const name = requireName(args.name, "Device name");
-    const identity = requireName(args.identity, "Device identity");
+    const identity = args.identity.trim().toLowerCase().replace(/[^0-9a-f]/g, "");
+    if (!/^[0-9a-f]{12}$/.test(identity)) {
+      throw new Error("Invalid identity");
+    }
     const existing = await ctx.db
       .query("devices")
       .withIndex("by_org_identity", (q) =>
@@ -160,6 +163,13 @@ export const inventory = query({
         if (health && health.organizationId !== args.organizationId) {
           throw new Error("Forbidden");
         }
+        const generators = await ctx.db
+          .query("generators")
+          .withIndex("by_device", (q) => q.eq("deviceId", device._id))
+          .take(20);
+        if (generators.some((generator) => generator.organizationId !== args.organizationId)) {
+          throw new Error("Forbidden");
+        }
         rows.push({
           ...publicDevice(device),
           siteName: site && site.organizationId === args.organizationId ? site.name : null,
@@ -167,6 +177,8 @@ export const inventory = query({
           modbusStatus: health?.modbusStatus ?? "unknown",
           telemetryFreshness: health?.telemetryFreshness ?? "missing",
           overallStatus: health?.overallStatus ?? "unknown",
+          lastGatewayContactAt: health?.lastGatewayContactAt ?? null,
+          generatorCount: generators.length,
         });
       }
       return { rows, capped: batch.length === 200, isDone: true, continueCursor: null };
@@ -182,6 +194,13 @@ export const inventory = query({
       if (health && health.organizationId !== args.organizationId) {
         throw new Error("Forbidden");
       }
+      const generators = await ctx.db
+        .query("generators")
+        .withIndex("by_device", (q) => q.eq("deviceId", device._id))
+        .take(20);
+      if (generators.some((generator) => generator.organizationId !== args.organizationId)) {
+        throw new Error("Forbidden");
+      }
       rows.push({
         ...publicDevice(device),
         siteName: site && site.organizationId === args.organizationId ? site.name : null,
@@ -189,6 +208,8 @@ export const inventory = query({
         modbusStatus: health?.modbusStatus ?? "unknown",
         telemetryFreshness: health?.telemetryFreshness ?? "missing",
         overallStatus: health?.overallStatus ?? "unknown",
+        lastGatewayContactAt: health?.lastGatewayContactAt ?? null,
+        generatorCount: generators.length,
       });
     }
     return { rows, capped: false, isDone: page.isDone, continueCursor: page.continueCursor };

@@ -187,6 +187,28 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
         {error ? <p className="err">{error}</p> : null}
       </section>
 
+      <section className="ops-section" aria-labelledby="gw-config-title">
+        <h2 id="gw-config-title">Configuration</h2>
+        <div className="notice" role="note">
+          <strong>Cloud does not deliver Modbus settings.</strong> Desired Soft-AP baud, parity, slave
+          ID, and GenComm writes are applied on the gateway itself (USB CLI or local Configure at the
+          Soft-AP). Saving cloud metadata here does not transmit or acknowledge controller
+          configuration.
+        </div>
+        <dl className="facts">
+          <dt>Desired configuration</dt>
+          <dd>Not stored as a cloud desired-state document</dd>
+          <dt>Configuration transmitted</dt>
+          <dd>Not implemented</dd>
+          <dt>Gateway acknowledgement</dt>
+          <dd>Not implemented</dd>
+          <dt>Local configuration UI</dt>
+          <dd>
+            <Link to="/local/configure">Live Configure (Soft-AP / LAN proxy)</Link>
+          </dd>
+        </dl>
+      </section>
+
       <section className="ops-section" aria-labelledby="gw-equipment-title">
         <h2 id="gw-equipment-title">Connected equipment</h2>
         {detail.generators.length === 0 ? (

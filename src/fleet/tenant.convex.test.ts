@@ -67,13 +67,13 @@ async function seed() {
     organizationId: orgA,
     siteId: siteA,
     name: "Gateway A",
-    identity: "gw-a",
+    identity: "aaaaaaaaaaaa",
   });
   const deviceC = await asC.mutation(api.devices.create, {
     organizationId: orgC,
     siteId: siteC,
     name: "Gateway C",
-    identity: "gw-c",
+    identity: "cccccccccccc",
   });
   const generatorA = await asA.mutation(api.generators.create, {
     organizationId: orgA,
@@ -163,27 +163,56 @@ describe("tenant isolation", () => {
     expect(await t.query(api.organizations.mine, {})).toEqual([]);
   });
 
+  test("gateway identity must be a 12-character hex MAC", async () => {
+    const { asA, orgA, siteA } = await seed();
+    await expect(
+      asA.mutation(api.devices.create, {
+        organizationId: orgA,
+        siteId: siteA,
+        name: "Bad",
+        identity: "not-a-mac",
+      }),
+    ).rejects.toThrow(/Invalid identity/);
+  });
+
+  test("site rename requires manage.sites and stays in-organization", async () => {
+    const { asA, asB, orgA, siteA } = await seed();
+    await expect(
+      asB.mutation(api.sites.rename, {
+        organizationId: orgA,
+        siteId: siteA,
+        name: "Hijack",
+      }),
+    ).rejects.toThrow(/Forbidden/);
+    const renamed = await asA.mutation(api.sites.rename, {
+      organizationId: orgA,
+      siteId: siteA,
+      name: "Yard North",
+    });
+    expect(renamed).toEqual({ siteId: siteA, changed: true });
+  });
+
   test("the same gateway identity can exist in another organization only", async () => {
     const { asA, asC, orgA, orgC, siteA, siteC } = await seed();
     await asA.mutation(api.devices.create, {
       organizationId: orgA,
       siteId: siteA,
       name: "Second",
-      identity: "shared-mac",
+      identity: "dddddddddddd",
     });
     await expect(
       asA.mutation(api.devices.create, {
         organizationId: orgA,
         siteId: siteA,
         name: "Duplicate",
-        identity: "shared-mac",
+        identity: "dddddddddddd",
       }),
     ).rejects.toThrow(/Already registered/);
     const other = await asC.mutation(api.devices.create, {
       organizationId: orgC,
       siteId: siteC,
       name: "Other",
-      identity: "shared-mac",
+      identity: "dddddddddddd",
     });
     expect(other).toBeTruthy();
   });
@@ -465,10 +494,10 @@ describe("tenant isolation", () => {
     expect(otherOrg.rows).toHaveLength(0);
     const own = await asA.query(api.devices.inventory, {
       organizationId: orgA,
-      search: "gw-a",
+      search: "aaaaaaaaaaaa",
       paginationOpts: page,
     });
-    expect(own.rows.map((row) => row.identity)).toEqual(["gw-a"]);
+    expect(own.rows.map((row) => row.identity)).toEqual(["aaaaaaaaaaaa"]);
   });
 
   test("roles, exports, maintenance, and deliveries enforce permissions", async () => {

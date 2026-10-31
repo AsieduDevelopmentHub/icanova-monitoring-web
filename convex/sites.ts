@@ -51,3 +51,23 @@ export const create = mutation({
     return siteId;
   },
 });
+
+/** Rename site metadata only. No hierarchy or location fields exist. */
+export const rename = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    siteId: v.id("sites"),
+    name: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "manage.sites");
+    const site = await requireSite(ctx, args.organizationId, args.siteId);
+    const name = requireName(args.name, "Site name");
+    if (site.name === name) {
+      return { siteId: site._id, changed: false as const };
+    }
+    await ctx.db.patch(site._id, { name });
+    await writeAudit(ctx, args.organizationId, "site.rename", site._id);
+    return { siteId: site._id, changed: true as const };
+  },
+});

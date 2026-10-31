@@ -10,6 +10,7 @@ import { formatReading } from "../telemetry/readings";
 import { storedFreshness } from "../telemetry/freshness";
 import { accessMessage, id, storedReading } from "./access";
 import { FleetBoundary } from "./boundary";
+import { gatewayIdentityError, normalizeGatewayIdentity } from "./gatewayIdentity";
 import { useBearerToken } from "./useBearer";
 
 type OrgRow = { organizationId: string; name: string; permissions: string[] };
@@ -195,8 +196,18 @@ function Devices({
   async function onCreateDevice(event: FormEvent) {
     event.preventDefault();
     setFormError(null);
+    const identityError = gatewayIdentityError(identity);
+    if (identityError) {
+      setFormError(identityError);
+      return;
+    }
     try {
-      await createDevice({ organizationId, siteId, name: deviceName, identity });
+      await createDevice({
+        organizationId,
+        siteId,
+        name: deviceName,
+        identity: normalizeGatewayIdentity(identity),
+      });
       setDeviceName("");
       setIdentity("");
     } catch (error) {
@@ -228,10 +239,17 @@ function Devices({
           <input value={deviceName} onChange={(event) => setDeviceName(event.target.value)} />
         </label>
         <label className="filter-field grow">
-          <span>Device identity</span>
-          <input value={identity} onChange={(event) => setIdentity(event.target.value)} />
+          <span>Gateway identity (efuse MAC)</span>
+          <input
+            className="tech"
+            value={identity}
+            onChange={(event) => setIdentity(event.target.value)}
+            placeholder="a1b2c3d4e5f6"
+          />
         </label>
-        <button type="submit">Create device</button>
+        <button type="submit" className="btn btn-primary">
+          Register gateway
+        </button>
       </form>
       <form className="filter-bar" onSubmit={onCreateGenerator}>
         <label className="filter-field">
