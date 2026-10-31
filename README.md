@@ -44,5 +44,5 @@ Do not invent production JWT issuer or JWKS values. Staging Auth0 audience may a
 
 | Item | Current | Target (authorized rename) |
 | ---- | ------- | -------------------------- |
-| GitHub | `AsieduDevelopmentHub/dse-gateway-web` | `icanova-monitoring-web` |
+| GitHub | [AsieduDevelopmentHub/icanova-monitoring-web](https://github.com/AsieduDevelopmentHub/icanova-monitoring-web) | renamed |
 | package.json name | `icanova-monitoring-web` | same |

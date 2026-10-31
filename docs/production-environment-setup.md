@@ -91,8 +91,34 @@ Smoke: `GET /me` 401 without token; 200 with prod Auth0 access token (`aud` matc
 
 ---
 
-## 6. Related docs
+## 6. Production blueprint checklist (8.2B)
+
+| # | Item | Owner | Status |
+|---|---|---|---|
+| 1 | Production Auth0 tenant/application | Operator | OPEN |
+| 2 | Production Auth0 API audience (e.g. `icanova`) | Operator | OPEN |
+| 3–5 | Callback / logout / allowed origins | Operator | OPEN |
+| 6 | Issuer + JWKS on Convex | Operator | OPEN |
+| 7 | Production Convex deployment confirmed | Operator | Proposed `tremendous-sturgeon-449` — **unverified purpose; env empty** |
+| 8–9 | JWT config + secrets (ingest, notify) | Operator | OPEN |
+| 10–12 | Frontend host, domain, TLS, DNS | Operator | OPEN |
+| 13 | Monitoring/alerting | Operator | OPEN |
+| 14 | Backup/recovery | Operator | Depends on restore drill |
+| 15 | Notification providers | Operator | OPEN |
+| 16 | Device credential provisioning process | Operator | Plan ready |
+| 17 | Operator access / admin accounts | Operator | OPEN |
+| 18 | Rollback procedure | Docs | `docs/production-deployment-runbook.md` |
+
+Validate local/staging profiles (non-destructive):
+
+```bash
+node scripts/validate-env-profile.mjs staging
+node scripts/validate-env-profile.mjs production
+```
+
+## 7. Related docs
 
 - Auth0 contract: `docs/identity-provider-setup.md`, `docs/production-auth-setup.md`
 - Deploy/rollback: `docs/production-deployment-runbook.md`
 - Security findings: `docs/production-security-audit.md`
+- Master status: `docs/phase8-master-status.md`

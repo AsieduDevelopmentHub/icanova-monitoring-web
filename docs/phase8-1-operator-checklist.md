@@ -31,9 +31,22 @@ Do **not** paste secrets into source or git. Staging is provisioned.
 
 | Step | Where | Action | Verify |
 |---|---|---|---|
-| Login → `/me` | Browser + Auth0 | Sign in at `/auth/login`; confirm access token `aud=icanova` | `GET {site}/me` → 200 |
-| Org membership | Staging Convex | Seed membership for Auth0 `sub` | Authenticated queries work |
-| E2E | Local | `E2E_OIDC=1 pnpm test:e2e` | Authenticated specs run |
-| Restore drill | Convex | Backup staging → restore to **empty** recovery only | Fill RPO/RTO in backup doc |
+| Restore drill | Convex | **BLOCKED — EXPLICIT OPERATOR AUTHORIZATION REQUIRED** | See below |
 
-Full notes: `docs/phase8-1-closure.md`
+Auth0 login → `/me`, org seed, and `E2E_OIDC=1` Playwright were verified in Phase 8.1 close-out.
+
+### Restore drill (do not skip authorization)
+
+```bash
+node scripts/restore-drill-check.mjs
+# After downloading a staging backup ZIP path listing:
+# node scripts/restore-drill-check.mjs --paths-file backups/staging-paths.txt
+```
+
+1. Written authorization.  
+2. Backup `dapper-roadrunner-247` only as **source**.  
+3. Create **empty** recovery deployment (not kangaroo / roadrunner / sturgeon).  
+4. Restore into recovery only; reconstruct env from vault.  
+5. Record RPO/RTO in `docs/backup-restore-verification.md`.  
+
+Full notes: `docs/phase8-1-closure.md` · Master: `docs/phase8-master-status.md`
