@@ -53,6 +53,7 @@ import type * as reports from "../reports.js";
 import type * as rollup from "../rollup.js";
 import type * as siteSummary from "../siteSummary.js";
 import type * as sites from "../sites.js";
+import type * as stagingWipe from "../stagingWipe.js";
 import type * as storage from "../storage.js";
 import type * as telemetry from "../telemetry.js";
 import type * as users from "../users.js";
@@ -109,6 +110,7 @@ declare const fullApi: ApiFromModules<{
   rollup: typeof rollup;
   siteSummary: typeof siteSummary;
   sites: typeof sites;
+  stagingWipe: typeof stagingWipe;
   storage: typeof storage;
   telemetry: typeof telemetry;
   users: typeof users;
