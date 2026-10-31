@@ -1,7 +1,7 @@
 import { parseMeasurement, type Reading } from "./readings";
 
 export const DEMO_GENERATOR_ID = "log-7320";
-export const DEMO_SOURCE = "dse-modbus-gateway/logs/dse.log";
+export const DEMO_SOURCE = "icanova-edge-gateway/logs/dse.log";
 
 export type BatchFail = {
   address: number;

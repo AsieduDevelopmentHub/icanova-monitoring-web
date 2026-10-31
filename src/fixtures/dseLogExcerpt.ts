@@ -1,5 +1,5 @@
 /**
- * Excerpt of dse-modbus-gateway/logs/dse.log.
+ * Excerpt of icanova-edge-gateway/logs/dse.log.
  * Gap-timing lines inside diagnostics are omitted. Values are not edited.
  */
 export const DSE_LOG_EXCERPT = `

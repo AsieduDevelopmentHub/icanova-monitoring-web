@@ -26,7 +26,7 @@ Never put an OIDC client **secret** in `VITE_*`.
 |---|---|---|---|
 | `AUTH_JWT_ISSUER` | Production | No (URL) | JWT issuer. Use `disabled` only in unlocked local experiments |
 | `AUTH_JWKS_URL` | Production | No (URL) | JWKS endpoint. Must be reachable |
-| `AUTH_JWT_AUDIENCE` | Production | No | Expected `aud` (default `dse-gateway`) |
+| `AUTH_JWT_AUDIENCE` | Production | No | Expected `aud` (staging brand: `icanova`; code fallback `dse-gateway` — always set explicitly) |
 | `AUTH_JWT_JWKS` | If self-hosting JWKS | Public keys only | Body of `GET /.well-known/jwks.json` |
 | `INGEST_SECRET` | Production ingest | **Yes** | Bearer shared with NCU collector |
 | `INGEST_RATE_LIMIT_DEVICE` | Optional | No | Max ingest requests per device identity per window (default 60) |

@@ -53,12 +53,12 @@ export function Shell() {
   const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const crumbs = crumbsFor(pathname);
-  const here = crumbs[crumbs.length - 1]?.label ?? "DSE Control Center";
+  const here = crumbs[crumbs.length - 1]?.label ?? "iCanOva";
   const token = useBearerToken();
   const session = token ? "Session token stored" : "Not signed in";
 
   useEffect(() => {
-    document.title = `${here} · DSE Control Center`;
+    document.title = `${here} · iCanOva`;
   }, [here]);
 
   useEffect(() => {
@@ -72,8 +72,8 @@ export function Shell() {
       </a>
       <aside className="sidebar">
         <div className="brand-lockup">
-          <span className="brand-mark">ADH</span>
-          <span className="brand-name">DSE Control Center</span>
+          <span className="brand-mark">iCanOva</span>
+          <span className="brand-name">Monitoring</span>
         </div>
         <NavList />
       </aside>

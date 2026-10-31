@@ -1,112 +1,124 @@
-# Phase 8.2 — Production infrastructure & security acceptance (preparation)
+# Phase 8.2A — Production architecture & security acceptance
 
 **Date:** 2026-10-31  
-**Status:** **PREPARATION ONLY — NO PRODUCTION DEPLOYMENT**  
-**Depends on:** Phase 8.1 software gates (done). Staging restore drill still open.
+**Status:** **AUDIT COMPLETE — NO PRODUCTION DEPLOYMENT**  
+**Phase 8.1 dependency:** Restore drill still **BLOCKED**  
+**Proposed prod Convex:** `tremendous-sturgeon-449` — **env empty** as of audit
 
-Statuses: VERIFIED IN STAGING | READY FOR PRODUCTION | OPERATOR CONFIGURATION REQUIRED | NOT VERIFIED | BLOCKED | NOT APPLICABLE
+Classifications: VERIFIED IN STAGING | READY FOR PRODUCTION | OPERATOR CONFIGURATION REQUIRED | IMPLEMENTATION REQUIRED | BLOCKED | NOT APPLICABLE | NOT VERIFIED
 
 ---
 
-## 1. Authentication
+## Deliverables map
 
-| Item | Status | Notes |
+| Doc | Purpose |
+|---|---|
+| `docs/production-environment-setup.md` | Three-env design + variable split |
+| `docs/production-security-audit.md` | Findings by severity |
+| `docs/production-deployment-runbook.md` | Deploy / smoke / rollback (do not execute) |
+| `docs/device-credential-migration-plan.md` | Controlled fleet migration |
+| `docs/production-backup-recovery-plan.md` | Prod DR requirements |
+| This file | Acceptance matrix |
+
+---
+
+## 1. Environment & architecture
+
+| Requirement | Classification | Notes |
 |---|---|---|
-| Staging Auth0 `icanova` | VERIFIED IN STAGING | Do **not** copy staging secrets to production |
-| Production Auth0 tenant | OPERATOR CONFIGURATION REQUIRED | Separate tenant or prod app recommended |
-| Production issuer / JWKS / audience | OPERATOR CONFIGURATION REQUIRED | Confirm `aud` (likely still `icanova` if same API brand) |
-| Production redirect / logout URIs | OPERATOR CONFIGURATION REQUIRED | Production SPA origins only |
-| Token TTL / key rotation | NOT VERIFIED | Document Auth0 rotation procedure |
-| Session handling | VERIFIED IN STAGING | SPA bearer in sessionStorage; logout clears |
-| Org membership bootstrap | VERIFIED IN STAGING | Need production invite/role procedure |
+| Dev / staging / prod separation | READY FOR PRODUCTION (design) | kangaroo / roadrunner / sturgeon |
+| Prod target identity | OPERATOR CONFIGURATION REQUIRED | `tremendous-sturgeon-449` exists; **0 env vars** |
+| Hosting platform | OPERATOR CONFIGURATION REQUIRED | Not Vercel-assumed; static HTTPS |
+| CI/CD | IMPLEMENTATION REQUIRED (optional) | No workflows today |
+| Rollback commands | READY FOR PRODUCTION (docs) | Runbook §10 |
 
----
+## 2. Auth0 production
 
-## 2. Convex production
-
-| Item | Status | Notes |
+| Requirement | Classification | Notes |
 |---|---|---|
-| Existing deploy `tremendous-sturgeon-449` | NOT APPLICABLE as staging | Treat as production candidate only after gates |
-| Production env vars | OPERATOR CONFIGURATION REQUIRED | Distinct `INGEST_SECRET`, Auth0 `AUTH_*`, Resend/Arkesel |
-| Deploy / rollback procedure | OPERATOR CONFIGURATION REQUIRED | Checklist before any push |
-| Execute production deploy | BLOCKED | Explicit authorization required |
+| Staging Auth0 `icanova` | VERIFIED IN STAGING | Do not copy secrets |
+| Prod tenant/app/API | OPERATOR CONFIGURATION REQUIRED | Separate from staging |
+| Access-token-only bearer | VERIFIED IN STAGING | Preserve in prod |
+| Issuer / JWKS / aud / callbacks | OPERATOR CONFIGURATION REQUIRED | Exact values from Auth0 console |
+| Token TTL / key rotation | NOT VERIFIED | Operator Auth0 settings |
+| Org membership process | IMPLEMENTATION REQUIRED (ops) | Invite/role runbook |
 
----
+## 3. Convex production
 
-## 3. Frontend hosting
-
-| Item | Status | Notes |
+| Requirement | Classification | Notes |
 |---|---|---|
-| Vercel | NOT APPLICABLE | Not configured in repo |
-| Hosting choice | OPERATOR CONFIGURATION REQUIRED | Vercel / other / existing |
-| Production `VITE_*` only | READY FOR PRODUCTION (pattern) | Never put secrets in `VITE_*` |
-
----
+| Schema / HTTP / crons | READY FOR PRODUCTION (code) | Same codebase as staging |
+| Prod secrets set | BLOCKED | Empty env on sturgeon |
+| Pre/post smoke | READY FOR PRODUCTION (docs) | Runbook |
+| Migrations | READY FOR PRODUCTION (policy) | Additive / dry-run |
 
 ## 4. Ingestion security
 
-| Item | Status | Notes |
+| Requirement | Classification | Notes |
 |---|---|---|
-| Dual-auth + shared secret | VERIFIED IN STAGING | Keep shared secret until fleet cutover |
-| Per-device credentials | VERIFIED IN STAGING | HTTP matrix |
-| Rate / body limits | VERIFIED IN STAGING (code) | Confirm prod env overrides if any |
-| Fleet-wide migration | BLOCKED | Controlled plan only; no auto migration |
-| Replay protection | NOT VERIFIED | Audit idempotency / cursors for prod write-up |
-
----
+| Dual-auth + matrix | VERIFIED IN STAGING | Keep shared secret |
+| Rate / size limits | READY FOR PRODUCTION (code) | |
+| Order / cursors | READY FOR PRODUCTION (code) | Replay/idempotency at batch level |
+| Fleet migration | IMPLEMENTATION REQUIRED | Plan documented; not executed |
+| Cutover remove shared secret | BLOCKED | Needs approval post-migration |
 
 ## 5. Notifications
 
-| Item | Status | Notes |
+| Requirement | Classification | Notes |
 |---|---|---|
-| Lab Resend / TEST_NOTIFY | VERIFIED IN STAGING (config) | Not a production send proof |
-| Production email/SMS credentials | OPERATOR CONFIGURATION REQUIRED | Sandbox first |
-| Live prod notify send | BLOCKED | Needs authorization |
+| Resend/Arkesel code paths | READY FOR PRODUCTION (code) | |
+| Prod provider credentials | OPERATOR CONFIGURATION REQUIRED | |
+| `TEST_NOTIFY_*` in prod | NOT APPLICABLE | Must stay unset |
+| Controlled test send | BLOCKED | Needs authorization |
+| SMS idempotency | NOT VERIFIED / MEDIUM risk | See security audit S6 |
 
----
+## 6. Backup & DR
 
-## 6. Backup & recovery
-
-| Item | Status | Notes |
+| Requirement | Classification | Notes |
 |---|---|---|
-| Staging restore drill | BLOCKED | Prerequisite for claiming prod DR |
-| Prod backup schedule / retention | OPERATOR CONFIGURATION REQUIRED | |
-| Secret reconstruction outside ZIP | READY FOR PRODUCTION (pattern) | Documented in DR docs |
+| Staging restore drill | BLOCKED | Phase 8.1 open item |
+| Prod backup schedule | OPERATOR CONFIGURATION REQUIRED | |
+| Artifact validation tooling | READY FOR PRODUCTION (code) | `backupArtifact.ts` |
+| Claimed RPO/RTO | NOT VERIFIED | Targets only |
 
----
+## 7. Monitoring & ops
 
-## 7. Monitoring & ops ACL
-
-| Item | Status | Notes |
+| Requirement | Classification | Notes |
 |---|---|---|
-| Section ACL | VERIFIED IN STAGING / local | Keep backend `requirePermission` |
-| Ingest / gateway / job health | VERIFIED IN STAGING (code paths) | Confirm prod dashboards / alerts |
-| Auth failure metrics | NOT VERIFIED | |
+| Section ACL | VERIFIED IN STAGING | |
+| Health / freshness / ingest ops | READY FOR PRODUCTION (code) | Distinguish online/Modbus/freshness in product model |
+| Auth failure monitoring dashboards | NOT VERIFIED | Counters exist; alerting operator-owned |
+| Hardware Modbus/SIM field proof | NOT APPLICABLE | Hardware ATP |
 
----
+## 8. Security findings summary
 
-## 8. Deployment safety (do not execute)
+See `docs/production-security-audit.md`.
 
-Prepare before any production push:
+| Severity | Count (this audit) |
+|---|---|
+| CRITICAL | 1 (empty prod env) |
+| HIGH | 2 (shared ingest; undrilled restore) |
+| MEDIUM | 4 |
+| LOW | 2 |
+| INFORMATIONAL | 3 |
 
-1. Env verification checklist (Auth, ingest, notify)  
-2. Staging smoke replay  
-3. Rollback: previous Convex deploy + previous SPA artifact  
-4. Post-deploy: `/me`, ingest 401 without secret, one synthetic device  
-5. Incident criteria to roll back  
+## 9. Deployment readiness
 
----
+| Item | Classification |
+|---|---|
+| Runbook complete | READY FOR PRODUCTION (docs) |
+| Execute prod deploy | BLOCKED |
 
-## 9. Hardware boundary
+## 10. Operator actions (ordered)
 
-ESP32 / RS485 / DSE / field SIM behavior remain **NOT VERIFIED** here — separate hardware ATP.
+1. Complete Phase 8.1 isolated restore drill **or** accept residual DR risk in writing.  
+2. Choose production SPA host + TLS.  
+3. Create production Auth0 SPA + API; set callbacks.  
+4. Set Convex prod env on approved deployment (never clone staging values).  
+5. Build SPA with prod `VITE_*`; smoke Auth + ingest.  
+6. Written approval → follow `docs/production-deployment-runbook.md`.  
+7. Plan device credential batches per migration plan (no mass cutover yet).  
 
----
+## 11. Hardware boundary
 
-## 10. Operator actions to start Phase 8.2 execution
-
-1. Complete staging restore drill (close Phase 8.1 fully).  
-2. Choose production SPA host.  
-3. Provision production Auth0 app + API (`icanova` or prod identifier).  
-4. Set production Convex env (never clone staging secrets).  
-5. Written approval before first production deploy.
+No ESP32 / RS485 / DSE / SIM verification in Phase 8.2A.

@@ -23,7 +23,9 @@ export function AuthLogin() {
   return (
     <section className="page">
       <header className="page-head">
+        <p className="brand-mark">iCanOva</p>
         <h1>Sign-in</h1>
+        <p>Imagine. Connect. Innovate.</p>
         <p>{error ?? "Redirecting to the identity provider…"}</p>
       </header>
     </section>

@@ -1,22 +1,33 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Manrope:wght@500;600;700&display=swap");
 
 :root {
-  --bg: #101214;
-  --bg-elev: #181b1f;
-  --bg-inset: #0c0e10;
-  --ink: #e6e8eb;
-  --muted: #8e959c;
-  --faint: #5e666d;
-  --line: #2c3238;
-  --line-strong: #3e464e;
-  --accent: #c9843a;
-  --accent-dim: #8a5a28;
-  --ok: #7dcea0;
-  --warn: #e0b15a;
-  --alarm: #e07a6a;
-  --info: #8eb4cc;
-  --offline: #8b939b;
-  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  /* iCanOva brand tokens — dark environment */
+  --brand-name: "iCanOva";
+  --color-graphite: #111820;
+  --color-warm-white: #f2f1ed;
+  --color-deep-navy: #263746;
+  --color-titanium: #b8babc;
+  --color-light-silver: #d8d9d7;
+  --color-industrial-steel: #637b83;
+  --color-muted-copper: #a8754d;
+
+  --bg: var(--color-graphite);
+  --bg-elev: var(--color-deep-navy);
+  --bg-inset: #0c1016;
+  --ink: var(--color-warm-white);
+  --muted: var(--color-titanium);
+  --faint: var(--color-industrial-steel);
+  --line: #2a3642;
+  --line-strong: var(--color-industrial-steel);
+  --accent: var(--color-muted-copper);
+  --accent-dim: #7d5639;
+  --ok: #24845b;
+  --warn: #d18a26;
+  --alarm: #c64747;
+  --info: #477ca8;
+  --offline: #707780;
+  --font-display: "Manrope", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
   --space-1: 4px;
   --space-2: 8px;
@@ -24,7 +35,10 @@
   --space-4: 16px;
   --space-5: 24px;
   --space-6: 32px;
-  --radius: 2px;
+  --radius: 4px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
   --sidebar: 228px;
   --topbar: 48px;
   --shadow: none;
@@ -132,16 +146,19 @@ a {
 }
 
 .brand-mark {
-  color: var(--accent);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.16em;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .brand-name {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .side-nav {

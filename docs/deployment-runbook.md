@@ -14,7 +14,7 @@ A green `productionReady` / `productionProfileReady` check is **not** production
 |---|---|
 | Frontend | Vite → `dist/` via `pnpm build`. No `vercel.json`. Host is operator-chosen static HTTPS. |
 | Backend | Convex functions via Convex CLI (`pnpm exec convex dev --once` or `convex deploy`) |
-| Collector | `dse-modbus-gateway/tools/ncu_inbox.py` → `INGEST_URL` + `INGEST_SECRET` |
+| Collector | `icanova-edge-gateway/tools/ncu_inbox.py` → `INGEST_URL` + `INGEST_SECRET` |
 | Firmware | Separate repo; uplink host/path/bearer in NVS — not flashed by this web deploy |
 | CI | None in-repo (no `.github/workflows`) |
 
@@ -28,8 +28,8 @@ There is **no** checked-in `convex.json` at repo root; the CLI uses the linked p
 |---|---|---|---|
 | Local | `convex dev` | `pnpm dev` + `.env.local` | Dev-only |
 | Development | `effervescent-kangaroo-10` | Build with that `VITE_CONVEX_URL` | Dev secrets; never copy to prod |
-| Staging | `dapper-roadrunner-247` (lab JWKS) | `.env.staging.local` | Distinct `INGEST_SECRET`, lab Auth JWKS, lab notify; real OIDC IdP still OPERATOR |
-| Production | **Not started** — OPERATOR | Separate HTTPS host | Operator-supplied only |
+| Staging | `dapper-roadrunner-247` | `.env.staging.local` | Auth0 `icanova` + distinct ingest; E2E verified |
+| Production | **Proposed** `tremendous-sturgeon-449` (env empty) | Operator host + prod `VITE_*` | See Phase 8.2A docs — **do not deploy** until gates clear |
 
 Required operator values for production/staging (never invented by agents):
 

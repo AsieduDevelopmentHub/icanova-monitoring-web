@@ -31,14 +31,18 @@ Admin: `devices.setIngestCredential` / `devices.clearIngestCredential` require `
 
 ---
 
-## 3. Cutover plan (future)
+## 3. Cutover plan
+
+Detailed fleet batches, monitoring, and approval gates: **`docs/device-credential-migration-plan.md`** (Phase 8.2A).
+
+Summary:
 
 1. Keep shared secret working.
 2. Provision hashes for registered devices; store plaintext only in secure operator vault / device NVS.
 3. Migrate collectors/firmware device-by-device to device bearer.
 4. Monitor `auth_failed` vs accept rates.
-5. Retire shared secret only after entire production fleet rotated.
-6. Rollback: re-enable shared secret env; previous hash overlap covers in-flight rotations.
+5. Retire shared secret only after entire production fleet rotated + written approval.
+6. Rollback: shared secret env remains; previous hash overlap covers in-flight rotations.
 
 ---
 

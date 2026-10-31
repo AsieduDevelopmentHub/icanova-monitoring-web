@@ -12,7 +12,7 @@ This document is the Phase 7A deliverable. Implementation of 7B–7M must not in
 
 | Layer | Location | Production path |
 |---|---|---|
-| Gateway firmware | `dse-modbus-gateway` | STA → HTTPS uplink (NCU1) or LAN collector |
+| Gateway firmware | `icanova-edge-gateway` | STA → HTTPS uplink (NCU1) or LAN collector |
 | Collector | `tools/ncu_inbox.py` | Decrypts NCU1, posts JSON to Convex `/ncu/ingest` with bearer |
 | Convex HTTP | `convex/http.ts` | `/ncu/ingest`, `/me`, `/.well-known/jwks.json` |
 | Convex data | `convex/schema.ts` | Org-scoped devices, telemetry, alarms, health, notify |
