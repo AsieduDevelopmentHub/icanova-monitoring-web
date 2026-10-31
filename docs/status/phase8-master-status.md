@@ -1,10 +1,11 @@
 # Phase 8 — Master status
 
 **Date:** 2026-10-31  
-**Overall programme status:** **NOT READY** (for production launch)  
-**Closest accurate review label:** **READY FOR OPERATOR REVIEW** (8.5C BLOCKED on prod Auth0 + sturgeon env). **PRODUCTION DEPLOYMENT NOT AUTHORIZED.**
+**Phase 8 software status:** **COMPLETE WITH DOCUMENTED EXCEPTIONS** — canonical `docs/status/phase-8-final.md`  
+**Production launch:** **NOT READY** / **`PRODUCTION: NOT AUTHORIZED`** (sturgeon empty; Pages on roadrunner)  
+**Active auth:** Convex Auth Password (Auth0 FUTURE/INACTIVE)
 
-Git: `master` @ `c552261` (iCanOva branding). Working tree includes Phase 8 docs/scripts from this programme.
+Git: working tree includes Phase 8 closure docs from this programme.
 
 ---
 
@@ -12,14 +13,14 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree includes Phase 8 docs
 
 | Item | Classification | Evidence | Remaining | Auto-safe? |
 |---|---|---|---|---|
-| Staging Convex `dapper-roadrunner-247` | VERIFIED | Deploy + Auth0 + E2E + device matrix | Keep isolated | Yes (read-only checks) |
-| Staging Auth0 `aud=icanova` | VERIFIED | `/me`, Playwright | — | Yes |
+| Staging Convex `dapper-roadrunner-247` | VERIFIED | Convex Auth + hosted E2E 4/4 | Keep isolated | Yes (read-only checks) |
+| Active IdP Convex Auth | VERIFIED | 8.5E–G | Auth0 FUTURE/INACTIVE | Yes |
 | Phase 8.1 restore drill | VERIFIED | `vivid-mosquito-28`; RPO/RTO recorded | Keep quarantined | Yes (read-only) |
 | Dev Convex kangaroo-10 | VERIFIED | Linked CLI default | Do not overwrite | Yes |
-| Prod Convex sturgeon-449 | BLOCKED (8.5C) | Identity OK; **0 env**; `/me` 404 | AUTH_*/INGEST + function deploy auth | **No** |
-| Prod Auth0 | NOT VERIFIED | Pages still uses staging Auth0 issuer | Dedicated tenant or written interim acceptance | No |
-| Hosting | Cloudflare Pages live | `https://icanova.pages.dev`; OIDC set | Point `VITE_CONVEX_URL` at sturgeon after prod ready | No |
-| Prod Convex secrets | BLOCKED | Empty — staging secrets not copied | After Auth0 verified + written auth | No |
+| Prod Convex sturgeon-449 | EMPTY / PENDING AUTH | Identity OK; **0 env**; HTTP 404 | JWT_*/INGEST + deploy after written auth | **No** |
+| Prod Auth0 | SUPERSEDED | Convex Auth is active IdP | Future enterprise IdP only | No |
+| Hosting | Cloudflare Pages live | `icanova.pages.dev` → roadrunner (8.5G) | Point `VITE_CONVEX_URL` at sturgeon after prod ready | No |
+| Prod Convex secrets | NOT PROVISIONED | Empty — staging secrets not copied | After written production authorization | No |
 | Dual-auth server | VERIFIED | Staging HTTP matrix | Fleet migration deferred | Yes (tests) |
 | Fleet credential migration | PLAN ONLY | Plan docs | Authorize batches | No |
 | Notify prod providers | OPERATOR CONFIGURATION REQUIRED | Controlled test procedure documented | Creds + auth to send | No |
@@ -43,7 +44,8 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree includes Phase 8 docs
 | 8.2F Automated acceptance | See latest test run in programme report |
 | 8.3 Device migration prep | PLAN ONLY — not executed |
 | 8.4 Hardware ATP prep | Plan COMPLETE — physical BLOCKED |
-| 8.5 Launch readiness | **NOT READY** |
+| 8.5 Launch readiness | **SOFTWARE COMPLETE** — prod deploy pending authorization (`phase-8-final.md`) |
+| 8.FINAL Closure | **COMPLETE WITH DOCUMENTED EXCEPTIONS** — `docs/status/phase-8-final.md` |
 | 8.5A Auth0 + hosting readiness | **COMPLETE** (docs/templates) |
 | 8.5B Host + Auth0 preflight | Pages live; OIDC set (staging Auth0) |
 | 8.5C Production Convex provisioning | **BLOCKED** — see `docs/status/phase-8.5c-production-convex-provisioning.md` |
@@ -77,6 +79,7 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree includes Phase 8 docs
 | `docs/status/phase-8.5e-convex-auth-transition.md` |
 | `docs/status/phase-8.5f-staging-convex-auth-activation.md` |
 | `docs/status/phase-8.5g-pages-convex-auth-cutover.md` |
+| `docs/status/phase-8-final.md` |
 | `docs/guide/production-environment-inventory.md` |
 | `docs/status/production-integration-verification.md` |
 | `docs/status/production-launch-checklist.md` |
@@ -95,7 +98,7 @@ Git: `master` @ `c552261` (iCanOva branding). Working tree includes Phase 8 docs
 
 ## Next single safest action
 
-**Staging frontend cutover is VERIFIED.** Next production gates remain operator-authorized only (sturgeon env, prod deploy, written go-live). Do **not** touch sturgeon without authorization.
+**Phase 8 software is closed.** Next: obtain **written production authorization**, then provision independent sturgeon `JWT_PRIVATE_KEY` / `JWKS` / `INGEST_SECRET`, deploy functions, smoke Password auth, rebuild Pages with production `VITE_CONVEX_URL`. Do **not** copy staging secrets.
 
-Canonical: `docs/status/phase-8.5g-pages-convex-auth-cutover.md`  
+Canonical: `docs/status/phase-8-final.md`  
 **PRODUCTION DEPLOYMENT NOT AUTHORIZED.**

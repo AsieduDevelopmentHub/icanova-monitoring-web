@@ -16,13 +16,13 @@ Severity: CRITICAL | HIGH | MEDIUM | LOW | INFORMATIONAL
 | S2 | **HIGH** | Shared `INGEST_SECRET` remains fleet-wide auth for ESP32/NCU1 | Dual-auth design; staging matrix keeps shared path | Keep until approved per-device cutover (`docs/guide/device-credential-migration-plan.md`); rotate if leaked; monitor `auth_failed` |
 | S3 | **MEDIUM** | Production-sourced DR restore **not drilled** (staging isolated restore **VERIFIED** on `vivid-mosquito-28`) | `docs/guide/backup-restore-verification.md` §6 | Run prod-sourced empty-recovery drill before claiming prod DR, or accept residual risk in writing |
 | S4 | **MEDIUM** | No CI/CD workflows; deploy is fully manual | No `.github/workflows` | **Accepted residual risk** for v1: operator runbook discipline (`docs/guide/production-deployment-runbook.md`); optional future CI |
-| S5 | **MEDIUM** | SPA stores access token in `sessionStorage` | `src/platform/bearer.ts` | **Accepted residual risk** with mitigations: XSS would expose bearer; keep CSP/deps clean; short Auth0 token TTL; no refresh-token in SPA |
+| S5 | **MEDIUM** | Convex Auth SPA session tokens in browser storage | `@convex-dev/auth` / Convex client | **Accepted residual risk**: XSS could expose session; keep CSP/deps clean; Auth0 sessionStorage bearer path inactive |
 | S6 | **MEDIUM** | SMS (Arkesel) has no provider idempotency key | `convex/notify.ts` / `notifyDelivery.ts` | **Accepted residual risk**: treat uncertain timeouts as possible duplicates; prefer email (Resend) for critical alerts; avoid blind SMS retry storms |
 | S7 | **MEDIUM** | Ingest IP rate limit trusts `X-Forwarded-For` / `CF-Connecting-IP` | `convex/http.ts` `ipKeyFromRequest` | **Accepted residual risk**: spoofing weakens IP bucket only; device identity bucket still applies |
 | S8 | **LOW → CLOSED** | Code default audience fallback `dse-gateway` | Removed 2026-10-31 | `auth.config.ts` requires `AUTH_JWT_AUDIENCE`; `readOidcConfig` requires `VITE_OIDC_AUDIENCE` (null if missing) |
-| S9 | **MEDIUM** (accepted temporary) | Production shares **staging Auth0 tenant**; separate production SPA Client ID **required** but not yet verified | Operator acceptance recorded in `docs/status/phase-8.5d-shared-auth0-acceptance.md`; live Pages still uses staging SPA Client ID | Create `iCanOva Production` SPA; leave staging SPA unchanged; share audience `icanova`; migrate to dedicated prod tenant later; never put SPA secrets in `VITE_*` |
+| S9 | **SUPERSEDED / CLOSED** | Shared Auth0 for production | Active IdP is Convex Auth (8.5E–G); Auth0 FUTURE/INACTIVE | Do not create prod Auth0 SPA for cutover; reactivate only via controlled future IdP migration |
 | S10 | **INFORMATIONAL** → **CLOSED** | Frontend hosting undecided | Cloudflare Pages live at `https://icanova.pages.dev` | Host selected; keep SPA on roadrunner until sturgeon cutover authorized |
-| S11 | **INFORMATIONAL** | Lab self-hosted JWKS pattern still documented for offline mint | `.jwt/` gitignored | Prod should use Auth0 JWKS only |
+| S11 | **INFORMATIONAL** | Lab JWT key material may exist under `.jwt/` (gitignored) | Convex Auth uses deployment `JWKS` | Never commit keys; generate independent prod keys |
 | S12 | **INFORMATIONAL** | Hardware/SIM/RS485 not in software threat model for this audit | Hardware ATP separate | Do not claim physical security from this audit |
 
 ---
@@ -31,8 +31,8 @@ Severity: CRITICAL | HIGH | MEDIUM | LOW | INFORMATIONAL
 
 | Control | Status | Evidence |
 |---|---|---|
-| Access-token-only Convex bearer | VERIFIED IN STAGING | `selectConvexBearer`; Auth0 `aud=icanova` → `/me` |
-| Fail-closed audience (no lab default) | VERIFIED (code) | `auth.config.ts`, `oidc.ts` + unit tests |
+| Convex Auth Password (active) | VERIFIED IN STAGING + hosted | 8.5F/8.5G; Auth0 inactive |
+| Fail-closed auth config | VERIFIED (code) | Convex Auth `auth.config.ts`; Auth0 OIDC fail-closed if ever re-enabled |
 | Backend `requirePermission` (not UI-only) | VERIFIED IN STAGING / local | Ops section ACL tests; foreign-org denial |
 | Credential hashes never returned | VERIFIED IN STAGING | Device-cred HTTP matrix |
 | Inactive device rejection | VERIFIED IN STAGING | HTTP 403 |

@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-31  
 **Decision authority:** Operator (explicit written acceptance in programme prompt)  
-**Status:** **ACCEPTED — TEMPORARY EXCEPTION**  
+**Status:** **SUPERSEDED** (2026-10-31) — active authentication is Convex Auth Password (Phases 8.5E–G). This document remains historical evidence of the interim Auth0 shared-tenant decision only.  
 **Does not authorize:** production Convex secret provisioning, function deploy, or Pages retarget to sturgeon
 
 ---
