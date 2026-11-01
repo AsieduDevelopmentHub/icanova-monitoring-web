@@ -26,6 +26,7 @@ Never put an OIDC client **secret** in `VITE_*`. Active SPA login uses Convex Au
 | `AUTH_JWT_AUDIENCE` | Future Auth0 only | No | Not loaded by active `auth.config.ts` |
 | `AUTH_JWT_JWKS` | Future Auth0 only | Public keys only | Lab/self-host JWKS body |
 | `INGEST_SECRET` | Production ingest | **Yes** | Bearer shared with NCU collector |
+| `OTA_PUBLISH_SECRET` | Firmware OTA CI | **Yes** | Bearer for `POST /ncu/ota/publish` (build upload workflow) |
 | `INGEST_RATE_LIMIT_DEVICE` | Optional | No | Max ingest requests per device identity per window (default 60) |
 | `INGEST_RATE_LIMIT_IP` | Optional | No | Max ingest requests per hashed source IP per window (default 600) |
 | `INGEST_RATE_WINDOW_MS` | Optional | No | Rate-limit window in ms (default 60000) |

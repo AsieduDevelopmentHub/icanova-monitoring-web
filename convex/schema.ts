@@ -91,6 +91,10 @@ export default defineSchema({
     name: v.string(),
     generatorCount: v.optional(v.number()),
     recounting: v.optional(v.boolean()),
+    /** Optional WGS84 site coordinates for map placement. */
+    latitude: v.optional(v.number()),
+    longitude: v.optional(v.number()),
+    locationUpdatedAt: v.optional(v.number()),
   }).index("by_org", ["organizationId"]),
 
   devices: defineTable({
@@ -320,6 +324,10 @@ export default defineSchema({
     gatewayOfflineNotified: v.boolean(),
     telemetryStaleNotified: v.boolean(),
     updatedAt: v.number(),
+    /** Last firmware version reported by the gateway heartbeat. */
+    firmwareVersion: v.optional(v.string()),
+    firmwareGit: v.optional(v.string()),
+    firmwareReportedAt: v.optional(v.number()),
   })
     .index("by_device", ["deviceId"])
     .index("by_org", ["organizationId"])
@@ -684,4 +692,22 @@ export default defineSchema({
   })
     .index("by_storage", ["storageId"])
     .index("by_org_owner", ["organizationId", "ownerToken"]),
+
+  /**
+   * Fleet firmware binaries for cloud OTA. Not org-scoped — one release channel for all gateways.
+   */
+  firmwareReleases: defineTable({
+    version: v.string(),
+    channel: v.union(v.literal("stable"), v.literal("beta")),
+    storageId: v.id("_storage"),
+    sha256: v.string(),
+    size: v.number(),
+    gitHash: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    published: v.boolean(),
+    createdAt: v.number(),
+    createdBy: v.optional(v.string()),
+  })
+    .index("by_channel_created", ["channel", "createdAt"])
+    .index("by_version_channel", ["version", "channel"]),
 });

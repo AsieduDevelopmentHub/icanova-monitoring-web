@@ -50,6 +50,8 @@ type ApplyArgs = {
   lastAcceptedBatchAt?: number | null;
   lastTelemetryAt?: number | null;
   link?: string | null;
+  firmwareVersion?: string | null;
+  firmwareGit?: string | null;
   /** When true, gateway is forced offline regardless of contact age. */
   forceGatewayOffline?: boolean;
   /** When true, freshness is forced stale if telemetry exists. */
@@ -223,6 +225,16 @@ async function applyDeviceHealth(ctx: MutationCtx, args: ApplyArgs) {
       ? args.lastTelemetryAt
       : (existing?.lastTelemetryAt ?? null);
   const link = args.link !== undefined ? args.link : (existing?.link ?? null);
+  const firmwareVersion =
+    args.firmwareVersion !== undefined
+      ? args.firmwareVersion
+      : (existing?.firmwareVersion ?? undefined);
+  const firmwareGit =
+    args.firmwareGit !== undefined ? args.firmwareGit : (existing?.firmwareGit ?? undefined);
+  const firmwareReportedAt =
+    args.firmwareVersion !== undefined && args.firmwareVersion
+      ? args.at
+      : (existing?.firmwareReportedAt ?? undefined);
 
   let gatewayStatus = gatewayFromContact(lastGatewayContactAt, args.at);
   if (args.forceGatewayOffline) {
@@ -379,6 +391,10 @@ async function applyDeviceHealth(ctx: MutationCtx, args: ApplyArgs) {
     gatewayOfflineNotified,
     telemetryStaleNotified,
     updatedAt: args.at,
+    ...(firmwareVersion != null && firmwareVersion !== ""
+      ? { firmwareVersion, firmwareReportedAt }
+      : {}),
+    ...(firmwareGit != null && firmwareGit !== "" ? { firmwareGit } : {}),
   };
 
   if (existing) {
@@ -441,6 +457,8 @@ export const recordHeartbeat = internalMutation({
   args: {
     identity: v.string(),
     organizationId: v.optional(v.id("organizations")),
+    firmwareVersion: v.optional(v.string()),
+    firmwareGit: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     if (!/^[0-9a-f]{12}$/.test(args.identity)) {
@@ -473,6 +491,8 @@ export const recordHeartbeat = internalMutation({
       at,
       reason: "heartbeat",
       lastHeartbeatAt: at,
+      ...(args.firmwareVersion ? { firmwareVersion: args.firmwareVersion } : {}),
+      ...(args.firmwareGit ? { firmwareGit: args.firmwareGit } : {}),
     });
     return { status: "ok" as const };
   },

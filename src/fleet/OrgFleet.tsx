@@ -5,9 +5,11 @@ import { Link } from "react-router";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { FilterBar, FilterSelect } from "../ui/FilterBar";
+import { EmptyState } from "../ui/EmptyState";
 import { PageSkeleton, Skeleton } from "../ui/Skeleton";
 import { SessionPulse } from "../ui/SessionPulse";
 import { StatusMark } from "../ui/StatusMark";
+import { DataTable } from "../ui/DataTable";
 import { formatReading } from "../telemetry/readings";
 import { storedFreshness } from "../telemetry/freshness";
 import { accessMessage, id, storedReading } from "./access";
@@ -93,7 +95,10 @@ function SignedFleet() {
       {selected ? (
         <p className="meta">Displayed permissions: {selected.permissions.join(", ") || "none"}.</p>
       ) : (
-        <p className="empty">This account has no organization membership.</p>
+        <EmptyState
+          title="No organization linked"
+          body="Create an organization below to register sites, gateways, and generators."
+        />
       )}
       <form className="filter-bar" onSubmit={onCreateOrg}>
         <label className="filter-field grow">
@@ -107,7 +112,19 @@ function SignedFleet() {
         <FleetBoundary key={orgId}>
           <SiteColumn organizationId={id<"organizations">(orgId)} />
         </FleetBoundary>
-      ) : null}
+      ) : (
+        <DataTable
+          caption="Sites"
+          rows={[]}
+          getRowKey={() => "empty"}
+          empty="Sites appear after an organization is created."
+          columns={[
+            { key: "name", header: "Site", render: () => null },
+            { key: "devices", header: "Devices", render: () => null },
+            { key: "generators", header: "Generators", render: () => null },
+          ]}
+        />
+      )}
     </div>
   );
 }
@@ -165,7 +182,23 @@ function SiteColumn({ organizationId }: { organizationId: Id<"organizations"> })
       {siteId ? (
         <Devices organizationId={organizationId} siteId={id<"sites">(siteId)} />
       ) : (
-        <p className="empty">Create a site before adding a device.</p>
+        <>
+          <EmptyState
+            title="No sites yet"
+            body="Create a site above, then register a gateway with its 12-character efuse MAC identity."
+          />
+          <DataTable
+            caption="Devices"
+            rows={[]}
+            getRowKey={() => "empty"}
+            empty="Devices appear after a site is created."
+            columns={[
+              { key: "name", header: "Device", render: () => null },
+              { key: "identity", header: "Identity", render: () => null },
+              { key: "status", header: "Status", render: () => null },
+            ]}
+          />
+        </>
       )}
     </div>
   );

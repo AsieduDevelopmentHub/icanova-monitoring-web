@@ -23,6 +23,7 @@ import type * as deviceIdentity from "../deviceIdentity.js";
 import type * as deviceLifecycle from "../deviceLifecycle.js";
 import type * as devices from "../devices.js";
 import type * as diagnostics from "../diagnostics.js";
+import type * as firmwareReleases from "../firmwareReleases.js";
 import type * as formats from "../formats.js";
 import type * as generators from "../generators.js";
 import type * as http from "../http.js";
@@ -82,6 +83,7 @@ declare const fullApi: ApiFromModules<{
   deviceLifecycle: typeof deviceLifecycle;
   devices: typeof devices;
   diagnostics: typeof diagnostics;
+  firmwareReleases: typeof firmwareReleases;
   formats: typeof formats;
   generators: typeof generators;
   http: typeof http;

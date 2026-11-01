@@ -4,7 +4,12 @@ import type { Id } from "./_generated/dataModel";
 import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
 import { decodeBatch } from "./ingestDecode";
-import { extractBearer, ingestAuthorized, isIngestHeartbeat } from "./ingestAuth";
+import {
+  constantTimeEqual,
+  extractBearer,
+  ingestAuthorized,
+  isIngestHeartbeat,
+} from "./ingestAuth";
 import type { IngestOpKind } from "./ingestOps";
 import { mapBatchStatus } from "./ingestOps";
 import {
@@ -182,11 +187,15 @@ http.route({
 
     if (isIngestHeartbeat(record)) {
       const identity = identityHint ?? "";
+      const fw = typeof record.fw === "string" ? record.fw.trim().slice(0, 40) : undefined;
+      const git = typeof record.git === "string" ? record.git.trim().slice(0, 16) : undefined;
       if (/^[0-9a-f]{12}$/.test(identity)) {
         try {
           const result = await ctx.runMutation(internal.deviceHealth.recordHeartbeat, {
             identity,
             ...(orgId ? { organizationId: orgId as Id<"organizations"> } : {}),
+            ...(fw ? { firmwareVersion: fw } : {}),
+            ...(git ? { firmwareGit: git } : {}),
           });
           if (result.status === "inactive") {
             await note(ctx, "inactive", orgId);
@@ -226,6 +235,213 @@ http.route({
       }
       await note(ctx, "error", orgId);
       return Response.json({ error: "Ingest failed" }, { status: 500 });
+    }
+  }),
+});
+
+async function authorizeDeviceOrIngest(
+  ctx: { runMutation: (ref: any, args: any) => Promise<unknown> },
+  authHeader: string | null,
+  identity: string | null,
+): Promise<
+  { ok: true; organizationId: string | null } | { ok: false; status: number; body: object }
+> {
+  const gate = ingestAuthorized(authHeader, process.env.INGEST_SECRET);
+  if (gate === "ok") {
+    return { ok: true, organizationId: null };
+  }
+  const presented = extractBearer(authHeader);
+  if (!presented || !identity || !/^[0-9a-f]{12}$/.test(identity)) {
+    if (gate === "unconfigured" && !presented) {
+      return { ok: false, status: 503, body: { error: "Ingest is not configured" } };
+    }
+    return { ok: false, status: 401, body: { error: "Unauthorized" } };
+  }
+  try {
+    const deviceAuth = (await ctx.runMutation(internal.devices.verifyDeviceIngestCredential, {
+      identity,
+      presented,
+    })) as { ok: boolean; reason?: string; organizationId?: string };
+    if (!deviceAuth?.ok) {
+      if (deviceAuth?.reason === "inactive") {
+        return {
+          ok: false,
+          status: 403,
+          body: { error: "Device inactive", status: "inactive" },
+        };
+      }
+      return { ok: false, status: 401, body: { error: "Unauthorized" } };
+    }
+    return { ok: true, organizationId: deviceAuth.organizationId ?? null };
+  } catch {
+    return { ok: false, status: 401, body: { error: "Unauthorized" } };
+  }
+}
+
+http.route({
+  path: "/ncu/ota/check",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const channelRaw = (url.searchParams.get("channel") ?? "stable").toLowerCase();
+    const channel = channelRaw === "beta" ? "beta" : "stable";
+    const current = (url.searchParams.get("current") ?? "").trim();
+    const identity = (url.searchParams.get("identity") ?? "").trim().toLowerCase();
+    const auth = await authorizeDeviceOrIngest(
+      ctx,
+      request.headers.get("Authorization"),
+      identity || null,
+    );
+    if (!auth.ok) {
+      return Response.json(auth.body, { status: auth.status });
+    }
+    const latest = await ctx.runQuery(internal.firmwareReleases.latestPublished, { channel });
+    if (!latest) {
+      return Response.json({ status: "up-to-date", upToDate: true }, { status: 200 });
+    }
+    if (current && current === latest.version) {
+      return Response.json(
+        { status: "up-to-date", upToDate: true, version: latest.version },
+        { status: 200 },
+      );
+    }
+    const downloadUrl = await ctx.runQuery(internal.firmwareReleases.resolveDownloadUrl, {
+      storageId: latest.storageId,
+    });
+    if (!downloadUrl) {
+      return Response.json({ error: "Firmware blob unavailable" }, { status: 503 });
+    }
+    return Response.json({
+      status: "update",
+      upToDate: false,
+      version: latest.version,
+      sha256: latest.sha256,
+      size: latest.size,
+      gitHash: latest.gitHash ?? null,
+      url: downloadUrl,
+      channel: latest.channel,
+    });
+  }),
+});
+
+http.route({
+  path: "/ncu/ota/publish",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const secret = process.env.OTA_PUBLISH_SECRET?.trim();
+    if (!secret) {
+      return Response.json({ error: "OTA publish is not configured" }, { status: 503 });
+    }
+    const presented = extractBearer(request.headers.get("Authorization"));
+    if (!presented || !constantTimeEqual(presented, secret)) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    let body: Record<string, unknown>;
+    try {
+      body = (await request.json()) as Record<string, unknown>;
+    } catch {
+      return Response.json({ error: "Invalid JSON" }, { status: 400 });
+    }
+    const action = typeof body.action === "string" ? body.action : "";
+    if (action === "uploadUrl") {
+      const uploadUrl = await ctx.runMutation(internal.firmwareReleases.internalCreateUploadUrl, {});
+      return Response.json({ uploadUrl });
+    }
+    if (action === "publish") {
+      const version = typeof body.version === "string" ? body.version : "";
+      const channel = body.channel === "beta" ? "beta" : "stable";
+      const storageId = typeof body.storageId === "string" ? body.storageId : "";
+      const sha256 = typeof body.sha256 === "string" ? body.sha256 : "";
+      const size = typeof body.size === "number" ? body.size : Number(body.size);
+      const gitHash = typeof body.gitHash === "string" ? body.gitHash : undefined;
+      const notes = typeof body.notes === "string" ? body.notes : undefined;
+      if (!storageId) {
+        return Response.json({ error: "storageId required" }, { status: 400 });
+      }
+      try {
+        const id = await ctx.runMutation(internal.firmwareReleases.internalPublish, {
+          version,
+          channel,
+          storageId: storageId as Id<"_storage">,
+          sha256,
+          size,
+          gitHash,
+          notes,
+          createdBy: "ci",
+        });
+        return Response.json({ releaseId: id, version, channel });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "publish failed";
+        return Response.json({ error: message }, { status: 400 });
+      }
+    }
+    return Response.json({ error: "Unknown action" }, { status: 400 });
+  }),
+});
+
+http.route({
+  path: "/ncu/location",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    let body: Record<string, unknown>;
+    try {
+      body = (await request.json()) as Record<string, unknown>;
+    } catch {
+      return Response.json({ error: "Invalid JSON" }, { status: 400 });
+    }
+    const identity =
+      typeof body.identity === "string" ? body.identity.trim().toLowerCase() : null;
+    const latitude =
+      typeof body.latitude === "number"
+        ? body.latitude
+        : typeof body.lat === "number"
+          ? body.lat
+          : Number.NaN;
+    const longitude =
+      typeof body.longitude === "number"
+        ? body.longitude
+        : typeof body.lon === "number"
+          ? body.lon
+          : Number.NaN;
+    const auth = await authorizeDeviceOrIngest(
+      ctx,
+      request.headers.get("Authorization"),
+      identity,
+    );
+    if (!auth.ok) {
+      return Response.json(auth.body, { status: auth.status });
+    }
+    if (!identity || !/^[0-9a-f]{12}$/.test(identity)) {
+      return Response.json({ error: "identity required" }, { status: 400 });
+    }
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      return Response.json({ error: "latitude and longitude required" }, { status: 400 });
+    }
+    try {
+      const result = await ctx.runMutation(internal.sites.setLocationForIdentity, {
+        identity,
+        latitude,
+        longitude,
+        ...(auth.organizationId
+          ? { organizationId: auth.organizationId as Id<"organizations"> }
+          : {}),
+      });
+      if (result.status === "inactive") {
+        return Response.json({ error: "Device inactive", status: "inactive" }, { status: 403 });
+      }
+      if (result.status === "unknown") {
+        return Response.json({ error: "Unknown device" }, { status: 404 });
+      }
+      if (result.status === "ambiguous") {
+        return Response.json({ error: "Ambiguous device" }, { status: 409 });
+      }
+      if (result.status !== "ok") {
+        return Response.json({ error: "Invalid location" }, { status: 400 });
+      }
+      return Response.json({ ok: true, siteId: result.siteId });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "location failed";
+      return Response.json({ error: message }, { status: 400 });
     }
   }),
 });

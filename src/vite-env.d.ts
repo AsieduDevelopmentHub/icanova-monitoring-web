@@ -1,5 +1,10 @@
 /// <reference types="vite/client" />
 
+declare module "*.png" {
+  const src: string;
+  export default src;
+}
+
 interface ImportMetaEnv {
   readonly VITE_GW_URL?: string;
   readonly VITE_USE_MOCK?: string;

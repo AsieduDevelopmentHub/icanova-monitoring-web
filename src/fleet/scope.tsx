@@ -7,40 +7,53 @@ import { FilterBar, FilterSelect } from "../ui/FilterBar";
 import { PageSkeleton } from "../ui/Skeleton";
 import { SessionPulse } from "../ui/SessionPulse";
 import { sessionView } from "./session";
-import { rejectedSessionNotice, unsignedNotice } from "./sessionGates";
+import { rejectedSessionNotice } from "./sessionGates";
 import { FleetBoundary } from "./boundary";
 import { id } from "./access";
+import { ScopeEmpty, type ScopeEmptyLayout } from "./ScopeEmpty";
 
 type OrgRow = { organizationId: string; name: string; permissions: string[] };
 
-export function LiveGate({ children }: { children: (org: OrgRow) => ReactNode }) {
+export function LiveGate({
+  children,
+  emptyLayout = "list",
+  emptyCaption,
+  emptyColumns,
+}: {
+  children: (org: OrgRow) => ReactNode;
+  emptyLayout?: ScopeEmptyLayout;
+  emptyCaption?: string;
+  emptyColumns?: string[];
+}) {
+  const emptyProps = { layout: emptyLayout, caption: emptyCaption, columns: emptyColumns };
   const { isAuthenticated, isLoading } = useConvexAuth();
   if (!import.meta.env.VITE_CONVEX_URL) {
-    return (
-      <div className="notice" role="note">
-        <strong>No deployment URL.</strong> Live queries are not running.
-      </div>
-    );
+    return <ScopeEmpty reason="offline" {...emptyProps} />;
   }
   if (isLoading) {
     return <SessionPulse compact label="Checking session" />;
   }
   if (!isAuthenticated) {
-    const notice = unsignedNotice("No organization query is running.");
-    return (
-      <div className="notice" role="note">
-        <strong>{notice.title}</strong> {notice.detail}
-      </div>
-    );
+    return <ScopeEmpty reason="unsigned" {...emptyProps} />;
   }
   return (
     <FleetBoundary>
-      <OrgBody>{children}</OrgBody>
+      <OrgBody emptyProps={emptyProps}>{children}</OrgBody>
     </FleetBoundary>
   );
 }
 
-function OrgBody({ children }: { children: (org: OrgRow) => ReactNode }) {
+function OrgBody({
+  children,
+  emptyProps,
+}: {
+  children: (org: OrgRow) => ReactNode;
+  emptyProps: {
+    layout: ScopeEmptyLayout;
+    caption?: string;
+    columns?: string[];
+  };
+}) {
   const me = useQuery(api.users.me, {});
   const orgs = useQuery(api.organizations.mine, {});
   const ensure = useMutation(api.users.ensure);
@@ -83,7 +96,7 @@ function OrgBody({ children }: { children: (org: OrgRow) => ReactNode }) {
     );
   }
   if (!Array.isArray(orgs) || orgs.length === 0) {
-    return <p className="empty">This account has no organization membership.</p>;
+    return <ScopeEmpty reason="organization" {...emptyProps} />;
   }
   const listed = orgs as OrgRow[];
   const org = listed.find((item) => item.organizationId === picked) ?? listed[0];
@@ -128,11 +141,29 @@ export function SiteSelect({
   }
   const page = Array.isArray(sites.page) ? sites.page : [];
   if (page.length === 0 && cursor === null) {
+    if (allowAll) {
+      return (
+        <div className="stack">
+          <FilterBar label="Site">
+            <FilterSelect
+              label="Site"
+              value={ALL_SITES}
+              onChange={setPicked}
+              options={[{ value: ALL_SITES, label: "All Sites" }]}
+            />
+          </FilterBar>
+          {children(null, "All Sites", false)}
+        </div>
+      );
+    }
     return (
-      <p className="empty">
-        No sites are registered in this organization. Create a site on Generators, then register the
-        gateway there. Its identity is the 12-character efuse MAC.
-      </p>
+      <ScopeEmpty
+        reason="sites"
+        layout="list"
+        showSiteFilter
+        caption="Site inventory"
+        columns={["Site", "Generators", "Gateways"]}
+      />
     );
   }
   const allSelected = allowAll && (picked === ALL_SITES || picked === "");

@@ -37,7 +37,11 @@ export function Events() {
           { id: "audit", label: "Audit log" },
         ]}
       />
-      <LiveGate>
+      <LiveGate
+        emptyLayout="list"
+        emptyCaption="Event timeline"
+        emptyColumns={["When", "Source", "Change"]}
+      >
         {(org) =>
           mode === "health" ? (
             <SiteSelect organizationId={org.organizationId}>

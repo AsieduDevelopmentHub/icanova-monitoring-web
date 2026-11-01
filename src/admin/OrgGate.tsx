@@ -3,21 +3,22 @@ import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { FleetBoundary } from "../fleet/boundary";
-import { unsignedNotice } from "../fleet/sessionGates";
-import { EmptyState } from "../ui/EmptyState";
+import { ScopeEmpty } from "../fleet/ScopeEmpty";
 import { FilterSelect } from "../ui/FilterBar";
-import { Skeleton } from "../ui/Skeleton";
+import { PageSkeleton } from "../ui/Skeleton";
 
 export function OrgGate({
   title,
   lede,
   offline,
   children,
+  emptyLayout = "list",
 }: {
   title: string;
   lede?: string;
   offline: string;
   children: (organizationId: Id<"organizations">) => ReactNode;
+  emptyLayout?: "list" | "desk";
 }) {
   return (
     <section className="page">
@@ -26,11 +27,11 @@ export function OrgGate({
         {lede ? <p>{lede}</p> : null}
       </header>
       {import.meta.env.VITE_CONVEX_URL ? (
-        <Signed offline={offline}>{children}</Signed>
+        <Signed offline={offline} emptyLayout={emptyLayout}>
+          {children}
+        </Signed>
       ) : (
-        <div className="notice" role="note">
-          {offline}
-        </div>
+        <ScopeEmpty reason="offline" layout={emptyLayout} showSiteFilter={false} caption={title} />
       )}
     </section>
   );
@@ -38,41 +39,47 @@ export function OrgGate({
 
 function Signed({
   offline,
+  emptyLayout,
   children,
 }: {
   offline: string;
+  emptyLayout: "list" | "desk";
   children: (organizationId: Id<"organizations">) => ReactNode;
 }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
   if (isLoading) {
-    return <Skeleton lines={4} />;
+    return <PageSkeleton rows={4} label="Checking session" />;
   }
   if (!isAuthenticated) {
-    const notice = unsignedNotice(offline);
-    return (
-      <div className="notice" role="note">
-        <strong>{notice.title}</strong> {notice.detail}
-      </div>
-    );
+    return <ScopeEmpty reason="unsigned" layout={emptyLayout} showSiteFilter={false} caption={offline} />;
   }
   return (
     <FleetBoundary>
-      <Picker>{children}</Picker>
+      <Picker emptyLayout={emptyLayout}>{children}</Picker>
     </FleetBoundary>
   );
 }
 
-function Picker({ children }: { children: (organizationId: Id<"organizations">) => ReactNode }) {
+function Picker({
+  children,
+  emptyLayout,
+}: {
+  children: (organizationId: Id<"organizations">) => ReactNode;
+  emptyLayout: "list" | "desk";
+}) {
   const orgs = useQuery(api.organizations.mine, {});
   const [picked, setPicked] = useState("");
   if (orgs === undefined) {
-    return <Skeleton lines={3} />;
+    return <PageSkeleton rows={3} label="Loading organizations" />;
   }
   if (!Array.isArray(orgs) || orgs.length === 0) {
     return (
-      <EmptyState
-        title="No organization membership"
-        body="This account is not a member of an organization yet."
+      <ScopeEmpty
+        reason="organization"
+        layout={emptyLayout}
+        showSiteFilter={false}
+        caption="Organization members"
+        columns={["Name", "Role", "Status"]}
       />
     );
   }

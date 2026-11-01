@@ -137,7 +137,11 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
           <dt>Lifecycle</dt>
           <dd>{active ? "active" : "inactive"}</dd>
           <dt>Firmware version</dt>
-          <dd>Not stored in this deployment</dd>
+          <dd className="tech">
+            {health?.firmwareVersion
+              ? `${health.firmwareVersion}${health.firmwareGit ? ` · ${health.firmwareGit}` : ""}`
+              : "Not reported yet"}
+          </dd>
         </dl>
         <div className="status-row">
           <StatusMark tone={active ? "ok" : "alarm"}>{active ? "Active" : "Inactive"}</StatusMark>

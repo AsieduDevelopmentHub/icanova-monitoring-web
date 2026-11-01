@@ -16,6 +16,7 @@ import {
 } from "../telemetry/deviceHealthView";
 import { DataTable } from "../ui/DataTable";
 import { FilterBar, FilterSearch, FilterSelect } from "../ui/FilterBar";
+import { ScopeEmpty } from "../fleet/ScopeEmpty";
 import { PageSkeleton, Skeleton } from "../ui/Skeleton";
 import { SessionPulse } from "../ui/SessionPulse";
 import { StatusMark } from "../ui/StatusMark";
@@ -65,10 +66,13 @@ function SignedInventory() {
   }
   if (!isAuthenticated) {
     return (
-      <div className="notice" role="note">
-        <strong>Not signed in.</strong> No device query is running.{" "}
-        <Link to="/auth/login">Sign in</Link> to load devices.
-      </div>
+      <ScopeEmpty
+        reason="unsigned"
+        layout="list"
+        showSiteFilter={false}
+        caption="Gateway inventory"
+        columns={["Gateway", "Site", "Cloud", "Identity"]}
+      />
     );
   }
   return (
@@ -86,7 +90,15 @@ function OrgInventory() {
     return <PageSkeleton rows={4} label="Loading organizations" />;
   }
   if (!Array.isArray(orgs) || orgs.length === 0) {
-    return <p className="empty">This account has no organization membership.</p>;
+    return (
+      <ScopeEmpty
+        reason="organization"
+        layout="list"
+        showSiteFilter={false}
+        caption="Gateway inventory"
+        columns={["Gateway", "Site", "Cloud", "Identity"]}
+      />
+    );
   }
   const org = orgs.find((item) => item.organizationId === picked) ?? orgs[0];
   const orgId = org.organizationId;

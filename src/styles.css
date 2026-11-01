@@ -1405,6 +1405,15 @@ table.cfg td.num {
   text-underline-offset: 2px;
 }
 
+.site-map {
+  height: 280px;
+  width: 100%;
+  margin: 0.75rem 0;
+  border: 1px solid var(--line);
+  background: var(--bg-inset);
+  z-index: 0;
+}
+
 .ops-section {
   display: flex;
   flex-direction: column;
@@ -1642,6 +1651,33 @@ table.cfg td.num {
 
 .empty-state-action {
   margin-top: var(--space-2);
+}
+
+.scope-empty-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 900px) {
+  .scope-empty-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  }
+
+  .scope-empty-grid.desk {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.scope-empty-panel {
+  min-height: 8rem;
+}
+
+.filter-field.is-disabled {
+  opacity: 0.72;
+}
+
+.filter-field.is-disabled select {
+  cursor: not-allowed;
 }
 
 .skeleton-stack {

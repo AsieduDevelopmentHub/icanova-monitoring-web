@@ -43,7 +43,11 @@ export function Alarms() {
       <header className="page-head">
         <h1>Alarms</h1>
       </header>
-      <LiveGate>
+      <LiveGate
+        emptyLayout="list"
+        emptyCaption="Alarm center"
+        emptyColumns={["Alarm", "Severity", "State", "Site", "Updated"]}
+      >
         {(org) => (
           <OrgAlarms organizationId={org.organizationId} permissions={org.permissions} />
         )}

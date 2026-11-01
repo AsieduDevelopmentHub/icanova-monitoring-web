@@ -5,8 +5,8 @@ import { FleetBoundary } from "../fleet/boundary";
 import {
   canViewOpsOverview,
   permissionDeniedNotice,
-  unsignedNotice,
 } from "../fleet/sessionGates";
+import { ScopeEmpty } from "../fleet/ScopeEmpty";
 import { Metric } from "../ui/Metric";
 import { PageSkeleton } from "../ui/Skeleton";
 import { SessionPulse } from "../ui/SessionPulse";
@@ -36,7 +36,7 @@ export function Ops() {
       {import.meta.env.VITE_CONVEX_URL ? (
         <SignedOps />
       ) : (
-        <p className="empty">Convex is not configured.</p>
+        <ScopeEmpty reason="offline" layout="desk" showSiteFilter={false} caption="Ops desk" />
       )}
     </section>
   );
@@ -48,12 +48,7 @@ function SignedOps() {
     return <SessionPulse compact label="Checking session" />;
   }
   if (!isAuthenticated) {
-    const notice = unsignedNotice("No operational query is running.");
-    return (
-      <div className="notice" role="note">
-        <strong>{notice.title}</strong> {notice.detail}
-      </div>
-    );
+    return <ScopeEmpty reason="unsigned" layout="desk" showSiteFilter={false} caption="Ops desk" />;
   }
   return (
     <FleetBoundary>
@@ -68,7 +63,7 @@ function OpsBoard() {
     return <PageSkeleton rows={4} label="Loading organizations" />;
   }
   if (!Array.isArray(orgs) || orgs.length === 0) {
-    return <p className="empty">This account has no organization membership.</p>;
+    return <ScopeEmpty reason="organization" layout="desk" showSiteFilter={false} caption="Ops desk" />;
   }
   const org = orgs[0];
   if (!canViewOpsOverview(org.permissions)) {

@@ -7,7 +7,7 @@ export function Dashboard() {
   return (
     <section className="page cc-page">
       <h1 className="sr-only">Command Center</h1>
-      <LiveGate>
+      <LiveGate emptyLayout="command">
         {(org) => (
           <SiteSelect organizationId={org.organizationId} allowAll>
             {(siteId, siteName) => (

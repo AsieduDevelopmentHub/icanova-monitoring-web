@@ -43,18 +43,24 @@ export function FilterSelect({
   value,
   onChange,
   options,
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   options: { value: string; label: string }[];
+  disabled?: boolean;
 }) {
   return (
-    <label className="filter-field">
+    <label className={disabled ? "filter-field is-disabled" : "filter-field"}>
       <span>{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+      >
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option key={option.value || option.label} value={option.value}>
             {option.label}
           </option>
         ))}

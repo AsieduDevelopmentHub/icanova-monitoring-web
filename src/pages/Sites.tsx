@@ -15,11 +15,18 @@ import {
   modbusView,
   overallView,
 } from "../telemetry/deviceHealthView";
+import { SiteLocationPicker } from "../sites/SiteLocationPicker";
 import { DataTable } from "../ui/DataTable";
+import { EmptyState } from "../ui/EmptyState";
 import { StatusMark } from "../ui/StatusMark";
 import { PageSkeleton, Skeleton } from "../ui/Skeleton";
 
-type SiteRow = { _id: string; name: string };
+type SiteRow = {
+  _id: string;
+  name: string;
+  latitude?: number;
+  longitude?: number;
+};
 
 export function Sites() {
   return (
@@ -27,7 +34,11 @@ export function Sites() {
       <header className="page-head">
         <h1>Sites</h1>
       </header>
-      <LiveGate>
+      <LiveGate
+        emptyLayout="list"
+        emptyCaption="Sites in this organization"
+        emptyColumns={["Name", "Action"]}
+      >
         {(org) => <SiteList organizationId={org.organizationId} permissions={org.permissions} />}
       </LiveGate>
     </section>
@@ -64,29 +75,29 @@ function SiteList({
         <p className="meta">Creating sites requires manage.sites.</p>
       )}
       {page.length === 0 ? (
-        <p className="empty">
-          No sites are registered in this organization. Create one before attaching a gateway.
-        </p>
-      ) : (
-        <DataTable
-          caption="Sites in this organization"
-          rows={page}
-          getRowKey={(row) => row._id}
-          empty="No sites on this page."
-          columns={[
-            { key: "name", header: "Name", render: (row) => row.name },
-            {
-              key: "open",
-              header: "",
-              render: (row) => (
-                <button type="button" className="btn btn-secondary" onClick={() => setPicked(row._id)}>
-                  {selected?._id === row._id ? "Selected" : "Select"}
-                </button>
-              ),
-            },
-          ]}
+        <EmptyState
+          title="No sites yet"
+          body="Create a site for this organization before attaching a gateway or generator."
         />
-      )}
+      ) : null}
+      <DataTable
+        caption="Sites in this organization"
+        rows={page}
+        getRowKey={(row) => row._id}
+        empty="No sites are registered in this organization yet."
+        columns={[
+          { key: "name", header: "Name", render: (row) => row.name },
+          {
+            key: "open",
+            header: "",
+            render: (row) => (
+              <button type="button" className="btn btn-secondary" onClick={() => setPicked(row._id)}>
+                {selected?._id === row._id ? "Selected" : "Select"}
+              </button>
+            ),
+          },
+        ]}
+      />
       {sites.isDone === false && sites.continueCursor ? (
         <p className="meta">
           This is not every site.{" "}
@@ -101,6 +112,8 @@ function SiteList({
             organizationId={organizationId}
             siteId={id<"sites">(selected._id)}
             siteName={selected.name}
+            latitude={typeof selected.latitude === "number" ? selected.latitude : null}
+            longitude={typeof selected.longitude === "number" ? selected.longitude : null}
             permissions={permissions}
           />
         </FleetBoundary>
@@ -160,18 +173,24 @@ function SiteDetail({
   organizationId,
   siteId,
   siteName,
+  latitude,
+  longitude,
   permissions,
 }: {
   organizationId: string;
   siteId: Id<"sites">;
   siteName: string;
+  latitude: number | null;
+  longitude: number | null;
   permissions: readonly string[];
 }) {
   const [cursor, setCursor] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState(siteName);
   const [renameError, setRenameError] = useState<string | null>(null);
   const [renamePending, setRenamePending] = useState(false);
+  const [locationPending, setLocationPending] = useState(false);
   const renameSite = useMutation(api.sites.rename);
+  const setLocation = useMutation(api.sites.setLocation);
   const generators = useQuery(api.generators.list, {
     organizationId: id<"organizations">(organizationId),
     siteId,
@@ -231,6 +250,27 @@ function SiteDetail({
         </form>
       ) : null}
       {renameError ? <p className="err">{renameError}</p> : null}
+      <SiteLocationPicker
+        latitude={latitude}
+        longitude={longitude}
+        disabled={!canManage}
+        pending={locationPending}
+        onSave={async (nextLat, nextLon) => {
+          setLocationPending(true);
+          try {
+            await setLocation({
+              organizationId: id<"organizations">(organizationId),
+              siteId,
+              latitude: nextLat,
+              longitude: nextLon,
+            });
+          } catch (caught) {
+            throw new Error(accessMessage(caught));
+          } finally {
+            setLocationPending(false);
+          }
+        }}
+      />
       <p className="meta">{registrationLabel(registered.length, generators.isDone !== false)}</p>
       <p className="meta">
         {summary.ready
