@@ -261,7 +261,7 @@ function RegisterGateway({
     <section className="ops-section" aria-labelledby="gw-register-title">
       <h2 id="gw-register-title">Register gateway</h2>
       <p className="meta">
-        Product: iCanOva Edge Gateway. Identity must match the device MAC used for ingest. Duplicate
+        Product: iCaNova Edge Gateway. Identity must match the device MAC used for ingest. Duplicate
         identities are rejected inside the organization.
       </p>
       {page.length === 0 ? (
@@ -368,7 +368,7 @@ function DeviceTable({
           {
             key: "product",
             header: "Product",
-            render: () => "iCanOva Edge Gateway",
+            render: () => "iCaNova Edge Gateway",
           },
           {
             key: "identity",

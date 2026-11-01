@@ -153,7 +153,7 @@ async function sendWebPush(
   try {
     const parsed = JSON.parse(args.body) as Record<string, unknown>;
     payload = JSON.stringify({
-      title: typeof parsed.title === "string" ? parsed.title.slice(0, 80) : (args.subject ?? "iCanOva"),
+      title: typeof parsed.title === "string" ? parsed.title.slice(0, 80) : (args.subject ?? "iCaNova"),
       body: typeof parsed.body === "string" ? parsed.body.slice(0, 140) : "",
       severity: typeof parsed.severity === "string" ? parsed.severity : "informational",
       event: typeof parsed.event === "string" ? parsed.event : undefined,
@@ -161,7 +161,7 @@ async function sendWebPush(
     });
   } catch {
     payload = JSON.stringify({
-      title: args.subject ?? "iCanOva",
+      title: args.subject ?? "iCaNova",
       body: args.body.slice(0, 140),
       severity: "informational",
       path: "/notifications",
@@ -281,7 +281,7 @@ export const deliverMessage = internalAction({
       if (claimed.channel === "email") {
         const outcome = await sendResend(
           claimed.to,
-          claimed.subject ?? "iCanOva notification",
+          claimed.subject ?? "iCaNova notification",
           claimed.body,
           claimed.idempotencyKey,
         );

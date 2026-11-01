@@ -21,7 +21,7 @@ Public landing + routing + substantial app visual restraint completed. Auth gate
 - Linear storytelling; stats as type, not gamified tiles
 - Soft bands, not floating card grids
 
-**Not copied:** layouts, logos, blues-as-brand, copy, or assets. Reinterpreted for iCanOva graphite / warm white / copper.
+**Not copied:** layouts, logos, blues-as-brand, copy, or assets. Reinterpreted for iCaNova graphite / warm white / copper.
 
 ## Initial visual audit
 

@@ -7,7 +7,7 @@ export function Unavailable() {
   const item = itemForPath(pathname);
   const title = item?.label ?? "Unavailable";
   const detail =
-    item?.unavailable ?? "This path is not a screen in iCanOva Monitoring.";
+    item?.unavailable ?? "This path is not a screen in iCaNova Monitoring.";
 
   return (
     <section className="page">

@@ -28,7 +28,7 @@ export function AuthPasswordReset() {
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
-    document.title = "Reset password · iCanOva Monitoring";
+    document.title = "Reset password · iCaNova Monitoring";
   }, []);
 
   if (!import.meta.env.VITE_CONVEX_URL) {

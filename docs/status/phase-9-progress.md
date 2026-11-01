@@ -21,7 +21,7 @@
 
 - `accountSecurity.changePassword` + Settings UI  
 - Shared `passwordPolicy`  
-- Notification event catalog UI; iCanOva SMS branding  
+- Notification event catalog UI; iCaNova SMS branding  
 
 ### P2–P3 Docs / honesty — COMPLETE (exceptions documented)
 

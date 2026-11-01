@@ -8,7 +8,7 @@ const VERSION = "2026.11.1";
 
 export function PrivacyPage() {
   useEffect(() => {
-    document.title = "Privacy notice · iCanOva Monitoring";
+    document.title = "Privacy notice · iCaNova Monitoring";
   }, []);
 
   return (
@@ -19,7 +19,7 @@ export function PrivacyPage() {
             <p className="mkt-eyebrow">Legal</p>
             <h1 id="privacy-hero-title">Privacy notice</h1>
             <p className="mkt-lede">
-              How iCanOva Monitoring, a product of ASIEDU DEVELOPMENT HUB, handles account and
+              How iCaNova Monitoring, a product of ASIEDU DEVELOPMENT HUB, handles account and
               operational data. This is a product notice — not a substitute for counsel-drafted
               policy on a regulated or enterprise deployment.
             </p>
@@ -34,11 +34,11 @@ export function PrivacyPage() {
               </div>
               <div>
                 <dt>Copyright</dt>
-                <dd>© 2026 iCanOva</dd>
+                <dd>© 2026 iCaNova</dd>
               </div>
               <div>
                 <dt>Established</dt>
-                <dd>2024</dd>
+                <dd>2026</dd>
               </div>
             </dl>
           </div>
@@ -49,15 +49,15 @@ export function PrivacyPage() {
             <article className="mkt-legal-block" data-mkt-reveal data-mkt-from="up">
               <h2>1. Who we are</h2>
               <p>
-                iCanOva is the product identity. iCanOva Monitoring is the authenticated web
+                iCaNova is the product identity. iCaNova Monitoring is the authenticated web
                 application. The Edge Gateway is the related hardware product. The parent company is
-                ASIEDU DEVELOPMENT HUB. Day-to-day product communication leads with iCanOva;
+                ASIEDU DEVELOPMENT HUB. Day-to-day product communication leads with iCaNova;
                 ASIEDU DEVELOPMENT HUB remains the legal operator of the service described here.
               </p>
               <p>
                 Questions about this notice:{" "}
                 <Link className="mkt-text-link" to="/contact">
-                  contact iCanOva
+                  contact iCaNova
                 </Link>
                 .
               </p>
@@ -168,7 +168,7 @@ export function PrivacyPage() {
             <article className="mkt-legal-block" data-mkt-reveal data-mkt-from="up">
               <h2>9. Children</h2>
               <p>
-                iCanOva Monitoring is an industrial operations product. It is not directed at
+                iCaNova Monitoring is an industrial operations product. It is not directed at
                 children and we do not knowingly collect personal data from children.
               </p>
             </article>
@@ -188,7 +188,7 @@ export function PrivacyPage() {
               <Link className="mkt-text-link" to="/terms">
                 Terms of use
               </Link>
-              . © 2026 iCanOva. Established 2024. Document{" "}
+              . © 2026 iCaNova. Established 2026. Document{" "}
               {VERSION}, effective{" "}
               {EFFECTIVE}.
             </p>

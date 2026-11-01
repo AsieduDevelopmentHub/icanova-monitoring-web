@@ -30,7 +30,7 @@ const FLOW = [
   {
     n: "04",
     title: "Surface honest states",
-    body: "Cloud contact, Modbus health and freshness stay separate in iCanOva Monitoring.",
+    body: "Cloud contact, Modbus health and freshness stay separate in iCaNova Monitoring.",
   },
 ] as const;
 
@@ -51,7 +51,7 @@ const INDICATORS = [
 
 export function ProductPage() {
   useEffect(() => {
-    document.title = "Edge Gateway · iCanOva Monitoring";
+    document.title = "Edge Gateway · iCaNova Monitoring";
   }, []);
 
   return (
@@ -61,9 +61,9 @@ export function ProductPage() {
           <div className="mkt-inner mkt-page-hero-grid">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Hardware</p>
-              <h1 id="product-hero-title">iCanOva Edge Gateway</h1>
+              <h1 id="product-hero-title">iCaNova Edge Gateway</h1>
               <p className="mkt-lede">
-                Industrial Modbus edge hardware that bridges generator controllers to iCanOva
+                Industrial Modbus edge hardware that bridges generator controllers to iCaNova
                 Monitoring — RS485 on the plant floor, HTTPS to the cloud.
               </p>
               <div className="mkt-cta-row">
@@ -85,7 +85,7 @@ export function ProductPage() {
                 <img
                   className="mkt-hardware-img"
                   src="/brand/icanova-edge-gateway.png?v=7"
-                  alt="iCanOva Edge Gateway concept casing"
+                  alt="iCaNova Edge Gateway concept casing"
                   width={1280}
                   height={720}
                   decoding="async"
@@ -185,7 +185,7 @@ export function ProductPage() {
               <h2>Local configuration never leaves the enclosure.</h2>
               <p className="mkt-copy">
                 Default hostname is icanova-edge. The Soft-AP SSID follows ICANOVA-EDGE-XXXX. Baud,
-                parity, slave address and GenComm writes are set on the device — iCanOva Monitoring
+                parity, slave address and GenComm writes are set on the device — iCaNova Monitoring
                 binds the registered unit to an organization and receives HTTPS ingest. It does not
                 become a remote serial console.
               </p>

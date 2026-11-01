@@ -1,7 +1,7 @@
 # Production Auth0 + SPA hosting (Phase 8.5A / 8.5B)
 
 **Date:** 2026-10-31  
-**Status (8.5D):** Host live; operator **accepted temporary shared Auth0 tenant**; production requires a **separate SPA** (`iCanOva Production`) — not yet verified. SPA still targets **staging Convex**. Production Convex env **empty**.  
+**Status (8.5D):** Host live; operator **accepted temporary shared Auth0 tenant**; production requires a **separate SPA** (`iCaNova Production`) — not yet verified. SPA still targets **staging Convex**. Production Convex env **empty**.  
 **Audience:** `icanova` (shared API — do not duplicate)  
 **Auth0 tenant (accepted for production temporarily):** `dev-notfczud6xx8hhxf.us.auth0.com`  
 **Acceptance record:** `docs/status/phase-8.5d-shared-auth0-acceptance.md`  
@@ -16,7 +16,7 @@
 | Verified callback | `https://icanova.pages.dev/auth/callback` |
 | Pages `VITE_OIDC_*` | **SET** (issuer/audience/redirect/logout); **Client ID still staging SPA** |
 | Auth0 tenant on Pages | Staging tenant — **temporary production exception accepted** |
-| Production Auth0 SPA | **OPEN** — create `iCanOva Production`; leave staging SPA unchanged |
+| Production Auth0 SPA | **OPEN** — create `iCaNova Production`; leave staging SPA unchanged |
 | Pages `VITE_CONVEX_URL` | **Staging** `dapper-roadrunner-247` — **not** sturgeon |
 | Production Convex `tremendous-sturgeon-449` | Identity OK; **0 env vars**; `/me` → **404** (functions likely undeployed) |
 | Convex prod secrets | **BLOCKED** until production SPA Client ID verified + written deploy authorization |
@@ -92,7 +92,7 @@ Authorize the production SPA client for the production API (`icanova`).
 Canonical steps: `docs/guide/production-auth0-spa-setup.md`.
 
 1. Stay on the **existing** Auth0 tenant (do not create a new tenant in 8.5D).  
-2. Create production **SPA** `iCanOva Production` (public, PKCE). **Do not** edit the staging SPA.  
+2. Create production **SPA** `iCaNova Production` (public, PKCE). **Do not** edit the staging SPA.  
 3. Reuse existing API identifier `icanova` — **do not** create a duplicate API.  
 4. Authorize production SPA → API `icanova`.  
 5. Set callback: `https://icanova.pages.dev/auth/callback`.  

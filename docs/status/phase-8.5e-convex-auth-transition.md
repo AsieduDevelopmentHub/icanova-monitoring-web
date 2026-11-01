@@ -8,7 +8,7 @@
 
 ## Why Convex Auth is primary
 
-iCanOva authentication is now owned by **Convex Auth (Password)** so the SPA does not depend on Auth0 for registration, login, logout, or session renewal. Convex continues to own organization membership, roles, and permissions. Successful authentication still does **not** grant organization access.
+iCaNova authentication is now owned by **Convex Auth (Password)** so the SPA does not depend on Auth0 for registration, login, logout, or session renewal. Convex continues to own organization membership, roles, and permissions. Successful authentication still does **not** grant organization access.
 
 ## Active architecture
 

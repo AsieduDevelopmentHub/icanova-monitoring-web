@@ -35,6 +35,6 @@ describe("password reset email config (unit)", () => {
         RESEND_FROM: "B <b@example.com>",
       } as NodeJS.ProcessEnv),
     ).toBe("B <b@example.com>");
-    expect(resolveResetFromAddress({} as NodeJS.ProcessEnv)).toMatch(/iCanOva/);
+    expect(resolveResetFromAddress({} as NodeJS.ProcessEnv)).toMatch(/iCaNova/);
   });
 });

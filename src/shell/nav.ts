@@ -80,7 +80,7 @@ export function itemForPath(pathname: string): NavItem | undefined {
 
 export function pageTitleFor(pathname: string): string {
   const crumbs = crumbsFor(pathname);
-  return crumbs[crumbs.length - 1]?.label ?? "iCanOva Monitoring";
+  return crumbs[crumbs.length - 1]?.label ?? "iCaNova Monitoring";
 }
 
 export function crumbsFor(pathname: string): { to: string; label: string }[] {

@@ -8,7 +8,7 @@ import { HeroProductFrame, ShowcaseFrames } from "./ShowcaseFrames";
 const CAPABILITIES = [
   {
     title: "Gateway connectivity",
-    body: "Track cloud contact for iCanOva Edge Gateways without confusing it with Modbus health or sample freshness.",
+    body: "Track cloud contact for iCaNova Edge Gateways without confusing it with Modbus health or sample freshness.",
   },
   {
     title: "Live equipment monitoring",
@@ -68,8 +68,8 @@ const TRUTHS = [
 
 const FAQ = [
   {
-    q: "What does iCanOva Monitoring actually monitor?",
-    a: "Connected iCanOva Edge Gateways, associated generators and site groupings — cloud contact, Modbus health, measurement freshness, alarms, events and bounded reports.",
+    q: "What does iCaNova Monitoring actually monitor?",
+    a: "Connected iCaNova Edge Gateways, associated generators and site groupings — cloud contact, Modbus health, measurement freshness, alarms, events and bounded reports.",
   },
   {
     q: "Do I need an account to open the dashboard?",
@@ -141,7 +141,7 @@ export function Landing() {
   const exploreLabel = isAuthenticated ? "Open dashboard" : "Get started";
 
   useEffect(() => {
-    document.title = "iCanOva Monitoring · Industrial operations visibility";
+    document.title = "iCaNova Monitoring · Industrial operations visibility";
   }, []);
 
   return (
@@ -155,7 +155,7 @@ export function Landing() {
               <span className="mkt-hero-emphasis"> Understand everything.</span>
             </h1>
             <p className="mkt-lede">
-              iCanOva Monitoring brings industrial equipment, Edge Gateways and operational data into
+              iCaNova Monitoring brings industrial equipment, Edge Gateways and operational data into
               one coherent experience — engineered for teams who need honest visibility, not vanity
               dashboards.
             </p>
@@ -194,7 +194,7 @@ export function Landing() {
           <div className="mkt-inner mkt-split mkt-split-visual">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Platform</p>
-              <h2>Most monitoring flattens signals. iCanOva keeps them separate.</h2>
+              <h2>Most monitoring flattens signals. iCaNova keeps them separate.</h2>
               <p className="mkt-copy">
                 Built for gateways, generators and site infrastructure. Cloud contact is not Modbus
                 health. A stale sample is not a failed link. Operators see what is known — and what is
@@ -249,7 +249,7 @@ export function Landing() {
           <div className="mkt-inner mkt-hardware-layout">
             <div className="mkt-hardware-copy" data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Product</p>
-              <h2 id="mkt-product-title">iCanOva Edge Gateway</h2>
+              <h2 id="mkt-product-title">iCaNova Edge Gateway</h2>
               <p className="mkt-copy">
                 Industrial enclosure for Modbus RTU edge connectivity — power, transmit and receive
                 status at a glance. Concept casing for field mounting beside generator controllers.
@@ -270,7 +270,7 @@ export function Landing() {
                 <img
                   className="mkt-hardware-img"
                   src="/brand/icanova-edge-gateway.png?v=7"
-                  alt="iCanOva Edge Gateway concept casing"
+                  alt="iCaNova Edge Gateway concept casing"
                   width={1280}
                   height={720}
                   loading="lazy"

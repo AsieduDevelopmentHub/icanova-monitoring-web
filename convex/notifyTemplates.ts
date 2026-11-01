@@ -68,7 +68,7 @@ export function alarmSms(ctx: AlarmNotifyContext, event: string): string {
   const verb =
     event === "alarm.acknowledged" ? "acked" : event === "alarm.cleared" ? "cleared" : "raised";
   const name = ctx.generatorName ?? "generator";
-  return `iCanOva ${verb} ${ctx.severity}: ${ctx.summary} @ ${name}. /alarms/${ctx.alarmId}`;
+  return `iCaNova ${verb} ${ctx.severity}: ${ctx.summary} @ ${name}. /alarms/${ctx.alarmId}`;
 }
 
 export function deviceRegisteredEmail(org: string, site: string, device: string, deviceId: string) {
@@ -81,7 +81,7 @@ export function deviceRegisteredEmail(org: string, site: string, device: string,
       `<p>Device: ${escapeHtml(device)}</p>`,
       `<p>Open gateways: /gateways/${deviceId}</p>`,
     ].join("\n"),
-    sms: `iCanOva device registered: ${device} @ ${site}`,
+    sms: `iCaNova device registered: ${device} @ ${site}`,
   };
 }
 

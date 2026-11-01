@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-31  
 **Tenant policy:** Use the **existing** Auth0 tenant currently serving staging (`dev-notfczud6xx8hhxf.us.auth0.com`). Do **not** create a new tenant in this phase.  
-**SPA policy:** Create a **new** Single Page Application named **`iCanOva Production`**. Leave the existing staging SPA unchanged.  
+**SPA policy:** Create a **new** Single Page Application named **`iCaNova Production`**. Leave the existing staging SPA unchanged.  
 **API policy:** Reuse existing API identifier **`icanova`**. Do **not** create a duplicate API.  
 **Secrets:** Public SPA only — **no** frontend client secret; never put secrets in `VITE_*` or git.
 
@@ -32,7 +32,7 @@ Optional trailing slash on logout: the live SPA uses `VITE_OIDC_LOGOUT_REDIRECT_
 
 1. Sign in to the **existing** tenant (`dev-notfczud6xx8hhxf.us.auth0.com`).  
 2. **Applications → Create Application**  
-   - Name: `iCanOva Production`  
+   - Name: `iCaNova Production`  
    - Type: **Single Page Application**  
 3. Open the new application → **Settings**:  
    - Application Type: SPA  

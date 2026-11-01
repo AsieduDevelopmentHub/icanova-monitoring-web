@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import { alarmSms, deviceRegisteredEmail } from "./notifyTemplates";
 
 describe("notify template branding", () => {
-  test("SMS copy uses iCanOva product name", () => {
+  test("SMS copy uses iCaNova product name", () => {
     const sms = alarmSms(
       {
         organizationName: "Org",
@@ -19,12 +19,12 @@ describe("notify template branding", () => {
       },
       "alarm.raised",
     );
-    expect(sms.startsWith("iCanOva ")).toBe(true);
+    expect(sms.startsWith("iCaNova ")).toBe(true);
     expect(sms).not.toMatch(/^DSE /);
   });
 
-  test("device registration SMS uses iCanOva", () => {
+  test("device registration SMS uses iCaNova", () => {
     const copy = deviceRegisteredEmail("Org", "Site", "GW1", "d1");
-    expect(copy.sms.startsWith("iCanOva ")).toBe(true);
+    expect(copy.sms.startsWith("iCaNova ")).toBe(true);
   });
 });

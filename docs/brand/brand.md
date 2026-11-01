@@ -1,10 +1,10 @@
 # Brand
 
-Platform brand is **iCanOva**. Product display names:
+Platform brand is **iCaNova**. Product display names:
 
-- Platform: **iCanOva Monitoring**
-- Edge family: **iCanOva Edge**
-- Edge product: **iCanOva Edge Gateway**
+- Platform: **iCaNova Monitoring**
+- Edge family: **iCaNova Edge**
+- Edge product: **iCaNova Edge Gateway**
 
 Canonical JSON (this repo): [`../product/product-identity.json`](../product/product-identity.json)  
 Terminology: [`../product/terminology.md`](../product/terminology.md)

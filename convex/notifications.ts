@@ -459,7 +459,7 @@ export const requestDelivery = mutation({
           .take(20);
         const active = subscriptions.filter((row) => row.status === "active");
         const pushBody = JSON.stringify({
-          title: "iCanOva notification",
+          title: "iCaNova notification",
           body: args.event,
           severity: "informational",
           event: args.event,
@@ -475,7 +475,7 @@ export const requestDelivery = mutation({
             event: args.event,
             attempt: 1,
             body: pushBody,
-            subject: "iCanOva notification",
+            subject: "iCaNova notification",
           });
           ids.push(id);
           continue;
@@ -489,7 +489,7 @@ export const requestDelivery = mutation({
             event: args.event,
             attempt: 1,
             body: pushBody,
-            subject: "iCanOva notification",
+            subject: "iCaNova notification",
           });
           ids.push(id);
           const row = await ctx.db.get(id);

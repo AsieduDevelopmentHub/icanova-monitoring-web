@@ -71,8 +71,8 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
   return (
     <div className="mkt">
       <header className={scrolled ? "mkt-nav is-scrolled" : "mkt-nav"}>
-        <Link to="/" className="mkt-brand" aria-label="iCanOva Monitoring home">
-          <span className="mkt-brand-mark">iCanOva</span>
+        <Link to="/" className="mkt-brand" aria-label="iCaNova Monitoring home">
+          <span className="mkt-brand-mark">iCaNova</span>
           <span className="mkt-brand-sub">Monitoring</span>
         </Link>
         <ul className="mkt-nav-pill">
@@ -164,7 +164,7 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
       <footer className="mkt-footer">
         <div className="mkt-inner mkt-footer-grid">
           <div>
-            <div className="mkt-footer-brand">iCanOva</div>
+            <div className="mkt-footer-brand">iCaNova</div>
             <p className="mkt-footer-tag">Imagine. Connect. Innovate.</p>
             <p className="mkt-footer-tag">Intelligent technology for connected industries.</p>
           </div>
@@ -207,7 +207,7 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
               <h3>Company</h3>
               <ul>
                 <li>
-                  <Link to="/about">About iCanOva</Link>
+                  <Link to="/about">About iCaNova</Link>
                 </li>
                 <li>
                   <Link to="/privacy">Privacy</Link>
@@ -223,7 +223,7 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
           ICANOVA
         </p>
         <p className="mkt-footer-legal mkt-inner">
-          © 2026 iCanOva. All rights reserved. · Established 2024
+          © 2026 iCaNova. All rights reserved. · Established 2026
         </p>
       </footer>
     </div>

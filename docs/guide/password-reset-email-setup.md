@@ -20,7 +20,7 @@
 Prefer branding:
 
 ```bash
-npx convex env set AUTH_EMAIL_FROM "iCanOva Monitoring <you@your-verified-domain>" --deployment staging
+npx convex env set AUTH_EMAIL_FROM "iCaNova Monitoring <you@your-verified-domain>" --deployment staging
 ```
 
 `AUTH_RESEND_KEY` is optional; if unset, `RESEND_API_KEY` is reused.

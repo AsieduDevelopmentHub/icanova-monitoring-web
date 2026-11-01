@@ -3,7 +3,7 @@
 **Status:** IMPLEMENTATION IN PROGRESS — see [`phase11-implementation-notes.md`](./phase11-implementation-notes.md).  
 **Inputs:** Competitor screenshots in [`competitor-inspiration/`](./competitor-inspiration/).  
 **Base:** Phase 9 Command Center + Phase 10 text densification.  
-**Focus:** Generators as the hero product surface for iCanOva Monitoring.
+**Focus:** Generators as the hero product surface for iCaNova Monitoring.
 
 ---
 
@@ -22,7 +22,7 @@ It loses on:
 3. **Emotion / craft** — spreadsheet chrome, tiny type, form-heavy asset pages.
 4. **Honesty of viz** — static dashed lines imply flow; often not a true live twin.
 
-**iCanOva must not become a clone.** We keep graphite / warm white / copper / steel, Manrope / Inter / Plex Mono, and our honesty rules (cloud ≠ Modbus ≠ freshness; missing ≠ zero; no invented %).
+**iCaNova must not become a clone.** We keep graphite / warm white / copper / steel, Manrope / Inter / Plex Mono, and our honesty rules (cloud ≠ Modbus ≠ freshness; missing ≠ zero; no invented %).
 
 **Near-term product scope:** generators + gateways + site board. Map fleet, multi-tenant DC, solar/rectifier product depth are later — only borrow *patterns*, not feature sprawl.
 
@@ -32,11 +32,11 @@ It loses on:
 
 **“Generator Command Instrument”**
 
-When an operator opens iCanOva they should feel:
+When an operator opens iCaNova they should feel:
 
 > I see the machine, I see power and status, I can drill to numbers — without reading an essay.
 
-| Layer | Competitor | iCanOva target |
+| Layer | Competitor | iCaNova target |
 | --- | --- | --- |
 | Hero | Flat isometric PNG + dashed lines | Live R3F **site/generator twin** with **animated copper/steel power flow** from real Convex state |
 | Numbers | Colored KPI tiles + tiny tables | Large `TechValue` / Metric strip + taller SVG charts |
@@ -46,7 +46,7 @@ When an operator opens iCanOva they should feel:
 
 ### Palette mapping (never copy their blue/teal)
 
-| Role | Competitor habit | iCanOva token |
+| Role | Competitor habit | iCaNova token |
 | --- | --- | --- |
 | Shell / rail | Near-black + teal buttons | `--color-graphite` / `--bg-nav` |
 | Page ground | Harsh white | `--color-warm-white` / dark `--color-graphite` |
@@ -100,7 +100,7 @@ Optional later (when schema exists): fuel tank, coolant, oil, phase legs R/Y/B a
 **Implementation approach (no new 3D packages):**
 
 1. Extend `CommandTwin` / new `SitePowerTwin` in `src/viz/` with R3F nodes + `useFrame` particle or moving dash textures along curves.
-2. Keep lazy load + `prefers-reduced-motion` → flat SVG schematic (2D energy diagram like their block chart, but iCanOva styled).
+2. Keep lazy load + `prefers-reduced-motion` → flat SVG schematic (2D energy diagram like their block chart, but iCaNova styled).
 3. Drive edges from existing queries only (`telemetry.current*`, `deviceHealth`, alarms). Missing metric → hide callout, not `0.00`.
 
 ### Layout for the catchy page
@@ -128,7 +128,7 @@ Composition (desktop):
 
 ## 4. Per-page implementation guide
 
-Each page: **competitor lesson → iCanOva layout → must-have data → anti-patterns.**
+Each page: **competitor lesson → iCaNova layout → must-have data → anti-patterns.**
 
 ### 4.1 Command Center (`/app`) — primary hero
 

@@ -150,7 +150,7 @@ try {
   }
   console.log("reset_request=submitted");
   console.log(
-    "ACTION\tCheck the staging mailbox for subject: Reset your iCanOva password",
+    "ACTION\tCheck the staging mailbox for subject: Reset your iCaNova password",
   );
   console.log(
     "ACTION\tThen re-run with RESET_OTP=<code> RESET_NEW_PASSWORD='AtLeast8a1' to finish verification",

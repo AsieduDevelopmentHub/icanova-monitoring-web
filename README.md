@@ -1,10 +1,10 @@
-# iCanOva Monitoring
+# iCaNova Monitoring
 
 Web-based platform for industrial equipment monitoring, device management, operational visibility and connected system management.
 
-**Brand:** iCanOva — Imagine. Connect. Innovate.  
-**Platform:** iCanOva Monitoring  
-**Edge family / product:** iCanOva Edge / iCanOva Edge Gateway  
+**Brand:** iCaNova — Imagine. Connect. Innovate.  
+**Platform:** iCaNova Monitoring  
+**Edge family / product:** iCaNova Edge / iCaNova Edge Gateway  
 **Descriptor:** Intelligent technology for connected industries.  
 A technology platform by ASIEDU DEVELOPMENT HUB (ADH).
 

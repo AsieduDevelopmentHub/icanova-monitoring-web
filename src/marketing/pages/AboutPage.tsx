@@ -21,13 +21,13 @@ const PILLARS = [
 
 const LINES = [
   {
-    title: "iCanOva Monitoring",
+    title: "iCaNova Monitoring",
     body: "The cloud application: sites, gateways, generators, live readings, alarms, events and bounded reports.",
     to: "/platform",
     label: "Platform",
   },
   {
-    title: "iCanOva Edge Gateway",
+    title: "iCaNova Edge Gateway",
     body: "Hardware that polls controllers over RS485 and uplinks telemetry over HTTPS ingest.",
     to: "/product",
     label: "Hardware",
@@ -36,7 +36,7 @@ const LINES = [
 
 export function AboutPage() {
   useEffect(() => {
-    document.title = "About · iCanOva Monitoring";
+    document.title = "About · iCaNova Monitoring";
   }, []);
 
   return (
@@ -46,11 +46,11 @@ export function AboutPage() {
           <div className="mkt-inner" data-mkt-reveal data-mkt-from="up">
             <p className="mkt-eyebrow">Brand</p>
             <p className="mkt-brand-hero-mark" aria-hidden="true">
-              iCanOva
+              iCaNova
             </p>
             <h1 id="about-hero-title">Intelligent technology for connected industries.</h1>
             <p className="mkt-lede">
-              iCanOva builds monitoring that operators can trust — equipment, Edge Gateways and
+              iCaNova builds monitoring that operators can trust — equipment, Edge Gateways and
               operational data in one coherent experience, without vanity dashboards.
             </p>
             <div className="mkt-cta-row">
@@ -108,7 +108,7 @@ export function AboutPage() {
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="up">
               <p className="mkt-eyebrow">Product line</p>
-              <h2>What we ship under iCanOva.</h2>
+              <h2>What we ship under iCaNova.</h2>
             </div>
             <ul className="mkt-cap-list">
               {LINES.map((item, index) => (
@@ -139,8 +139,8 @@ export function AboutPage() {
             </div>
             <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
               <p className="mkt-copy mkt-copy-on-dark">
-                iCanOva is a product identity of ASIEDU DEVELOPMENT HUB. Day-to-day product
-                communication leads with iCanOva; ASIEDU DEVELOPMENT HUB remains the corporate
+                iCaNova is a product identity of ASIEDU DEVELOPMENT HUB. Day-to-day product
+                communication leads with iCaNova; ASIEDU DEVELOPMENT HUB remains the corporate
                 parent.
               </p>
             </div>
@@ -178,7 +178,7 @@ export function AboutPage() {
 
         <PageClose
           title="Build with an honest monitoring stack."
-          body="From Edge Gateway registration to alarm response — one coherent iCanOva experience."
+          body="From Edge Gateway registration to alarm response — one coherent iCaNova experience."
           secondaryTo="/contact"
           secondaryLabel="Contact"
         />

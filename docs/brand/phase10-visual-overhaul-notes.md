@@ -4,7 +4,7 @@
 
 ## Goal
 
-Strip text clutter and densify the authenticated iCanOva UI into a data-first industrial instrument — compact shell, rebuilt Command Center, larger charts, polished twin, page-by-page hierarchy — without changing Convex auth, honesty semantics, or routes.
+Strip text clutter and densify the authenticated iCaNova UI into a data-first industrial instrument — compact shell, rebuilt Command Center, larger charts, polished twin, page-by-page hierarchy — without changing Convex auth, honesty semantics, or routes.
 
 ## Workstreams completed
 

@@ -47,7 +47,7 @@ Preferred production design remains a dedicated Auth0 tenant. Sharing the stagin
 
 | Mitigation | Status / owner |
 |---|---|
-| Separate production SPA Client ID + distinct Allowed Callback / Logout / Web Origins | **Operator** — create `iCanOva Production` SPA (see `docs/guide/production-auth0-spa-setup.md`) |
+| Separate production SPA Client ID + distinct Allowed Callback / Logout / Web Origins | **Operator** — create `iCaNova Production` SPA (see `docs/guide/production-auth0-spa-setup.md`) |
 | Staging SPA URLs and Client ID left unchanged | **Operator** — do not edit staging app for prod URLs |
 | Convex membership + RBAC gate org data | **Code** — `convex/authz.ts` / permissions; Auth0 login alone is insufficient |
 | Access token only for Convex (`aud=icanova`); never ID token | **Code** — `selectConvexBearer`; `auth.config.ts` customJwt |

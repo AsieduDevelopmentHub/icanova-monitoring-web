@@ -573,7 +573,7 @@ export async function emitHealthEvent(
       `<p>Device: ${device.name}</p>`,
       `<p>Open: /gateways/${args.deviceId}</p>`,
     ].join("\n"),
-    smsBody: `iCanOva ${args.event}: ${device.name} @ ${site.name}`,
+    smsBody: `iCaNova ${args.event}: ${device.name} @ ${site.name}`,
   });
 }
 

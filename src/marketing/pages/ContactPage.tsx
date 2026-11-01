@@ -9,13 +9,13 @@ const CHANNELS = [
   {
     label: "General",
     display: "hello@icanova.com",
-    subjectPrefix: "iCanOva · General",
+    subjectPrefix: "iCaNova · General",
     hint: "Product questions, partnerships, introductions",
   },
   {
     label: "Support",
     display: "support@icanova.com",
-    subjectPrefix: "iCanOva · Support",
+    subjectPrefix: "iCaNova · Support",
     hint: "Gateway registration, monitoring access, alarms",
   },
 ] as const;
@@ -26,7 +26,7 @@ export function ContactPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    document.title = "Contact · iCanOva Monitoring";
+    document.title = "Contact · iCaNova Monitoring";
   }, []);
 
   function onSubmit(e: FormEvent) {
@@ -54,7 +54,7 @@ export function ContactPage() {
         <section className="mkt-page-hero" aria-labelledby="contact-hero-title">
           <div className="mkt-inner mkt-page-hero-copy" data-mkt-reveal data-mkt-from="up">
             <p className="mkt-eyebrow">Contact</p>
-            <h1 id="contact-hero-title">Talk to iCanOva</h1>
+            <h1 id="contact-hero-title">Talk to iCaNova</h1>
             <p className="mkt-lede">
               Reach the team about Edge Gateways, monitoring access or partnership. The form opens
               your email app with a prefilled draft — nothing is sent from this site.
@@ -68,7 +68,7 @@ export function ContactPage() {
               <p className="mkt-eyebrow">Channels</p>
               <h2>Branded addresses</h2>
               <p className="mkt-copy mkt-copy-narrow">
-                Product identity uses iCanOva addresses in the UI. Drafts currently deliver through
+                Product identity uses iCaNova addresses in the UI. Drafts currently deliver through
                 our inbox relay.
               </p>
               <div className="mkt-contact-channels">
@@ -82,7 +82,7 @@ export function ContactPage() {
               </div>
               <p className="mkt-section-more">
                 <Link className="mkt-text-link" to="/about">
-                  About iCanOva
+                  About iCaNova
                 </Link>
               </p>
             </div>

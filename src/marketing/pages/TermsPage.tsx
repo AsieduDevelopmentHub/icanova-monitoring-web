@@ -8,7 +8,7 @@ const VERSION = "2026.11.1";
 
 export function TermsPage() {
   useEffect(() => {
-    document.title = "Terms of use · iCanOva Monitoring";
+    document.title = "Terms of use · iCaNova Monitoring";
   }, []);
 
   return (
@@ -19,7 +19,7 @@ export function TermsPage() {
             <p className="mkt-eyebrow">Legal</p>
             <h1 id="terms-hero-title">Terms of use</h1>
             <p className="mkt-lede">
-              These terms govern access to iCanOva Monitoring, a product of ASIEDU DEVELOPMENT HUB.
+              These terms govern access to iCaNova Monitoring, a product of ASIEDU DEVELOPMENT HUB.
               They are a concise public statement — not a complete commercial contract. Enterprise
               deployments may use a separate agreement that supersedes this page.
             </p>
@@ -34,11 +34,11 @@ export function TermsPage() {
               </div>
               <div>
                 <dt>Copyright</dt>
-                <dd>© 2026 iCanOva</dd>
+                <dd>© 2026 iCaNova</dd>
               </div>
               <div>
                 <dt>Established</dt>
-                <dd>2024</dd>
+                <dd>2026</dd>
               </div>
             </dl>
           </div>
@@ -50,7 +50,7 @@ export function TermsPage() {
               <h2>1. Acceptance</h2>
               <p>
                 By creating an account, signing in, registering an Edge Gateway or otherwise using
-                iCanOva Monitoring, you agree to these terms on behalf of yourself and the
+                iCaNova Monitoring, you agree to these terms on behalf of yourself and the
                 organization you represent. If you do not agree, do not use the service.
               </p>
             </article>
@@ -58,11 +58,11 @@ export function TermsPage() {
             <article className="mkt-legal-block" data-mkt-reveal data-mkt-from="up" data-mkt-delay="1">
               <h2>2. The service</h2>
               <p>
-                iCanOva Monitoring provides authenticated access to gateway registration, telemetry,
-                alarms, sites, reports and related operational tools. The iCanOva Edge Gateway and
+                iCaNova Monitoring provides authenticated access to gateway registration, telemetry,
+                alarms, sites, reports and related operational tools. The iCaNova Edge Gateway and
                 its Soft-AP configuration remain device-side responsibilities. Deep Sea Electronics
                 / DSE controllers and GenComm register maps are third-party equipment — not part of
-                the iCanOva brand.
+                the iCaNova brand.
               </p>
             </article>
 
@@ -113,7 +113,7 @@ export function TermsPage() {
             <article className="mkt-legal-block" data-mkt-reveal data-mkt-from="up">
               <h2>7. Intellectual property</h2>
               <p>
-                iCanOva, iCanOva Monitoring, iCanOva Edge Gateway and related marks are product
+                iCaNova, iCaNova Monitoring, iCaNova Edge Gateway and related marks are product
                 identities of ASIEDU DEVELOPMENT HUB. You receive a limited, revocable right to use
                 the application for your organization’s operations. You do not receive ownership of
                 the software, documentation or brand. Feedback you send may be used to improve the
@@ -173,9 +173,9 @@ export function TermsPage() {
               <p>
                 Notices and questions:{" "}
                 <Link className="mkt-text-link" to="/contact">
-                  contact iCanOva
+                  contact iCaNova
                 </Link>
-                . © 2026 iCanOva. Established 2024.
+                . © 2026 iCaNova. Established 2026.
               </p>
             </article>
 

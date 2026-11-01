@@ -1,4 +1,4 @@
-/* Public marketing — iCanOva palette, atmospheric surfaces from gpt.md */
+/* Public marketing — iCaNova palette, atmospheric surfaces from gpt.md */
 
 .mkt {
   --mkt-max: 1200px;
@@ -932,28 +932,29 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  align-self: center;
+  align-self: stretch;
   width: 100%;
-  min-height: 0;
+  min-height: clamp(17.5rem, 58vw, 24rem);
 }
 
 .mkt-diagram {
   margin: 0 auto;
-  width: min(100%, 32.5rem);
-  flex: 0 0 auto;
+  width: min(100%, 46rem);
+  flex: 1 1 auto;
 }
 
 .mkt-diagram-stage {
   position: relative;
   isolation: isolate;
   overflow: hidden;
+  width: 100%;
   border-radius: 1.15rem;
   border: 1px solid transparent;
   background:
     linear-gradient(var(--color-warm-white), var(--color-warm-white)) padding-box,
     linear-gradient(135deg, var(--mkt-edge-a), var(--mkt-edge-b), var(--mkt-edge-c)) border-box;
   box-shadow:
-    0 10px 32px color-mix(in srgb, var(--color-graphite) 6%, transparent),
+    0 14px 40px color-mix(in srgb, var(--color-graphite) 8%, transparent),
     0 1px 3px color-mix(in srgb, var(--color-graphite) 4%, transparent);
 }
 
@@ -961,30 +962,37 @@
   display: block;
   width: 100%;
   height: auto;
+  min-height: clamp(16rem, 52vw, 22.5rem);
   aspect-ratio: 560 / 320;
 }
 
 .mkt-diagram-grid {
-  opacity: 0.38;
+  opacity: 0.42;
 }
 
 .mkt-diagram-dash {
-  stroke-dasharray: 5 7;
-  animation: mkt-diagram-dash 2.4s linear infinite;
+  stroke-dasharray: 8 10;
+  stroke-width: 2.6;
+  animation: mkt-diagram-dash 2.1s linear infinite;
 }
 
 .mkt-diagram-glow {
-  opacity: 0.55;
-  animation: mkt-diagram-glow 2.8s ease-in-out infinite;
+  opacity: 0.72;
+  animation: mkt-diagram-glow 2.4s ease-in-out infinite;
   transform-box: fill-box;
   transform-origin: center;
+}
+
+.mkt-diagram-packet {
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-muted-copper) 55%, transparent));
 }
 
 .mkt-diagram-label {
   fill: var(--color-graphite);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 16px;
   letter-spacing: 0.12em;
+  font-weight: 650;
 }
 
 .mkt-diagram-sub,
@@ -992,19 +1000,21 @@
 .mkt-diagram-kicker {
   fill: var(--color-industrial-steel);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.1em;
 }
 
 .mkt-diagram-kicker {
   fill: var(--color-muted-copper);
   letter-spacing: 0.16em;
+  font-size: 15px;
+  font-weight: 650;
 }
 
 .mkt-diagram-value {
   fill: var(--color-graphite);
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.03em;
 }
@@ -1012,14 +1022,15 @@
 .mkt-diagram-chip {
   fill: color-mix(in srgb, var(--color-graphite) 88%, var(--color-deep-navy));
   stroke: #2a3642;
-  stroke-width: 1;
+  stroke-width: 1.4;
 }
 
 .mkt-diagram-chip-text {
   fill: var(--color-titanium);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.08em;
+  font-weight: 600;
 }
 
 .mkt-dark .mkt-diagram-stage {
@@ -1041,19 +1052,19 @@
 
 @keyframes mkt-diagram-dash {
   to {
-    stroke-dashoffset: -24;
+    stroke-dashoffset: -36;
   }
 }
 
 @keyframes mkt-diagram-glow {
   0%,
   100% {
-    opacity: 0.28;
-    transform: scale(0.92);
+    opacity: 0.38;
+    transform: scale(0.9);
   }
   50% {
-    opacity: 0.7;
-    transform: scale(1.08);
+    opacity: 0.92;
+    transform: scale(1.18);
   }
 }
 
@@ -1293,7 +1304,7 @@
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  min-height: 17.5rem;
+  min-height: clamp(19rem, 52vw, 23rem);
 }
 
 .mkt-proof .mkt-frame-main {
@@ -2103,7 +2114,7 @@
 
   .mkt-proof-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: minmax(17.5rem, auto) auto auto;
+    grid-template-rows: minmax(21rem, auto) auto auto;
     align-items: stretch;
   }
 
@@ -2204,6 +2215,18 @@
 
   .mkt-split-visual {
     align-items: center;
+  }
+
+  .mkt-diagram-slot {
+    min-height: 26rem;
+  }
+
+  .mkt-diagram {
+    width: min(100%, 48rem);
+  }
+
+  .mkt-diagram-svg {
+    min-height: 24rem;
   }
 
   .mkt-split-visual-flip {

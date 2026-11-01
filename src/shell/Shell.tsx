@@ -211,7 +211,7 @@ export function Shell() {
   }, [theme]);
 
   useEffect(() => {
-    document.title = `${here} · iCanOva Monitoring`;
+    document.title = `${here} · iCaNova Monitoring`;
   }, [here]);
 
   useEffect(() => {
@@ -231,11 +231,11 @@ export function Shell() {
       </a>
       <aside className="sidebar" aria-label="Application">
         <NavLink to="/" className="brand-lockup">
-          <span className="brand-mark">iCanOva</span>
+          <span className="brand-mark">iCaNova</span>
           <span className="brand-name">Monitoring</span>
         </NavLink>
         <NavList />
-        <p className="sidebar-foot">Est. 2024</p>
+        <p className="sidebar-foot">Est. 2026</p>
       </aside>
       <div className="shell-main">
         <header className="topbar">

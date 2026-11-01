@@ -29,7 +29,7 @@ export function AuthLogin() {
   const returnTo = safeReturnPath((location.state as { from?: unknown } | null)?.from, "/app");
 
   useEffect(() => {
-    document.title = "Sign in · iCanOva Monitoring";
+    document.title = "Sign in · iCaNova Monitoring";
   }, []);
 
   useEffect(() => {
@@ -130,7 +130,7 @@ export function AuthLogin() {
           {mode === "signIn" ? (
             canSignUp ? (
               <>
-                New to iCanOva?{" "}
+                New to iCaNova?{" "}
                 <button
                   type="button"
                   className="auth-text-link"

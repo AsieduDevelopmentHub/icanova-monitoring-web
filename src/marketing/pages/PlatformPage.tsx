@@ -112,7 +112,7 @@ export function PlatformPage() {
   const exploreTo = isAuthenticated ? "/app" : "/auth/login";
 
   useEffect(() => {
-    document.title = "Platform · iCanOva Monitoring";
+    document.title = "Platform · iCaNova Monitoring";
   }, []);
 
   return (
@@ -123,7 +123,7 @@ export function PlatformPage() {
             <p className="mkt-eyebrow">Operator application</p>
             <h1 id="platform-hero-title">The application operators actually work in.</h1>
             <p className="mkt-lede">
-              iCanOva Monitoring is a signed-in application — roles, alarm lifecycle and
+              iCaNova Monitoring is a signed-in application — roles, alarm lifecycle and
               notification channels — not a restatement of the homepage pitch.
             </p>
             <div className="mkt-cta-row">

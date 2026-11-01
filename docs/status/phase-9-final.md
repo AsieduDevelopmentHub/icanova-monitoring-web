@@ -43,7 +43,7 @@ Phase 9 delivered account-lifecycle maturity (recovery + change), notification o
 |---|---|
 | Existing dedupe / retry / delivery tracking | Retained from Phase 7/8 |
 | Event catalog + preference/policy UX polish | COMPLETE |
-| Template branding (iCanOva) | COMPLETE |
+| Template branding (iCaNova) | COMPLETE |
 | Live email/SMS/push customer delivery proof | **NOT TESTED** |
 
 ## 5. Ingestion security

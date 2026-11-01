@@ -29,7 +29,7 @@ export function resolveResetFromAddress(env: NodeJS.ProcessEnv = process.env): s
   if (shared) {
     return shared;
   }
-  return "iCanOva Monitoring <onboarding@resend.dev>";
+  return "iCaNova Monitoring <onboarding@resend.dev>";
 }
 
 function resendApiKey(): string | undefined {
@@ -80,9 +80,9 @@ export const PasswordResetEmail = Resend({
     const { error } = await resend.emails.send({
       from,
       to: [email],
-      subject: "Reset your iCanOva password",
-      text: `Your iCanOva password reset code is ${token}. It expires shortly. If you did not request this, ignore this email.`,
-      html: `<p>Your iCanOva password reset code is <strong>${token}</strong>.</p><p>It expires shortly. If you did not request this, ignore this email.</p>`,
+      subject: "Reset your iCaNova password",
+      text: `Your iCaNova password reset code is ${token}. It expires shortly. If you did not request this, ignore this email.`,
+      html: `<p>Your iCaNova password reset code is <strong>${token}</strong>.</p><p>It expires shortly. If you did not request this, ignore this email.</p>`,
     });
     if (error) {
       throw new Error("Could not send password reset email");

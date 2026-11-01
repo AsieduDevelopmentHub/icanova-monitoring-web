@@ -129,7 +129,7 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
       <Panel title="Identity">
         <dl className="facts">
           <dt>Product</dt>
-          <dd>iCanOva Edge Gateway</dd>
+          <dd>iCaNova Edge Gateway</dd>
           <dt>Identity</dt>
           <dd className="tech">{detail.device.identity}</dd>
           <dt>Site</dt>

@@ -32,7 +32,7 @@ Set at **build time** (Vite embeds `VITE_*`). Do not invent Client ID values.
 |---|---|---|
 | `VITE_CONVEX_URL` | `https://tremendous-sturgeon-449.convex.cloud` after authorized cutover | Still `https://dapper-roadrunner-247.convex.cloud` |
 | `VITE_OIDC_ISSUER` | `https://dev-notfczud6xx8hhxf.us.auth0.com` (shared tenant — accepted) | Same staging issuer |
-| `VITE_OIDC_CLIENT_ID` | **New** `iCanOva Production` SPA Client ID | Still **staging** SPA Client ID (len=32) |
+| `VITE_OIDC_CLIENT_ID` | **New** `iCaNova Production` SPA Client ID | Still **staging** SPA Client ID (len=32) |
 | `VITE_OIDC_AUDIENCE` | `icanova` | `icanova` |
 | `VITE_OIDC_REDIRECT_URI` | `https://icanova.pages.dev/auth/callback` | Same |
 | `VITE_OIDC_LOGOUT_REDIRECT_URI` | `https://icanova.pages.dev/` | Same |
@@ -61,7 +61,7 @@ Notify providers remain disabled unless separately authorized.
 
 ## 4. Cutover sequence (after operator creates SPA + supplies Client ID)
 
-1. Operator creates `iCanOva Production` SPA per `docs/guide/production-auth0-spa-setup.md`.  
+1. Operator creates `iCaNova Production` SPA per `docs/guide/production-auth0-spa-setup.md`.  
 2. Operator records production Client ID in vault (not git).  
 3. **Separate authorization** required before: set sturgeon `AUTH_*` + new `INGEST_SECRET`.  
 4. **Separate authorization** required before: deploy Convex functions to production.  

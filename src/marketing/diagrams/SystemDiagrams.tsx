@@ -40,9 +40,11 @@ function Packet({
 }) {
   if (reduce) return null;
   return (
-    <circle r="3.1" fill={color}>
+    <g className="mkt-diagram-packet">
       <animateMotion dur={dur} begin={begin} repeatCount="indefinite" path={path} />
-    </circle>
+      <circle r="8" fill={color} opacity="0.24" />
+      <circle r="5" fill={color} />
+    </g>
   );
 }
 
@@ -114,7 +116,7 @@ function Node({
   label,
   sub,
   fill = COPPER,
-  r = 7,
+  r = 10,
   glowId,
 }: {
   x: number;
@@ -127,13 +129,13 @@ function Node({
 }) {
   return (
     <g transform={`translate(${x} ${y})`}>
-      <circle r="16" fill={`url(#${glowId})`} className="mkt-diagram-glow" />
-      <circle r={r} fill={fill} stroke={SILVER} strokeWidth="1.2" />
-      <text className="mkt-diagram-label" x="0" y="28" textAnchor="middle">
+      <circle r="24" fill={`url(#${glowId})`} className="mkt-diagram-glow" />
+      <circle r={r} fill={fill} stroke={SILVER} strokeWidth="1.6" />
+      <text className="mkt-diagram-label" x="0" y="34" textAnchor="middle">
         {label}
       </text>
       {sub ? (
-        <text className="mkt-diagram-sub" x="0" y="42" textAnchor="middle">
+        <text className="mkt-diagram-sub" x="0" y="50" textAnchor="middle">
           {sub}
         </text>
       ) : null}
@@ -144,7 +146,7 @@ function Node({
 function Chip({
   x,
   y,
-  w = 108,
+  w = 124,
   label,
   led = OK,
   delay = "0s",
@@ -159,13 +161,13 @@ function Chip({
   const reduce = usePrefersReducedMotion();
   return (
     <g transform={`translate(${x} ${y})`}>
-      <rect className="mkt-diagram-chip" width={w} height="26" rx="6" />
-      <circle className="mkt-diagram-led" cx="14" cy="13" r="3.2" fill={led}>
+      <rect className="mkt-diagram-chip" width={w} height="32" rx="8" />
+      <circle className="mkt-diagram-led" cx="16" cy="16" r="4.4" fill={led}>
         {reduce ? null : (
-          <animate attributeName="opacity" values="0.4;1;0.4" dur="1.8s" begin={delay} repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.35;1;0.35" dur="1.6s" begin={delay} repeatCount="indefinite" />
         )}
       </circle>
-      <text className="mkt-diagram-chip-text" x="26" y="17">
+      <text className="mkt-diagram-chip-text" x="30" y="21">
         {label}
       </text>
     </g>
@@ -192,12 +194,12 @@ export function HonestySignalsDiagram() {
             d={`M${lane.x} 214 V62`}
             fill="none"
             stroke={`url(#${id}-line)`}
-            strokeWidth="1.8"
+            strokeWidth="2.8"
             className="mkt-diagram-dash"
           />
           <Packet path={lane.path} dur="3.6s" color={lane.color} reduce={reduce} />
           <Node x={lane.x} y={214} label={lane.label} sub={lane.sub} fill={lane.color} glowId={`${id}-glow`} />
-          <rect x={lane.x - 18} y="52" width="36" height="10" rx="2" fill={lane.color} opacity="0.85" />
+          <rect x={lane.x - 22} y="48" width="44" height="14" rx="3" fill={lane.color} opacity="0.9" />
         </g>
       ))}
       <text className="mkt-diagram-note" x="280" y="300" textAnchor="middle">
@@ -220,7 +222,7 @@ export function SurfacesDiagram() {
   ];
   return (
     <DiagramStage id={id}>
-      <g fill="none" stroke={`url(#${id}-line)`} strokeWidth="1.7">
+      <g fill="none" stroke={`url(#${id}-line)`} strokeWidth="2.6">
         {spokes.map((s) => (
           <path key={s.label} d={s.path} className="mkt-diagram-dash" />
         ))}
@@ -239,13 +241,13 @@ export function SurfacesDiagram() {
         <Node key={s.label} x={s.x} y={s.y} label={s.label} glowId={`${id}-glow`} />
       ))}
       <g transform="translate(280 168)">
-        <circle r="28" fill={`url(#${id}-glow)`} className="mkt-diagram-glow" />
-        <rect x="-18" y="-18" width="36" height="36" rx="7" fill={GRAPHITE} stroke={COPPER} strokeWidth="1.6" />
-        <text className="mkt-diagram-label" x="-16" y="42">
+        <circle r="36" fill={`url(#${id}-glow)`} className="mkt-diagram-glow" />
+        <rect x="-22" y="-22" width="44" height="44" rx="9" fill={GRAPHITE} stroke={COPPER} strokeWidth="2" />
+        <text className="mkt-diagram-label" x="0" y="48" textAnchor="middle">
           ORG
         </text>
       </g>
-      <Chip x={214} y={276} w={132} label="SIGNED-IN APP" led={OK} />
+      <Chip x={206} y={272} w={148} label="SIGNED-IN APP" led={OK} />
     </DiagramStage>
   );
 }
@@ -273,7 +275,7 @@ export function AccessModelDiagram() {
           key={k.label}
           x={k.x}
           y={k.y}
-          w={96}
+          w={108}
           label={k.label}
           led={i === 1 ? WARN : COPPER}
           delay={`${i * 0.2}s`}
@@ -283,19 +285,21 @@ export function AccessModelDiagram() {
         d="M430 168 H488"
         fill="none"
         stroke={STEEL}
-        strokeWidth="1.5"
-        strokeDasharray="4 6"
+        strokeWidth="2.4"
+        strokeDasharray="6 8"
       />
       <g transform="translate(506 168)">
-        <circle r="14" fill="none" stroke={STEEL} strokeWidth="1.4" />
-        <text className="mkt-diagram-label" x="0" y="32" textAnchor="middle">
+        <circle r="18" fill="none" stroke={STEEL} strokeWidth="2" />
+        <text className="mkt-diagram-label" x="0" y="36" textAnchor="middle">
           OUTSIDE
         </text>
       </g>
       {!reduce ? (
-        <circle r="3" fill={STEEL} opacity="0.4">
+        <g className="mkt-diagram-packet">
           <animateMotion dur="3.2s" repeatCount="indefinite" path="M488 168 H440" />
-        </circle>
+          <circle r="7" fill={STEEL} opacity="0.28" />
+          <circle r="4.5" fill={STEEL} />
+        </g>
       ) : null}
       <text className="mkt-diagram-note" x="244" y="292" textAnchor="middle">
         no org match · no data
@@ -328,15 +332,15 @@ export function AppMapDiagram() {
         return (
           <g key={label} transform={`translate(${x} ${y})`}>
             <rect
-              width="108"
-              height="72"
-              rx="10"
+              width="112"
+              height="78"
+              rx="12"
               fill={GRAPHITE}
               stroke={i === 4 ? COPPER : "#2a3642"}
-              strokeWidth="1.3"
+              strokeWidth="1.8"
             />
-            <circle cx="18" cy="18" r="4" fill={i === 4 ? WARN : COPPER} className="mkt-diagram-led" />
-            <text className="mkt-diagram-chip-text" x="14" y="48">
+            <circle cx="20" cy="20" r="5.2" fill={i === 4 ? WARN : COPPER} className="mkt-diagram-led" />
+            <text className="mkt-diagram-chip-text" x="14" y="52">
               {label}
             </text>
           </g>
@@ -366,7 +370,7 @@ export function BoundaryDiagram() {
       {["ORG", "TELEMETRY", "ALARMS"].map((item, i) => (
         <Chip key={item} x={346} y={108 + i * 42} w={156} label={item} led={INFO} delay={`${0.15 + i * 0.3}s`} />
       ))}
-      <path d="M236 160 H324" fill="none" stroke={`url(#${id}-line)`} strokeWidth="2" />
+      <path d="M236 160 H324" fill="none" stroke={`url(#${id}-line)`} strokeWidth="2.8" />
       <Packet path="M236 160 H324" dur="2.8s" color={COPPER} reduce={reduce} />
       <text className="mkt-diagram-note" x="280" y="148" textAnchor="middle">
         HTTPS INGEST
@@ -388,7 +392,7 @@ export function ChannelsDiagram() {
   ];
   return (
     <DiagramStage id={id}>
-      <g fill="none" stroke={`url(#${id}-line)`} strokeWidth="1.7">
+      <g fill="none" stroke={`url(#${id}-line)`} strokeWidth="2.6">
         {arms.map((a) => (
           <path key={a.label} className="mkt-diagram-dash" d={`M280 160 L${a.x} ${a.y}`} />
         ))}
@@ -404,9 +408,9 @@ export function ChannelsDiagram() {
         />
       ))}
       <g transform="translate(280 160)">
-        <circle r="26" fill={`url(#${id}-glow)`} className="mkt-diagram-glow" />
-        <rect x="-16" y="-16" width="32" height="32" rx="6" fill={GRAPHITE} stroke={COPPER} strokeWidth="1.5" />
-        <text className="mkt-diagram-label" x="-28" y="42">
+        <circle r="34" fill={`url(#${id}-glow)`} className="mkt-diagram-glow" />
+        <rect x="-20" y="-20" width="40" height="40" rx="8" fill={GRAPHITE} stroke={COPPER} strokeWidth="2" />
+        <text className="mkt-diagram-label" x="0" y="48" textAnchor="middle">
           ALARM
         </text>
       </g>
@@ -430,20 +434,20 @@ export function RetentionDiagram() {
       <text className="mkt-diagram-kicker" x="28" y="40">
         STORED WINDOW ~7d
       </text>
-      <path d="M48 168 H512" fill="none" stroke={`url(#${id}-line)`} strokeWidth="1.8" />
+      <path d="M48 168 H512" fill="none" stroke={`url(#${id}-line)`} strokeWidth="2.6" />
       {days.map((day, i) => {
         const x = 64 + i * 66;
-        const h = 28 + (i % 3) * 18;
+        const h = 36 + (i % 3) * 22;
         return (
           <g key={day}>
             <rect
-              x={x - 12}
+              x={x - 14}
               y={168 - h}
-              width="24"
+              width="28"
               height={h}
-              rx="3"
+              rx="4"
               fill={i === 0 ? STEEL : COPPER}
-              opacity={0.28 + i * 0.1}
+              opacity={0.34 + i * 0.1}
             >
               {!reduce && i === 0 ? (
                 <animate attributeName="opacity" values="0.55;0.08;0.55" dur="4s" repeatCount="indefinite" />
@@ -471,15 +475,15 @@ export function EdgeRoleDiagram() {
   return (
     <DiagramStage id={id}>
       <Node x={86} y={160} label="CONTROLLER" sub="RS485" fill={OK} glowId={`${id}-glow`} />
-      <path d="M110 160 H230" fill="none" stroke={`url(#${id}-line)`} strokeWidth="1.8" className="mkt-diagram-dash" />
+      <path d="M110 160 H230" fill="none" stroke={`url(#${id}-line)`} strokeWidth="2.8" className="mkt-diagram-dash" />
       <g transform="translate(280 160)">
-        <circle r="34" fill={`url(#${id}-glow)`} className="mkt-diagram-glow" />
-        <rect x="-46" y="-28" width="92" height="56" rx="10" fill={GRAPHITE} stroke={COPPER} strokeWidth="1.6" />
-        <text className="mkt-diagram-chip-text" x="-28" y="6">
+        <circle r="42" fill={`url(#${id}-glow)`} className="mkt-diagram-glow" />
+        <rect x="-52" y="-32" width="104" height="64" rx="12" fill={GRAPHITE} stroke={COPPER} strokeWidth="2" />
+        <text className="mkt-diagram-chip-text" x="-32" y="6">
           EDGE GW
         </text>
       </g>
-      <path d="M326 160 H470" fill="none" stroke={`url(#${id}-line)`} strokeWidth="1.8" />
+      <path d="M326 160 H470" fill="none" stroke={`url(#${id}-line)`} strokeWidth="2.8" />
       <Node x={490} y={160} label="MONITORING" sub="HTTPS" fill={INFO} glowId={`${id}-glow`} />
       <Packet path="M110 160 H230" dur="2.6s" color={OK} reduce={reduce} />
       <Packet path="M326 160 H470" dur="3.1s" begin="0.5s" color={COPPER} reduce={reduce} />
@@ -506,7 +510,7 @@ export function EdgePathDiagram() {
         d="M70 150 H460"
         fill="none"
         stroke={`url(#${id}-line)`}
-        strokeWidth="1.8"
+        strokeWidth="2.8"
         className="mkt-diagram-dash"
       />
       <Packet path="M70 150 H460" dur="5.2s" color={COPPER} reduce={reduce} />
@@ -541,7 +545,7 @@ export function SoftApDiagram() {
       <text className="mkt-diagram-note" x="195" y="246" textAnchor="middle">
         not a remote serial console
       </text>
-      <path d="M320 160 H430" fill="none" stroke={STEEL} strokeWidth="1.5" />
+      <path d="M320 160 H430" fill="none" stroke={STEEL} strokeWidth="2.6" />
       <Node x={470} y={160} label="CLOUD" sub="ingest only" fill={INFO} glowId={`${id}-glow`} />
       <Packet path="M320 160 H430" dur="3s" color={COPPER} reduce={reduce} />
     </DiagramStage>

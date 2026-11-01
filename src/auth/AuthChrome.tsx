@@ -23,7 +23,7 @@ export function AuthChrome({ children, labelledBy }: AuthChromeProps) {
           {children}
         </section>
         <footer className="auth-form-legal">
-          <span>© 2026 iCanOva · Established 2024</span>
+          <span>© 2026 iCaNova · Established 2026</span>
         </footer>
       </div>
       <aside className="auth-brand-pane" aria-hidden="true">
@@ -43,8 +43,8 @@ export function AuthChrome({ children, labelledBy }: AuthChromeProps) {
 
 export function AuthFormBrand() {
   return (
-    <Link to="/" className="auth-brand-lockup auth-brand-lockup-link" aria-label="iCanOva Monitoring home">
-      <span className="auth-brand-mark">iCanOva</span>
+    <Link to="/" className="auth-brand-lockup auth-brand-lockup-link" aria-label="iCaNova Monitoring home">
+      <span className="auth-brand-mark">iCaNova</span>
       <span className="auth-brand-sub">Monitoring</span>
     </Link>
   );

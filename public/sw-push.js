@@ -1,4 +1,4 @@
-/* iCanOva Monitoring — VAPID Web Push service worker (no FCM). */
+/* iCaNova Monitoring — VAPID Web Push service worker (no FCM). */
 /* eslint-disable no-restricted-globals */
 
 function safePath(raw) {
@@ -34,7 +34,7 @@ function safePath(raw) {
 function parsePayload(event) {
   if (!event.data) {
     return {
-      title: "iCanOva Monitoring",
+      title: "iCaNova Monitoring",
       body: "You have a new notification.",
       severity: "informational",
       path: "/notifications",
@@ -43,7 +43,7 @@ function parsePayload(event) {
   try {
     const data = event.data.json();
     return {
-      title: typeof data.title === "string" ? data.title.slice(0, 80) : "iCanOva Monitoring",
+      title: typeof data.title === "string" ? data.title.slice(0, 80) : "iCaNova Monitoring",
       body: typeof data.body === "string" ? data.body.slice(0, 140) : "",
       severity: typeof data.severity === "string" ? data.severity : "informational",
       path: safePath(data.path),
@@ -51,7 +51,7 @@ function parsePayload(event) {
     };
   } catch {
     return {
-      title: "iCanOva Monitoring",
+      title: "iCaNova Monitoring",
       body: String(event.data.text?.() ?? "").slice(0, 140) || "You have a new notification.",
       severity: "informational",
       path: "/notifications",

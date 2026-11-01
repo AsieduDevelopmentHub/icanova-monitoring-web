@@ -53,7 +53,7 @@ export function AuthCallback() {
     <div className="auth-screen">
       <section className="auth-panel" aria-labelledby="auth-callback-title">
         <header className="page-head">
-          <p className="brand-mark">iCanOva</p>
+          <p className="brand-mark">iCaNova</p>
           <h1 id="auth-callback-title">Auth0 callback</h1>
           <p role="status">{message}</p>
           {failed ? (

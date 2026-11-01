@@ -1,6 +1,6 @@
 # Phase 3 — Visual identity notes
 
-Design system for **iCanOva Monitoring** (Industrial Precision + Modern Enterprise SaaS).
+Design system for **iCaNova Monitoring** (Industrial Precision + Modern Enterprise SaaS).
 
 ## Tokens
 
@@ -17,7 +17,7 @@ Theme persistence: `localStorage` key `icanova-theme` (`src/theme/theme.ts`). Bo
 
 ## Shell
 
-- Graphite sidebar with iCanOva Monitoring wordmark.
+- Graphite sidebar with iCaNova Monitoring wordmark.
 - Theme toggle in top bar (and mobile drawer).
 - Breadcrumbs + session actions unchanged functionally.
 

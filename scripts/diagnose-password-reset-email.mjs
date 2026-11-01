@@ -55,7 +55,7 @@ const stamp = new Date().toISOString();
 const canary = await resend.emails.send({
   from,
   to: [to],
-  subject: `iCanOva Resend canary ${stamp}`,
+  subject: `iCaNova Resend canary ${stamp}`,
   text: `Canary only. Not a password reset. ${stamp}`,
 });
 if (canary.error) {

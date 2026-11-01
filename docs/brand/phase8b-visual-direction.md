@@ -22,7 +22,7 @@ Principles extracted:
 - Soft section bands without wrapping every idea in a floating card
 - Stats as typography, not gamified tiles
 
-### Current iCanOva (`icanova.pages.dev` / local Phase 8)
+### Current iCaNova (`icanova.pages.dev` / local Phase 8)
 
 Why it still feels generic / arcade-adjacent:
 - Equal-weight metric mosaics and bordered panels everywhere
@@ -37,7 +37,7 @@ Why it still feels generic / arcade-adjacent:
 
 - Marketing: large Manrope display, warm white canvas, graphite/navy structural bands, copper CTAs sparingly
 - Application: denser, type/divider/table-led — fewer bordered cards, quieter status chrome
-- Keep iCanOva palette; do **not** adopt Vital-Go/Orrai blues as brand
+- Keep iCaNova palette; do **not** adopt Vital-Go/Orrai blues as brand
 
 ## Routing plan
 

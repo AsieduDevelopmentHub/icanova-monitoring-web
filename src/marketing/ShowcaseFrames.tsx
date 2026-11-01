@@ -241,7 +241,7 @@ export function HeroProductFrame() {
       <div className="mkt-frame mkt-frame-hero">
         <aside className="mkt-frame-side">
           <div className="mkt-frame-brand">
-            <strong>iCanOva</strong>
+            <strong>iCaNova</strong>
             <span>Monitoring</span>
           </div>
           <div className="mkt-frame-nav">
