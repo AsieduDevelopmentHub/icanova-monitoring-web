@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link } from "react-router";
 import { MarketingLayout } from "../MarketingLayout";
 import { PageClose } from "./PageClose";
+import { EdgePathDiagram, EdgeRoleDiagram, SoftApDiagram } from "../diagrams/SystemDiagrams";
 
 const SPECS = [
   { label: "Serial", value: "RS485 Modbus RTU" },
@@ -109,43 +110,49 @@ export function ProductPage() {
         </section>
 
         <section className="mkt-section mkt-blend mkt-edge-wave">
-          <div className="mkt-inner mkt-split">
+          <div className="mkt-inner mkt-split mkt-split-visual">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Role</p>
               <h2>Edge connectivity without cloud overreach.</h2>
-            </div>
-            <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
               <p className="mkt-copy">
                 The gateway polls compatible controllers, keeps Soft-AP configuration on-device, and
                 posts telemetry to the monitoring backend. Cloud registration binds the unit to an
                 organization — it does not push baud, parity or GenComm writes from the dashboard.
               </p>
             </div>
+            <div className="mkt-diagram-slot">
+              <EdgeRoleDiagram />
+            </div>
           </div>
         </section>
 
         <section className="mkt-section mkt-mist mkt-curve-shell">
-          <div className="mkt-inner">
-            <div data-mkt-reveal data-mkt-from="up">
-              <p className="mkt-eyebrow">Path</p>
-              <h2>From controller to operator.</h2>
+          <div className="mkt-inner mkt-split mkt-split-visual">
+            <div>
+              <div data-mkt-reveal data-mkt-from="up">
+                <p className="mkt-eyebrow">Path</p>
+                <h2>From controller to operator.</h2>
+              </div>
+              <ol className="mkt-steps">
+                {FLOW.map((step, index) => (
+                  <li
+                    key={step.n}
+                    data-mkt-reveal
+                    data-mkt-from={index % 2 === 0 ? "left" : "right"}
+                    data-mkt-delay={String((index % 2) + 1)}
+                  >
+                    <span className="mkt-step-n">{step.n}</span>
+                    <div>
+                      <h3>{step.title}</h3>
+                      <p>{step.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
             </div>
-            <ol className="mkt-steps">
-              {FLOW.map((step, index) => (
-                <li
-                  key={step.n}
-                  data-mkt-reveal
-                  data-mkt-from={index % 2 === 0 ? "left" : "right"}
-                  data-mkt-delay={String((index % 2) + 1)}
-                >
-                  <span className="mkt-step-n">{step.n}</span>
-                  <div>
-                    <h3>{step.title}</h3>
-                    <p>{step.body}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <div className="mkt-diagram-slot">
+              <EdgePathDiagram />
+            </div>
           </div>
         </section>
 
@@ -172,18 +179,19 @@ export function ProductPage() {
         </section>
 
         <section className="mkt-section mkt-blend mkt-edge-pop">
-          <div className="mkt-inner mkt-split">
+          <div className="mkt-inner mkt-split mkt-split-visual">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Soft-AP</p>
               <h2>Local configuration never leaves the enclosure.</h2>
-            </div>
-            <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
               <p className="mkt-copy">
                 Default hostname is icanova-edge. The Soft-AP SSID follows ICANOVA-EDGE-XXXX. Baud,
                 parity, slave address and GenComm writes are set on the device — iCanOva Monitoring
                 binds the registered unit to an organization and receives HTTPS ingest. It does not
                 become a remote serial console.
               </p>
+            </div>
+            <div className="mkt-diagram-slot">
+              <SoftApDiagram />
             </div>
           </div>
         </section>

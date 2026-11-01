@@ -2,6 +2,8 @@ import { useEffect, useId, useState } from "react";
 import { Link } from "react-router";
 import { useConvexAuth } from "convex/react";
 import { MarketingLayout } from "./MarketingLayout";
+import { HonestySignalsDiagram, SurfacesDiagram } from "./diagrams/SystemDiagrams";
+import { ShowcaseFrames } from "./ShowcaseFrames";
 
 const CAPABILITIES = [
   {
@@ -186,90 +188,6 @@ function HeroProductFrame() {
   );
 }
 
-function ShowcaseFrames() {
-  return (
-    <div className="mkt-proof-grid">
-      <article className="mkt-proof">
-        <div className="mkt-frame mkt-frame-compact">
-          <div className="mkt-frame-main">
-            <header className="mkt-frame-top">
-              <span>Alarm centre</span>
-            </header>
-            <div className="mkt-frame-table">
-              <div className="mkt-frame-tr">
-                <span className="mkt-sev">Transport</span>
-                <span>Link DEGRADED</span>
-              </div>
-              <div className="mkt-frame-tr">
-                <span className="mkt-sev">Transport</span>
-                <span>Batch CRC fail</span>
-              </div>
-              <div className="mkt-frame-tr">
-                <span className="mkt-sev warn">Controller</span>
-                <span>Oil pressure low</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <h3>Alarm centre</h3>
-        <p>Active, acknowledged and cleared states with equipment context operators can trust.</p>
-      </article>
-      <article className="mkt-proof">
-        <div className="mkt-frame mkt-frame-compact">
-          <div className="mkt-frame-main">
-            <header className="mkt-frame-top">
-              <span>Gateway detail</span>
-            </header>
-            <div className="mkt-frame-metrics mkt-frame-metrics-3">
-              <div>
-                <span>Identity</span>
-                <strong>GW-1842</strong>
-              </div>
-              <div>
-                <span>Cloud</span>
-                <strong>Online</strong>
-              </div>
-              <div>
-                <span>Config</span>
-                <strong>On device</strong>
-              </div>
-            </div>
-            <p className="mkt-frame-note">Cloud metadata is not Soft-AP delivery.</p>
-          </div>
-        </div>
-        <h3>Gateway detail</h3>
-        <p>Identity, connectivity and configuration boundaries made explicit.</p>
-      </article>
-      <article className="mkt-proof">
-        <div className="mkt-frame mkt-frame-compact">
-          <div className="mkt-frame-main">
-            <header className="mkt-frame-top">
-              <span>Live readings</span>
-            </header>
-            <div className="mkt-frame-metrics mkt-frame-metrics-3">
-              <div>
-                <span>kW</span>
-                <strong>128.4</strong>
-              </div>
-              <div>
-                <span>Hz</span>
-                <strong>50.02</strong>
-              </div>
-              <div>
-                <span>Oil °C</span>
-                <strong>86</strong>
-              </div>
-            </div>
-            <p className="mkt-frame-note">Units and timestamps — stale stays labeled.</p>
-          </div>
-        </div>
-        <h3>Live readings</h3>
-        <p>Stored measurements with honest empty and stale states — never decorative zeros.</p>
-      </article>
-    </div>
-  );
-}
-
 export function Landing() {
   const { isAuthenticated } = useConvexAuth();
   const exploreTo = isAuthenticated ? "/app" : "/auth/login";
@@ -326,12 +244,10 @@ export function Landing() {
         </section>
 
         <section id="platform" className="mkt-section mkt-blend mkt-edge-wave">
-          <div className="mkt-inner mkt-split">
+          <div className="mkt-inner mkt-split mkt-split-visual">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Platform</p>
               <h2>Most monitoring flattens signals. iCanOva keeps them separate.</h2>
-            </div>
-            <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
               <p className="mkt-copy">
                 Built for gateways, generators and site infrastructure. Cloud contact is not Modbus
                 health. A stale sample is not a failed link. Operators see what is known — and what is
@@ -343,34 +259,42 @@ export function Landing() {
                 </Link>
               </p>
             </div>
+            <div className="mkt-diagram-slot">
+              <HonestySignalsDiagram />
+            </div>
           </div>
         </section>
 
         <section id="capabilities" className="mkt-section mkt-mist mkt-curve-shell">
-          <div className="mkt-inner">
-            <div data-mkt-reveal data-mkt-from="up">
-              <p className="mkt-eyebrow">Capabilities</p>
-              <h2>What the platform actually does.</h2>
-              <p className="mkt-copy mkt-copy-narrow">
-                Every item maps to a real application surface. Sign-in is required before the
-                dashboard opens.
-              </p>
+          <div className="mkt-inner mkt-split mkt-split-visual">
+            <div>
+              <div data-mkt-reveal data-mkt-from="up">
+                <p className="mkt-eyebrow">Capabilities</p>
+                <h2>What the platform actually does.</h2>
+                <p className="mkt-copy mkt-copy-narrow">
+                  Every item maps to a real application surface. Sign-in is required before the
+                  dashboard opens.
+                </p>
+              </div>
+              <ul className="mkt-cap-list">
+                {CAPABILITIES.map((item, index) => (
+                  <li
+                    key={item.title}
+                    data-mkt-reveal
+                    data-mkt-from={index % 2 === 0 ? "left" : "right"}
+                    data-mkt-delay={String((index % 3) + 1)}
+                  >
+                    <div>
+                      <h3>{item.title}</h3>
+                      <p>{item.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="mkt-cap-list">
-              {CAPABILITIES.map((item, index) => (
-                <li
-                  key={item.title}
-                  data-mkt-reveal
-                  data-mkt-from={index % 2 === 0 ? "left" : "right"}
-                  data-mkt-delay={String((index % 3) + 1)}
-                >
-                  <div>
-                    <h3>{item.title}</h3>
-                    <p>{item.body}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="mkt-diagram-slot">
+              <SurfacesDiagram />
+            </div>
           </div>
         </section>
 

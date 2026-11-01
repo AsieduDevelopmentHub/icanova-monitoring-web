@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link } from "react-router";
 import { MarketingLayout } from "../MarketingLayout";
 import { PageClose } from "./PageClose";
+import { KnownUnknownDiagram } from "../diagrams/SystemDiagrams";
 
 const PILLARS = [
   {
@@ -86,18 +87,19 @@ export function AboutPage() {
         </section>
 
         <section className="mkt-section mkt-blend">
-          <div className="mkt-inner mkt-split">
+          <div className="mkt-inner mkt-split mkt-split-visual">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Mission</p>
               <h2>Honest visibility for industrial operations.</h2>
-            </div>
-            <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
               <p className="mkt-copy">
                 Bring industrial equipment, Edge Gateways and operational data into focus. Operators
                 should see what is known — and what is not — so engineering and operations can act
                 with confidence. We refuse decorative zeros, blurred uplink/serial health and
                 fabricated availability scores.
               </p>
+            </div>
+            <div className="mkt-diagram-slot">
+              <KnownUnknownDiagram />
             </div>
           </div>
         </section>

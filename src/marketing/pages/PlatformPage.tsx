@@ -3,6 +3,13 @@ import { Link } from "react-router";
 import { useConvexAuth } from "convex/react";
 import { MarketingLayout } from "../MarketingLayout";
 import { PageClose } from "./PageClose";
+import {
+  AccessModelDiagram,
+  AppMapDiagram,
+  BoundaryDiagram,
+  ChannelsDiagram,
+  RetentionDiagram,
+} from "../diagrams/SystemDiagrams";
 
 const AREAS = [
   {
@@ -134,77 +141,84 @@ export function PlatformPage() {
         </section>
 
         <section className="mkt-section mkt-mist mkt-curve-shell">
-          <div className="mkt-inner">
-            <div data-mkt-reveal data-mkt-from="up">
-              <p className="mkt-eyebrow">Application map</p>
-              <h2>Every surface is a signed-in workspace.</h2>
-              <p className="mkt-copy mkt-copy-narrow">
-                Visitors sign in before the dashboard opens. The items below are the product — not a
-                brochure of modules we hope to build.
-              </p>
+          <div className="mkt-inner mkt-split mkt-split-visual">
+            <div>
+              <div data-mkt-reveal data-mkt-from="up">
+                <p className="mkt-eyebrow">Application map</p>
+                <h2>Every surface is a signed-in workspace.</h2>
+                <p className="mkt-copy mkt-copy-narrow">
+                  Visitors sign in before the dashboard opens. The items below are the product — not a
+                  brochure of modules we hope to build.
+                </p>
+              </div>
+              <div className="mkt-matrix">
+                {AREAS.map((item, index) => (
+                  <article
+                    key={item.title}
+                    className="mkt-matrix-row"
+                    data-mkt-reveal
+                    data-mkt-from="up"
+                    data-mkt-delay={String((index % 3) + 1)}
+                  >
+                    <h3>{item.title}</h3>
+                    <p>{item.body}</p>
+                  </article>
+                ))}
+              </div>
             </div>
-            <div className="mkt-matrix">
-              {AREAS.map((item, index) => (
-                <article
-                  key={item.title}
-                  className="mkt-matrix-row"
-                  data-mkt-reveal
-                  data-mkt-from="up"
-                  data-mkt-delay={String((index % 3) + 1)}
-                >
-                  <h3>{item.title}</h3>
-                  <p>{item.body}</p>
-                </article>
-              ))}
+            <div className="mkt-diagram-slot">
+              <AppMapDiagram />
             </div>
           </div>
         </section>
 
         <section className="mkt-section mkt-blend mkt-edge-pop">
-          <div className="mkt-inner mkt-split">
-            <div data-mkt-reveal data-mkt-from="left">
-              <p className="mkt-eyebrow">Access model</p>
-              <h2>Organization isolation with named permissions.</h2>
+          <div className="mkt-inner mkt-split mkt-split-visual">
+            <div>
+              <div data-mkt-reveal data-mkt-from="left">
+                <p className="mkt-eyebrow">Access model</p>
+                <h2>Organization isolation with named permissions.</h2>
+                <p className="mkt-copy">
+                  A signed-in account is required. Data is scoped to the organization. Roles are not a
+                  fixed “admin / viewer” costume — each organization assigns permissions such as
+                  viewing measurements, acknowledging alarms, managing devices and exporting reports.
+                </p>
+              </div>
+              <ul className="mkt-cap-list">
+                {PERMISSIONS.map((item, index) => (
+                  <li
+                    key={item.name}
+                    data-mkt-reveal
+                    data-mkt-from={index % 2 === 0 ? "left" : "right"}
+                    data-mkt-delay={String((index % 3) + 1)}
+                  >
+                    <div>
+                      <h3>{item.name}</h3>
+                      <p>{item.meaning}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
-              <p className="mkt-copy">
-                A signed-in account is required. Data is scoped to the organization. Roles are not a
-                fixed “admin / viewer” costume — each organization assigns permissions such as
-                viewing measurements, acknowledging alarms, managing devices and exporting reports.
-              </p>
+            <div className="mkt-diagram-slot">
+              <AccessModelDiagram />
             </div>
-          </div>
-          <div className="mkt-inner">
-            <ul className="mkt-cap-list">
-              {PERMISSIONS.map((item, index) => (
-                <li
-                  key={item.name}
-                  data-mkt-reveal
-                  data-mkt-from={index % 2 === 0 ? "left" : "right"}
-                  data-mkt-delay={String((index % 3) + 1)}
-                >
-                  <div>
-                    <h3>{item.name}</h3>
-                    <p>{item.meaning}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
           </div>
         </section>
 
         <section className="mkt-section mkt-mist mkt-edge-clip">
-          <div className="mkt-inner mkt-split">
+          <div className="mkt-inner mkt-split mkt-split-visual">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Boundary</p>
               <h2>Cloud registration is not Soft-AP control.</h2>
-            </div>
-            <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
               <p className="mkt-copy">
                 The cloud stores organization membership, gateway registration, telemetry samples,
                 alarms and audit activity. Baud, parity, GenComm writes and Wi-Fi Soft-AP settings
                 stay on the Edge Gateway. The dashboard does not push local Modbus configuration.
               </p>
+            </div>
+            <div className="mkt-diagram-slot">
+              <BoundaryDiagram />
             </div>
           </div>
         </section>
@@ -242,46 +256,52 @@ export function PlatformPage() {
         </section>
 
         <section className="mkt-section mkt-blend mkt-edge-wave">
-          <div className="mkt-inner">
-            <div data-mkt-reveal data-mkt-from="up">
-              <p className="mkt-eyebrow">Notifications</p>
-              <h2>Channels fail on their own.</h2>
-              <p className="mkt-copy mkt-copy-narrow">
-                A delivery attempt does not acknowledge or clear an alarm. Each channel is configured
-                per organization and reported independently.
-              </p>
+          <div className="mkt-inner mkt-split mkt-split-visual">
+            <div>
+              <div data-mkt-reveal data-mkt-from="up">
+                <p className="mkt-eyebrow">Notifications</p>
+                <h2>Channels fail on their own.</h2>
+                <p className="mkt-copy mkt-copy-narrow">
+                  A delivery attempt does not acknowledge or clear an alarm. Each channel is configured
+                  per organization and reported independently.
+                </p>
+              </div>
+              <ul className="mkt-cap-list">
+                {CHANNELS.map((item, index) => (
+                  <li
+                    key={item.name}
+                    data-mkt-reveal
+                    data-mkt-from={index % 2 === 0 ? "left" : "right"}
+                    data-mkt-delay={String((index % 3) + 1)}
+                  >
+                    <div>
+                      <h3>{item.name}</h3>
+                      <p>{item.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="mkt-cap-list">
-              {CHANNELS.map((item, index) => (
-                <li
-                  key={item.name}
-                  data-mkt-reveal
-                  data-mkt-from={index % 2 === 0 ? "left" : "right"}
-                  data-mkt-delay={String((index % 3) + 1)}
-                >
-                  <div>
-                    <h3>{item.name}</h3>
-                    <p>{item.body}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="mkt-diagram-slot">
+              <ChannelsDiagram />
+            </div>
           </div>
         </section>
 
         <section className="mkt-section mkt-mist">
-          <div className="mkt-inner mkt-split">
+          <div className="mkt-inner mkt-split mkt-split-visual">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Retention</p>
               <h2>Export what is stored — then it ages out.</h2>
-            </div>
-            <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
               <p className="mkt-copy">
                 Telemetry history is bounded (about seven days in the current product). Reports pull
                 from stored records, not invented availability percentages. If a deployment needs a
                 longer retain window, that is a commercial conversation — not a silent change to
                 what the UI pretends to hold.
               </p>
+            </div>
+            <div className="mkt-diagram-slot">
+              <RetentionDiagram />
             </div>
           </div>
         </section>

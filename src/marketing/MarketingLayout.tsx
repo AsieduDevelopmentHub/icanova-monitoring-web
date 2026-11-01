@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, NavLink, useLocation } from "react-router";
 import { useConvexAuth } from "convex/react";
 import "./landing.css";
 
@@ -67,35 +67,28 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
           <span className="mkt-brand-mark">iCanOva</span>
           <span className="mkt-brand-sub">Monitoring</span>
         </Link>
-        <ul className="mkt-nav-links">
+        <ul className="mkt-nav-pill">
           <li>
-            <Link to="/">Home</Link>
+            <NavLink to="/" end>
+              Home
+            </NavLink>
           </li>
           <li>
-            <Link to="/platform">Platform</Link>
+            <NavLink to="/platform">Platform</NavLink>
           </li>
           <li>
-            <Link to="/product">Product</Link>
+            <NavLink to="/product">Product</NavLink>
           </li>
           <li>
-            <Link to="/about">About</Link>
+            <NavLink to="/about">About</NavLink>
           </li>
           <li>
-            <Link to="/contact">Contact</Link>
+            <NavLink to="/contact">Contact</NavLink>
           </li>
         </ul>
         <div className="mkt-nav-actions">
-          {isAuthenticated ? (
-            <Link className="mkt-link" to="/app">
-              Dashboard
-            </Link>
-          ) : (
-            <Link className="mkt-link" to="/auth/login">
-              Sign in
-            </Link>
-          )}
-          <Link className="mkt-btn mkt-btn-primary" to={exploreTo}>
-            {isAuthenticated ? "Open platform" : "Get started"}
+          <Link className="mkt-btn mkt-btn-nav" to={isAuthenticated ? "/app" : "/auth/login"}>
+            {isAuthenticated ? "Dashboard" : "Sign in"}
           </Link>
           <button
             type="button"
@@ -125,21 +118,21 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
         aria-label="Mobile"
         aria-hidden={!menuOpen}
       >
-        <Link to="/" onClick={() => setMenuOpen(false)}>
+        <NavLink to="/" end onClick={() => setMenuOpen(false)}>
           Home
-        </Link>
-        <Link to="/platform" onClick={() => setMenuOpen(false)}>
+        </NavLink>
+        <NavLink to="/platform" onClick={() => setMenuOpen(false)}>
           Platform
-        </Link>
-        <Link to="/product" onClick={() => setMenuOpen(false)}>
+        </NavLink>
+        <NavLink to="/product" onClick={() => setMenuOpen(false)}>
           Product
-        </Link>
-        <Link to="/about" onClick={() => setMenuOpen(false)}>
+        </NavLink>
+        <NavLink to="/about" onClick={() => setMenuOpen(false)}>
           About
-        </Link>
-        <Link to="/contact" onClick={() => setMenuOpen(false)}>
+        </NavLink>
+        <NavLink to="/contact" onClick={() => setMenuOpen(false)}>
           Contact
-        </Link>
+        </NavLink>
         <div className="mkt-drawer-actions">
           <Link
             className="mkt-btn mkt-btn-secondary"
