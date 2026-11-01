@@ -103,7 +103,10 @@ const stamp = Date.now();
 try {
   // Ensure account exists (sign-up is idempotent enough: if exists, sign-in).
   await page.goto(`${BASE}/auth/login`, { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: /create an account/i }).click();
+  await page.getByRole("button", { name: /sign up/i }).click();
+  const localPart = mailbox.split("@")[0].replace(/[^a-z0-9._-]/gi, "").slice(0, 24) || "resetuser";
+  const uname = `${localPart}${String(stamp).slice(-6)}`.toLowerCase().slice(0, 32);
+  await page.locator('input[name="username"]').fill(uname);
   await page.locator('input[name="email"]').fill(mailbox);
   await page.locator('input[name="password"]').fill(bootstrapPassword);
   await page.getByRole("button", { name: /create account/i }).click();

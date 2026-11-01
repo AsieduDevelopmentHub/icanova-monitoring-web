@@ -12,6 +12,7 @@ const enabled = process.env.E2E_CONVEX_AUTH === "1";
 const base = process.env.E2E_BASE_URL?.trim() || "http://127.0.0.1:4173";
 const stamp = Date.now();
 const email = `85f.verify.${stamp}@icanova.test`;
+const username = `u85f${stamp.toString().slice(-8)}`;
 const password = `Stage85f!${stamp}`;
 
 test.describe.configure({ mode: "serial" });
@@ -26,6 +27,7 @@ test.describe("Convex Auth staging (live roadrunner)", () => {
   test("Auth0 isolation: login has password form, no Auth0 redirect", async ({ page }) => {
     await page.goto("/auth/login");
     await expect(page.locator("#auth-login-title")).toBeVisible();
+    await expect(page.getByText(/username or email/i).first()).toBeVisible();
     await expect(page.locator('input[name="email"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
     await expect(page).not.toHaveURL(/auth0\.com/i);
@@ -34,8 +36,9 @@ test.describe("Convex Auth staging (live roadrunner)", () => {
 
   test("Register creates Convex Auth session without Auth0", async ({ page }) => {
     await page.goto("/auth/login");
-    await page.getByRole("button", { name: /create an account/i }).click();
+    await page.getByRole("button", { name: /sign up/i }).click();
     await expect(page.locator("#auth-login-title")).toHaveText(/create account/i);
+    await page.locator('input[name="username"]').fill(username);
     await page.locator('input[name="email"]').fill(email);
     await page.locator('input[name="password"]').fill(password);
     await page.getByRole("button", { name: /create account/i }).click();

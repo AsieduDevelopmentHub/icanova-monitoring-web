@@ -2,6 +2,7 @@
 
 **Active path:** Convex Auth `Password({ reset })` → `convex/passwordResetEmail.ts` → Resend  
 **Staging deployment:** `dapper-roadrunner-247`  
+**Related:** username login + signup flag — `docs/guide/auth-username-and-signup.md`  
 **Do not** configure production (`sturgeon`) without written authorization.
 
 ---

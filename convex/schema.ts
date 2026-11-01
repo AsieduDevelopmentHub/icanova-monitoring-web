@@ -59,10 +59,13 @@ export default defineSchema({
     phoneVerificationTime: v.optional(v.number()),
     isAnonymous: v.optional(v.boolean()),
     tokenIdentifier: v.optional(v.string()),
+    /** App login alias; Convex Auth Password account id remains email. */
+    username: v.optional(v.string()),
   })
     .index("email", ["email"])
     .index("phone", ["phone"])
-    .index("by_token", ["tokenIdentifier"]),
+    .index("by_token", ["tokenIdentifier"])
+    .index("username", ["username"]),
 
   organizations: defineTable({
     name: v.string(),

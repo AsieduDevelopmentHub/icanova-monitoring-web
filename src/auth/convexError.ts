@@ -61,6 +61,18 @@ export function sanitizeConvexError(error: unknown, fallback: string): string {
   if (/email is required/i.test(text)) {
     return "Email is required.";
   }
+  if (/username is required/i.test(text)) {
+    return "Username is required.";
+  }
+  if (/username is already taken/i.test(text)) {
+    return "That username is already taken.";
+  }
+  if (/username must be 3/i.test(text)) {
+    return "Username must be 3–32 characters: letters, numbers, dots, underscores, or hyphens.";
+  }
+  if (/public signup is disabled/i.test(text)) {
+    return "Public signup is disabled.";
+  }
   // Never pass through raw Convex / server dumps (may include Request IDs or secrets).
   return fallback;
 }

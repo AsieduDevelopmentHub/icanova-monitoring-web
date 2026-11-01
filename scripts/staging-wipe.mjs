@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const envPath = new URL("../.env.staging.local", import.meta.url);
 const envText = readFileSync(envPath, "utf8");
@@ -10,12 +11,13 @@ process.env.CONVEX_DEPLOY_KEY = keyLine.slice("CONVEX_DEPLOY_KEY=".length);
 let tableIndex = Number(process.argv[2] ?? 0);
 let rounds = 0;
 let totalDeleted = 0;
+const convexMain = fileURLToPath(new URL("../node_modules/convex/bin/main.js", import.meta.url));
 
 while (rounds < 500) {
   const argsJson = JSON.stringify({ confirm: "STAGING_WIPE", tableIndex });
   const result = spawnSync(
-    process.platform === "win32" ? "pnpm.cmd" : "pnpm",
-    ["exec", "convex", "run", "stagingWipe:clearTenantData", argsJson],
+    process.execPath,
+    [convexMain, "run", "stagingWipe:clearTenantData", argsJson],
     { encoding: "utf8", shell: false, env: process.env },
   );
   const out = `${result.stdout ?? ""}${result.stderr ?? ""}`.trim();

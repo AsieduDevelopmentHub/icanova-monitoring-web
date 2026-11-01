@@ -1,7 +1,8 @@
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth } from "convex/react";
+import { useConvexAuth, useConvex, useQuery } from "convex/react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation } from "react-router";
+import { api } from "../../convex/_generated/api";
 import { PasswordField } from "../ui/PasswordField";
 import { AuthChrome } from "./AuthChrome";
 import {
@@ -13,11 +14,15 @@ import { safeReturnPath } from "./returnPath";
 
 type Mode = "signIn" | "signUp";
 
+const USERNAME_HINT = "3–32 characters: letters, numbers, dots, underscores, or hyphens.";
+
 /** Full-screen enterprise Convex Auth login / registration. */
 export function AuthLogin() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { signIn } = useAuthActions();
+  const convex = useConvex();
   const location = useLocation();
+  const signupEnabled = useQuery(api.authPublic.signupEnabled);
   const [mode, setMode] = useState<Mode>("signIn");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -26,6 +31,12 @@ export function AuthLogin() {
   useEffect(() => {
     document.title = "Sign in · iCanOva Monitoring";
   }, []);
+
+  useEffect(() => {
+    if (signupEnabled === false && mode === "signUp") {
+      setMode("signIn");
+    }
+  }, [signupEnabled, mode]);
 
   if (!import.meta.env.VITE_CONVEX_URL) {
     return (
@@ -59,23 +70,34 @@ export function AuthLogin() {
     setPending(true);
     const form = new FormData(event.currentTarget);
     form.set("flow", mode);
-    if (mode === "signUp") {
-      const localIssue = clientPasswordIssue(String(form.get("password") ?? ""));
-      if (localIssue) {
-        setError(localIssue);
-        setPending(false);
-        return;
-      }
-    }
     try {
+      if (mode === "signUp") {
+        if (signupEnabled === false) {
+          setError("Public signup is disabled.");
+          return;
+        }
+        const localIssue = clientPasswordIssue(String(form.get("password") ?? ""));
+        if (localIssue) {
+          setError(localIssue);
+          return;
+        }
+      } else {
+        const identifier = String(form.get("email") ?? "").trim();
+        const resolved = await convex.query(api.authPublic.resolveSignInEmail, {
+          identifier,
+        });
+        if (resolved.email) {
+          form.set("email", resolved.email);
+        }
+      }
       await signIn("password", form);
     } catch (err) {
       setError(
         sanitizeConvexError(
           err,
           mode === "signIn"
-            ? "Sign-in failed. Check email and password."
-            : "Could not create the account. The email may already be registered.",
+            ? "Sign-in failed. Check username/email and password."
+            : "Could not create the account. Username or email may already be registered.",
         ),
       );
     } finally {
@@ -83,26 +105,32 @@ export function AuthLogin() {
     }
   }
 
+  const canSignUp = signupEnabled !== false;
+
   return (
     <AuthChrome labelledBy="auth-login-title">
       <header className="auth-card-head">
         <h1 id="auth-login-title">{mode === "signIn" ? "Sign in" : "Create account"}</h1>
         <p className="auth-switch">
           {mode === "signIn" ? (
-            <>
-              New to iCanOva?{" "}
-              <button
-                type="button"
-                className="auth-text-link"
-                disabled={pending}
-                onClick={() => {
-                  setError(null);
-                  setMode("signUp");
-                }}
-              >
-                Sign up
-              </button>
-            </>
+            canSignUp ? (
+              <>
+                New to iCanOva?{" "}
+                <button
+                  type="button"
+                  className="auth-text-link"
+                  disabled={pending}
+                  onClick={() => {
+                    setError(null);
+                    setMode("signUp");
+                  }}
+                >
+                  Sign up
+                </button>
+              </>
+            ) : (
+              <>Self-service signup is disabled. Ask an administrator for access.</>
+            )
           ) : (
             <>
               Already have an account?{" "}
@@ -122,9 +150,31 @@ export function AuthLogin() {
         </p>
       </header>
       <form className="stack auth-form" onSubmit={(event) => void onSubmit(event)}>
+        {mode === "signUp" ? (
+          <label className="field">
+            <span>Username</span>
+            <input
+              name="username"
+              type="text"
+              autoComplete="username"
+              required
+              minLength={3}
+              maxLength={32}
+              pattern="[A-Za-z0-9._\-]+"
+              disabled={pending}
+            />
+            <small className="field-hint">{USERNAME_HINT}</small>
+          </label>
+        ) : null}
         <label className="field">
-          <span>Email address</span>
-          <input name="email" type="email" autoComplete="username" required disabled={pending} />
+          <span>{mode === "signIn" ? "Username or email" : "Email address"}</span>
+          <input
+            name="email"
+            type={mode === "signIn" ? "text" : "email"}
+            autoComplete={mode === "signIn" ? "username" : "email"}
+            required
+            disabled={pending}
+          />
         </label>
         <PasswordField
           label="Password"

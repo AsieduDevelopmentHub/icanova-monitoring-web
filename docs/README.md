@@ -13,6 +13,7 @@ Layout mirrors the gateway `doc/` tree: guides, status reports, and brand.
 
 Start here:
 
+- Username login + signup flag: [guide/auth-username-and-signup.md](guide/auth-username-and-signup.md)
 - Phase 10 final: [status/phase-10-final.md](status/phase-10-final.md)
 - Data “lost after deploy”: [status/phase-10-data-persistence.md](status/phase-10-data-persistence.md)
 - Go-live checklist: [operations/production-go-live-checklist.md](operations/production-go-live-checklist.md)

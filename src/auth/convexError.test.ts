@@ -21,6 +21,15 @@ describe("sanitizeConvexError", () => {
     );
   });
 
+  test("maps signup and username errors", () => {
+    expect(
+      sanitizeConvexError(new Error("Uncaught ConvexError: Public signup is disabled."), "x"),
+    ).toBe("Public signup is disabled.");
+    expect(
+      sanitizeConvexError(new Error("Uncaught ConvexError: That username is already taken."), "x"),
+    ).toBe("That username is already taken.");
+  });
+
   test("extractConvexErrorText removes wrappers", () => {
     expect(
       extractConvexErrorText(

@@ -12,6 +12,8 @@ import type * as accountSecurity from "../accountSecurity.js";
 import type * as alarms from "../alarms.js";
 import type * as audits from "../audits.js";
 import type * as auth from "../auth.js";
+import type * as authIdentity from "../authIdentity.js";
+import type * as authPublic from "../authPublic.js";
 import type * as authz from "../authz.js";
 import type * as crons from "../crons.js";
 import type * as delivery from "../delivery.js";
@@ -69,6 +71,8 @@ declare const fullApi: ApiFromModules<{
   alarms: typeof alarms;
   audits: typeof audits;
   auth: typeof auth;
+  authIdentity: typeof authIdentity;
+  authPublic: typeof authPublic;
   authz: typeof authz;
   crons: typeof crons;
   delivery: typeof delivery;
