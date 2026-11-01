@@ -1,18 +1,22 @@
-/* Public marketing — Vital-Go / Orrai composition cues in iCanOva palette */
+/* Public marketing — iCanOva palette, atmospheric surfaces from gpt.md */
 
 .mkt {
-  --mkt-max: 1160px;
+  --mkt-max: 1200px;
   --mkt-display: clamp(2.6rem, 6vw, 4.35rem);
   --mkt-h2: clamp(1.85rem, 3.4vw, 2.75rem);
-  --mkt-radius: 14px;
+  --mkt-radius: 16px;
   --mkt-radius-lg: 22px;
   --mkt-surface-radius: clamp(1.35rem, 3.2vw, 2.15rem);
-  --mkt-section-gap: clamp(0.75rem, 1.9vw, 1.4rem);
-  --mkt-page-wash: color-mix(in srgb, var(--color-deep-navy) 5.5%, var(--color-warm-white));
+  --mkt-surface: color-mix(in srgb, #fff 38%, var(--color-warm-white));
+  --mkt-glow-copper: color-mix(in srgb, var(--color-muted-copper) 16%, transparent);
+  --mkt-glow-navy: color-mix(in srgb, var(--color-deep-navy) 9%, transparent);
+  --mkt-edge-a: color-mix(in srgb, var(--color-muted-copper) 42%, transparent);
+  --mkt-edge-b: color-mix(in srgb, var(--color-light-silver) 50%, transparent);
+  --mkt-edge-c: color-mix(in srgb, var(--color-deep-navy) 28%, transparent);
   min-height: 100vh;
   width: 100%;
   overflow-x: clip;
-  background: var(--mkt-page-wash);
+  background: var(--color-warm-white);
   color: var(--color-graphite);
   font-family: var(--font-body);
 }
@@ -112,8 +116,13 @@
 }
 
 .mkt-btn-primary {
-  background: var(--color-muted-copper);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 14%, var(--color-muted-copper)),
+    var(--color-muted-copper)
+  );
   color: var(--color-graphite);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--color-muted-copper) 24%, transparent);
 }
 
 .mkt-btn-primary:hover {
@@ -121,14 +130,14 @@
 }
 
 .mkt-btn-secondary {
-  background: #fff;
-  border-color: var(--color-light-silver);
+  background: color-mix(in srgb, #fff 72%, var(--color-warm-white));
+  border-color: color-mix(in srgb, var(--color-light-silver) 80%, transparent);
   color: var(--color-graphite);
 }
 
 .mkt-btn-ghost {
-  background: transparent;
-  border-color: color-mix(in srgb, var(--color-graphite) 18%, transparent);
+  background: color-mix(in srgb, #fff 28%, transparent);
+  border-color: color-mix(in srgb, var(--color-graphite) 14%, transparent);
   color: var(--color-graphite);
 }
 
@@ -224,8 +233,6 @@
 .mkt-main {
   display: flex;
   flex-direction: column;
-  gap: var(--mkt-section-gap);
-  padding: 0 clamp(0.55rem, 1.8vw, 1.2rem) clamp(1.5rem, 3.5vw, 2.75rem);
 }
 
 .mkt-inner {
@@ -234,114 +241,77 @@
 }
 
 .mkt-section {
-  padding: clamp(3.5rem, 8vw, 6.5rem) 0;
-}
-
-.mkt-band {
-  background: color-mix(in srgb, var(--color-light-silver) 28%, var(--color-warm-white));
-}
-
-/*
- * Section composition — floating surfaces + non-linear seams.
- * Inspiration: stacked rounded panels with wash gaps; scooped / arched edges
- * instead of always-straight horizontal dividers.
- */
-.mkt-surface {
   position: relative;
+  padding: clamp(5.5rem, 10vw, 7.5rem) 0;
+}
+
+/* Seamless light-section blending — warm palette, no solid color blocks */
+.mkt-blend {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-muted-copper) 4%, var(--color-warm-white)) 0%,
+    var(--color-warm-white) 72%
+  );
+}
+
+.mkt-mist {
+  background: linear-gradient(
+    180deg,
+    var(--color-warm-white) 0%,
+    color-mix(in srgb, var(--color-deep-navy) 3.2%, var(--color-warm-white)) 46%,
+    var(--color-warm-white) 100%
+  );
+}
+
+.mkt-afterglow {
   isolation: isolate;
-  border-radius: var(--mkt-surface-radius);
-  background: var(--color-warm-white);
+  background:
+    radial-gradient(ellipse 78% 58% at 82% 42%, var(--mkt-glow-copper), transparent 62%),
+    linear-gradient(
+      180deg,
+      var(--color-warm-white) 0%,
+      color-mix(in srgb, var(--color-deep-navy) 2.8%, var(--color-warm-white)) 100%
+    );
+}
+
+.mkt-gborder {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--mkt-surface), var(--mkt-surface)) padding-box,
+    linear-gradient(135deg, var(--mkt-edge-a), var(--mkt-edge-b), var(--mkt-edge-c)) border-box;
   box-shadow:
-    0 1px 0 rgba(17, 24, 32, 0.035),
-    0 16px 42px rgba(17, 24, 32, 0.055);
-  overflow: clip;
+    0 8px 30px color-mix(in srgb, var(--color-graphite) 5%, transparent),
+    0 1px 3px color-mix(in srgb, var(--color-graphite) 3.5%, transparent);
 }
 
-.mkt-surface.mkt-band {
-  background: color-mix(in srgb, var(--color-light-silver) 24%, #fff);
+/* Section curves — varied corners, inset so the radius reads against the page */
+.mkt-curve-shell,
+.mkt-curve-arch,
+.mkt-curve-scoop,
+.mkt-curve-swell,
+.mkt-curve-soft {
+  margin-inline: clamp(0.7rem, 2.2vw, 1.4rem);
+  overflow: hidden;
 }
 
-.mkt-surface.mkt-dark {
-  box-shadow:
-    0 1px 0 rgba(17, 24, 32, 0.2),
-    0 20px 52px rgba(17, 24, 32, 0.28);
+.mkt-curve-shell {
+  border-radius: clamp(1.5rem, 3.2vw, 2.25rem);
 }
 
-.mkt-surface.mkt-stats {
-  border-block: 0;
+.mkt-curve-arch {
+  border-radius: clamp(2.4rem, 6vw, 4.25rem) clamp(2.4rem, 6vw, 4.25rem) 0 0;
 }
 
-/* Soft convex ends — large bottom corner radii */
-.mkt-seam-arch {
-  border-bottom-left-radius: clamp(2.25rem, 7vw, 4.75rem);
-  border-bottom-right-radius: clamp(2.25rem, 7vw, 4.75rem);
+.mkt-curve-scoop {
+  border-radius: 0 0 clamp(2.6rem, 7vw, 4.75rem) clamp(2.6rem, 7vw, 4.75rem);
 }
 
-/* Concave center scoop into the page wash (smooth, not a sharp V) */
-.mkt-seam-scoop {
-  border-bottom-left-radius: clamp(1.25rem, 3vw, 2rem);
-  border-bottom-right-radius: clamp(1.25rem, 3vw, 2rem);
-  clip-path: polygon(
-    0% 0%,
-    100% 0%,
-    100% 90%,
-    96% 91.5%,
-    88% 94%,
-    76% 97%,
-    62% 99%,
-    50% 100%,
-    38% 99%,
-    24% 97%,
-    12% 94%,
-    4% 91.5%,
-    0% 90%
-  );
+.mkt-curve-swell {
+  border-radius: clamp(2.8rem, 7.5vw, 5.25rem) clamp(1rem, 2vw, 1.5rem);
 }
 
-/* Gentle asymmetric wave */
-.mkt-seam-wave {
-  border-bottom-left-radius: clamp(1rem, 2.5vw, 1.75rem);
-  border-bottom-right-radius: clamp(2rem, 6vw, 3.5rem);
-  clip-path: polygon(
-    0% 0%,
-    100% 0%,
-    100% 91%,
-    92% 94%,
-    78% 99%,
-    64% 96%,
-    50% 93%,
-    36% 96%,
-    22% 100%,
-    8% 95%,
-    0% 92%
-  );
-}
-
-/* Top edge only — for panels that tuck under a scoop above */
-.mkt-seam-rise {
-  border-top-left-radius: clamp(2rem, 6vw, 3.75rem);
-  border-top-right-radius: clamp(2rem, 6vw, 3.75rem);
-}
-
-/* Pull the next panel slightly into the scoop wash */
-.mkt-seam-scoop + .mkt-surface,
-.mkt-seam-wave + .mkt-surface {
-  margin-top: calc(var(--mkt-section-gap) * -0.45);
-}
-
-@media (max-width: 640px) {
-  .mkt-seam-scoop,
-  .mkt-seam-wave {
-    /* Softer arch on small screens; clip can feel harsh on narrow widths */
-    clip-path: none;
-    border-bottom-left-radius: clamp(1.75rem, 10vw, 2.75rem);
-    border-bottom-right-radius: clamp(1.75rem, 10vw, 2.75rem);
-  }
-
-  .mkt-seam-scoop + .mkt-surface,
-  .mkt-seam-wave + .mkt-surface {
-    margin-top: 0;
-  }
+.mkt-curve-soft {
+  border-radius: clamp(1.75rem, 4vw, 2.75rem);
 }
 
 .mkt-eyebrow {
@@ -414,30 +384,21 @@
   margin-top: var(--space-5);
 }
 
-/* —— Hero: full-bleed composition —— */
+/* —— Hero: atmospheric brand gradients —— */
 .mkt-hero {
   position: relative;
-  padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(3rem, 7vw, 5.5rem);
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(3rem, 7vw, 5.25rem) 0 clamp(3.25rem, 8vw, 5.75rem);
   background:
-    radial-gradient(ellipse 70% 55% at 85% 20%, color-mix(in srgb, var(--color-muted-copper) 14%, transparent), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 10% 90%, color-mix(in srgb, var(--color-deep-navy) 6%, transparent), transparent 50%),
-    var(--color-warm-white);
-}
-
-.mkt-hero.mkt-surface,
-.mkt-page-hero.mkt-surface {
-  /* Hero wash already sets fill; keep surface shadow/radius */
-  background:
-    radial-gradient(ellipse 70% 55% at 85% 20%, color-mix(in srgb, var(--color-muted-copper) 14%, transparent), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 10% 90%, color-mix(in srgb, var(--color-deep-navy) 6%, transparent), transparent 50%),
-    var(--color-warm-white);
-}
-
-.mkt-hero.mkt-seam-scoop,
-.mkt-hero.mkt-seam-wave,
-.mkt-page-hero.mkt-seam-scoop,
-.mkt-page-hero.mkt-seam-wave {
-  padding-bottom: clamp(3.75rem, 9vw, 6.5rem);
+    radial-gradient(ellipse 90% 70% at 78% 16%, var(--mkt-glow-copper), transparent 54%),
+    radial-gradient(ellipse 72% 58% at 12% 88%, var(--mkt-glow-navy), transparent 52%),
+    linear-gradient(
+      135deg,
+      var(--color-warm-white) 0%,
+      color-mix(in srgb, var(--color-muted-copper) 5%, var(--color-warm-white)) 48%,
+      var(--color-warm-white) 100%
+    );
 }
 
 .mkt-hero-copy {
@@ -447,8 +408,23 @@
 }
 
 .mkt-hero-visual {
+  position: relative;
   width: min(100% - 2 * clamp(var(--space-4), 4vw, var(--space-6)), var(--mkt-max));
   margin-inline: auto;
+}
+
+.mkt-hero-visual::before {
+  content: "";
+  position: absolute;
+  inset: 6% -8% -4%;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 70% 62% at 50% 48%, var(--mkt-glow-copper), transparent 68%);
+}
+
+.mkt-hero-visual .mkt-frame {
+  position: relative;
+  z-index: 1;
 }
 
 /* —— Product frames —— */
@@ -457,11 +433,13 @@
   grid-template-columns: 1fr;
   overflow: hidden;
   border-radius: var(--mkt-radius-lg);
-  border: 1px solid color-mix(in srgb, var(--color-light-silver) 80%, transparent);
-  background: #fff;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(135deg, var(--mkt-edge-a), var(--mkt-edge-b), var(--mkt-edge-c)) border-box;
   box-shadow:
-    0 1px 0 rgba(17, 24, 32, 0.04),
-    0 28px 64px rgba(17, 24, 32, 0.12);
+    0 8px 30px color-mix(in srgb, var(--color-graphite) 5.5%, transparent),
+    0 1px 3px color-mix(in srgb, var(--color-graphite) 3.5%, transparent);
 }
 
 .mkt-frame-hero {
@@ -663,9 +641,7 @@
 
 /* —— Stats —— */
 .mkt-stats {
-  padding: clamp(2rem, 4vw, 3rem) 0;
-  border-block: 1px solid color-mix(in srgb, var(--color-light-silver) 70%, transparent);
-  background: #fff;
+  padding: clamp(2.25rem, 5vw, 3.5rem) 0;
 }
 
 .mkt-stats-row {
@@ -705,17 +681,13 @@
   padding: 0;
   display: flex;
   flex-direction: column;
+  gap: var(--space-2);
 }
 
 .mkt-cap-list li {
   display: grid;
   gap: var(--space-3);
-  padding: var(--space-5) 0;
-  border-top: 1px solid color-mix(in srgb, var(--color-light-silver) 80%, transparent);
-}
-
-.mkt-cap-list li:last-child {
-  border-bottom: 1px solid color-mix(in srgb, var(--color-light-silver) 80%, transparent);
+  padding: var(--space-4) 0;
 }
 
 .mkt-cap-list p {
@@ -741,9 +713,14 @@
 
 /* —— Hardware product (casing) —— */
 .mkt-product-hardware {
+  isolation: isolate;
   background:
-    radial-gradient(ellipse 55% 45% at 85% 40%, color-mix(in srgb, var(--color-muted-copper) 10%, transparent), transparent 60%),
-    var(--color-warm-white);
+    radial-gradient(ellipse 70% 55% at 86% 42%, var(--mkt-glow-copper), transparent 62%),
+    linear-gradient(
+      180deg,
+      var(--color-warm-white) 0%,
+      color-mix(in srgb, var(--color-deep-navy) 2.6%, var(--color-warm-white)) 100%
+    );
 }
 
 .mkt-hardware-layout {
@@ -791,6 +768,14 @@
   display: grid;
   place-items: center;
   width: min(100%, 1080px);
+}
+
+.mkt-hardware-stage::before {
+  content: "";
+  position: absolute;
+  inset: 18% 8% 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 70%, var(--mkt-glow-copper), transparent 70%);
 }
 
 .mkt-hardware-img {
@@ -926,8 +911,10 @@
 
 /* —— Dark honesty band —— */
 .mkt-dark {
+  isolation: isolate;
   background:
-    radial-gradient(ellipse 60% 50% at 80% 0%, color-mix(in srgb, var(--color-muted-copper) 18%, transparent), transparent 55%),
+    radial-gradient(ellipse 80% 55% at 88% 0%, color-mix(in srgb, var(--color-muted-copper) 16%, transparent), transparent 56%),
+    radial-gradient(ellipse 55% 48% at 8% 100%, color-mix(in srgb, var(--color-deep-navy) 70%, #000), transparent 52%),
     var(--color-graphite);
   color: color-mix(in srgb, #fff 88%, transparent);
 }
@@ -995,14 +982,11 @@
 .mkt-faq {
   display: flex;
   flex-direction: column;
+  gap: 0.15rem;
 }
 
 .mkt-faq-item {
-  border-top: 1px solid color-mix(in srgb, var(--color-light-silver) 85%, transparent);
-}
-
-.mkt-faq-item:last-child {
-  border-bottom: 1px solid color-mix(in srgb, var(--color-light-silver) 85%, transparent);
+  border: 0;
 }
 
 .mkt-faq-q {
@@ -1044,50 +1028,50 @@
 
 /* —— Closing CTA —— */
 .mkt-close-band {
-  padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(3rem, 7vw, 4.75rem);
-}
-
-.mkt-close-band.mkt-surface {
-  background:
-    radial-gradient(ellipse 80% 60% at 100% 0%, color-mix(in srgb, var(--color-muted-copper) 14%, transparent), transparent 55%),
-    color-mix(in srgb, var(--color-light-silver) 28%, #fff);
+  padding: clamp(3.5rem, 8vw, 6rem) 0;
+  background: linear-gradient(
+    180deg,
+    var(--color-warm-white) 0%,
+    color-mix(in srgb, var(--color-deep-navy) 3%, var(--color-warm-white)) 100%
+  );
 }
 
 .mkt-close-card {
   display: grid;
   gap: var(--space-5);
-  padding: clamp(1.25rem, 3vw, 2rem) 0 0;
-}
-
-.mkt-close-band:not(.mkt-surface) .mkt-close-card {
-  padding: clamp(2rem, 4vw, 3rem);
-  border-radius: var(--mkt-radius-lg);
+  padding: clamp(2.25rem, 5vw, 3.5rem);
+  border-radius: clamp(1.5rem, 3vw, 2rem);
+  border: 1px solid color-mix(in srgb, var(--color-muted-copper) 26%, var(--color-deep-navy));
   background:
-    radial-gradient(ellipse 80% 60% at 100% 0%, color-mix(in srgb, var(--color-muted-copper) 16%, transparent), transparent 55%),
-    color-mix(in srgb, var(--color-light-silver) 35%, #fff);
-  border: 1px solid color-mix(in srgb, var(--color-light-silver) 80%, transparent);
+    radial-gradient(ellipse 80% 70% at 92% 8%, color-mix(in srgb, var(--color-muted-copper) 22%, transparent), transparent 52%),
+    linear-gradient(135deg, var(--color-graphite) 0%, var(--color-deep-navy) 100%);
+  box-shadow: 0 22px 48px color-mix(in srgb, var(--color-graphite) 18%, transparent);
 }
 
 .mkt-close-card h2 {
   max-width: 16ch;
+  color: #fff;
 }
 
 .mkt-close-card p {
   margin: 0;
   max-width: 36rem;
-  color: var(--color-industrial-steel);
+  color: color-mix(in srgb, #fff 72%, transparent);
   line-height: 1.55;
+}
+
+.mkt-close-card .mkt-eyebrow {
+  color: var(--color-muted-copper);
 }
 
 /* —— Footer —— */
 .mkt-footer {
-  margin: 0 clamp(0.55rem, 1.8vw, 1.2rem) clamp(0.75rem, 1.9vw, 1.4rem);
-  border-radius: clamp(2rem, 6vw, 3.75rem) clamp(2rem, 6vw, 3.75rem) var(--mkt-surface-radius) var(--mkt-surface-radius);
-  background: var(--color-graphite);
+  margin: 0;
+  background:
+    radial-gradient(ellipse 70% 42% at 50% 0%, color-mix(in srgb, var(--color-muted-copper) 11%, transparent), transparent 52%),
+    var(--color-graphite);
   color: color-mix(in srgb, #fff 72%, transparent);
-  padding: clamp(3rem, 6vw, 4.5rem) 0 clamp(2rem, 4vw, 3rem);
-  box-shadow: 0 18px 48px rgba(17, 24, 32, 0.22);
-  overflow: clip;
+  padding: clamp(3.5rem, 7vw, 5rem) 0 clamp(2rem, 4vw, 3rem);
 }
 
 .mkt-footer-grid {
@@ -1165,11 +1149,18 @@
 /* Detail page heroes & compositions */
 .mkt-page-hero {
   position: relative;
+  isolation: isolate;
+  overflow: hidden;
   padding: clamp(2.75rem, 7vw, 5rem) 0 clamp(2.5rem, 5vw, 4rem);
   background:
-    radial-gradient(ellipse 70% 55% at 85% 15%, color-mix(in srgb, var(--color-muted-copper) 14%, transparent), transparent 55%),
-    radial-gradient(ellipse 45% 40% at 8% 85%, color-mix(in srgb, var(--color-deep-navy) 7%, transparent), transparent 50%),
-    var(--color-warm-white);
+    radial-gradient(ellipse 88% 68% at 80% 12%, var(--mkt-glow-copper), transparent 54%),
+    radial-gradient(ellipse 55% 48% at 8% 88%, var(--mkt-glow-navy), transparent 50%),
+    linear-gradient(
+      135deg,
+      var(--color-warm-white) 0%,
+      color-mix(in srgb, var(--color-muted-copper) 4.5%, var(--color-warm-white)) 50%,
+      var(--color-warm-white) 100%
+    );
 }
 
 .mkt-page-hero-brand {
@@ -1226,7 +1217,6 @@
 
 .mkt-truths-light article {
   padding-top: var(--space-4);
-  border-top: 1px solid color-mix(in srgb, var(--color-graphite) 12%, transparent);
 }
 
 .mkt-truths-light p {
@@ -1253,8 +1243,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-graphite) 10%, transparent);
 }
 
 .mkt-contact-channel-label {
@@ -1284,11 +1272,15 @@
 }
 
 .mkt-contact-panel {
-  padding: clamp(1.25rem, 3vw, 1.75rem);
+  padding: clamp(1.5rem, 3vw, 2rem);
   border-radius: var(--mkt-radius-lg);
-  border: 1px solid color-mix(in srgb, var(--color-light-silver) 80%, transparent);
-  background: color-mix(in srgb, #fff 72%, var(--color-warm-white));
-  box-shadow: 0 18px 48px rgba(17, 24, 32, 0.08);
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--mkt-surface), var(--mkt-surface)) padding-box,
+    linear-gradient(135deg, var(--mkt-edge-a), var(--mkt-edge-b), var(--mkt-edge-c)) border-box;
+  box-shadow:
+    0 8px 30px color-mix(in srgb, var(--color-graphite) 5%, transparent),
+    0 1px 3px color-mix(in srgb, var(--color-graphite) 3.5%, transparent);
 }
 
 .mkt-field {
@@ -1334,28 +1326,75 @@
   color: var(--color-industrial-steel);
 }
 
+.mkt-legal-meta {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1.5rem 0 0;
+  padding: 1.15rem 0 0;
+  border-top: 1px solid color-mix(in srgb, var(--color-graphite) 10%, transparent);
+}
+
+.mkt-legal-meta div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.mkt-legal-meta dt,
+.mkt-legal-k {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-muted-copper);
+}
+
+.mkt-legal-meta dd,
+.mkt-legal-v {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--color-graphite);
+}
+
 .mkt-legal-stack {
-  max-width: 40rem;
+  max-width: 44rem;
   display: grid;
   gap: 0;
 }
 
 .mkt-legal-block {
-  padding: 1.35rem 0;
+  padding: 1.5rem 0;
   border-top: 1px solid color-mix(in srgb, var(--color-graphite) 12%, transparent);
 }
 
+.mkt-legal-block:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
 .mkt-legal-block h2 {
-  margin: 0 0 0.45rem;
+  margin: 0 0 0.5rem;
   max-width: none;
   font-size: 1.15rem;
 }
 
-.mkt-legal-block p {
+.mkt-legal-block p,
+.mkt-legal-block li {
   margin: 0;
   font-size: 1.02rem;
   line-height: 1.65;
   color: var(--color-industrial-steel);
+}
+
+.mkt-legal-block p + p {
+  margin-top: 0.75rem;
+}
+
+.mkt-legal-block ul {
+  margin: 0.75rem 0 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.4rem;
 }
 
 .mkt-legal-foot {
@@ -1366,6 +1405,121 @@
   color: var(--color-industrial-steel);
 }
 
+.mkt-workspace {
+  width: min(100% - 2 * clamp(var(--space-4), 4vw, var(--space-6)), var(--mkt-max));
+  margin-inline: auto;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mkt-hero .mkt-workspace {
+  width: 100%;
+  margin: 0;
+  padding-inline: clamp(var(--space-4), 4vw, var(--space-6));
+}
+
+.mkt-hero .mkt-workspace-board {
+  grid-template-columns: 1fr;
+}
+
+.mkt-workspace-board {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.mkt-workspace-col {
+  padding: 1.15rem 1.15rem 1.25rem;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--mkt-surface), var(--mkt-surface)) padding-box,
+    linear-gradient(135deg, var(--mkt-edge-a), var(--mkt-edge-b), var(--mkt-edge-c)) border-box;
+  box-shadow:
+    0 8px 30px color-mix(in srgb, var(--color-graphite) 4.5%, transparent),
+    0 1px 3px color-mix(in srgb, var(--color-graphite) 3%, transparent);
+}
+
+.mkt-workspace-col header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-industrial-steel);
+}
+
+.mkt-workspace-col strong {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: -0.03em;
+  color: var(--color-graphite);
+}
+
+.mkt-workspace-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--color-graphite) 8%, transparent);
+  font-size: 0.88rem;
+}
+
+.mkt-workspace-item span:last-child {
+  color: var(--color-industrial-steel);
+}
+
+.mkt-workspace-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.mkt-workspace-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--color-light-silver) 85%, transparent);
+  font-size: 0.78rem;
+  color: var(--color-graphite);
+}
+
+.mkt-matrix {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.mkt-matrix-row {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0;
+}
+
+.mkt-matrix-row h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.mkt-matrix-row p {
+  margin: 0;
+  max-width: 40rem;
+  color: var(--color-industrial-steel);
+  line-height: 1.5;
+}
+
+.mkt-matrix-path {
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  color: var(--color-muted-copper);
+}
+
 @media (min-width: 720px) {
   .mkt-specs-row {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1373,6 +1527,20 @@
 
   .mkt-contact-layout {
     grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  }
+
+  .mkt-workspace-board {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mkt-legal-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mkt-matrix-row {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    align-items: start;
+    gap: var(--space-4);
   }
 }
 
@@ -1443,6 +1611,14 @@
     margin: 0;
   }
 
+  .mkt-hero .mkt-workspace {
+    padding-inline: 0;
+  }
+
+  .mkt-legal-meta {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .mkt-frame-hero {
     grid-template-columns: 11rem 1fr;
     min-height: 420px;
@@ -1457,10 +1633,10 @@
     align-items: end;
   }
 
-  .mkt-cap-list li {
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: var(--space-5);
+  .mkt-matrix-row {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    align-items: start;
+    gap: var(--space-4);
   }
 
   .mkt-faq-layout {
@@ -1489,6 +1665,27 @@
 
   .mkt-steps li {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 719px) {
+  .mkt-hero,
+  .mkt-page-hero {
+    background:
+      radial-gradient(ellipse 88% 52% at 80% 0%, color-mix(in srgb, var(--color-muted-copper) 11%, transparent), transparent 52%),
+      var(--color-warm-white);
+  }
+
+  .mkt-afterglow:not([class*="mkt-curve"]),
+  .mkt-product-hardware:not([class*="mkt-curve"]),
+  .mkt-mist:not([class*="mkt-curve"]),
+  .mkt-blend:not([class*="mkt-curve"]) {
+    background: var(--color-warm-white);
+  }
+
+  .mkt-hero-visual::before,
+  .mkt-hardware-stage::before {
+    opacity: 0.55;
   }
 }
 

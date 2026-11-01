@@ -41,7 +41,7 @@ export function AboutPage() {
   return (
     <MarketingLayout reveal>
       <main className="mkt-main">
-        <section className="mkt-page-hero mkt-page-hero-brand mkt-surface mkt-seam-scoop" aria-labelledby="about-hero-title">
+        <section className="mkt-page-hero mkt-page-hero-brand" aria-labelledby="about-hero-title">
           <div className="mkt-inner" data-mkt-reveal data-mkt-from="up">
             <p className="mkt-eyebrow">Brand</p>
             <p className="mkt-brand-hero-mark" aria-hidden="true">
@@ -63,7 +63,7 @@ export function AboutPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-surface mkt-seam-rise mkt-seam-wave">
+        <section className="mkt-section mkt-mist mkt-curve-shell">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="fade">
               <p className="mkt-eyebrow">Tagline</p>
@@ -85,7 +85,7 @@ export function AboutPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-band mkt-surface mkt-seam-arch">
+        <section className="mkt-section mkt-blend">
           <div className="mkt-inner mkt-split">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Mission</p>
@@ -102,7 +102,7 @@ export function AboutPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-surface mkt-seam-wave">
+        <section className="mkt-section mkt-mist mkt-curve-swell">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="up">
               <p className="mkt-eyebrow">Product line</p>
@@ -129,7 +129,7 @@ export function AboutPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-dark mkt-surface mkt-seam-arch">
+        <section className="mkt-section mkt-dark mkt-curve-soft">
           <div className="mkt-inner mkt-split">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Parent</p>
@@ -137,10 +137,40 @@ export function AboutPage() {
             </div>
             <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
               <p className="mkt-copy mkt-copy-on-dark">
-                iCanOva is a product identity of ASIEDU DEVELOPMENT HUB (ADH). Day-to-day product
-                communication leads with iCanOva; ADH remains the corporate parent line.
+                iCanOva is a product identity of ASIEDU DEVELOPMENT HUB. Day-to-day product
+                communication leads with iCanOva; ASIEDU DEVELOPMENT HUB remains the corporate
+                parent.
               </p>
             </div>
+          </div>
+        </section>
+
+        <section className="mkt-section mkt-blend mkt-curve-scoop">
+          <div className="mkt-inner">
+            <div data-mkt-reveal data-mkt-from="up">
+              <p className="mkt-eyebrow">Discipline</p>
+              <h2>What we will not ship.</h2>
+            </div>
+            <ul className="mkt-cap-list">
+              <li data-mkt-reveal data-mkt-from="left">
+                <div>
+                  <h3>Decorative zeros</h3>
+                  <p>Missing readings stay empty. A blank cell is more honest than a calming 0.0.</p>
+                </div>
+              </li>
+              <li data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
+                <div>
+                  <h3>Blurred health</h3>
+                  <p>Cloud contact, Modbus and freshness are never collapsed into one green badge.</p>
+                </div>
+              </li>
+              <li data-mkt-reveal data-mkt-from="left" data-mkt-delay="2">
+                <div>
+                  <h3>Invented availability</h3>
+                  <p>Reports export stored data. We do not mint uptime percentages for a slide deck.</p>
+                </div>
+              </li>
+            </ul>
           </div>
         </section>
 

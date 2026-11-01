@@ -8,13 +8,13 @@ const MAILTO_TARGET = "asiedudev.hub@gmail.com";
 const CHANNELS = [
   {
     label: "General",
-    display: "hello@icanova.monitoring",
+    display: "hello@icanova.com",
     subjectPrefix: "iCanOva · General",
     hint: "Product questions, partnerships, introductions",
   },
   {
     label: "Support",
-    display: "support@icanova.monitoring",
+    display: "support@icanova.com",
     subjectPrefix: "iCanOva · Support",
     hint: "Gateway registration, monitoring access, alarms",
   },
@@ -51,7 +51,7 @@ export function ContactPage() {
   return (
     <MarketingLayout reveal>
       <main className="mkt-main">
-        <section className="mkt-page-hero mkt-surface mkt-seam-scoop" aria-labelledby="contact-hero-title">
+        <section className="mkt-page-hero" aria-labelledby="contact-hero-title">
           <div className="mkt-inner mkt-page-hero-copy" data-mkt-reveal data-mkt-from="up">
             <p className="mkt-eyebrow">Contact</p>
             <h1 id="contact-hero-title">Talk to iCanOva</h1>
@@ -62,7 +62,7 @@ export function ContactPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-section-tight mkt-surface mkt-seam-rise mkt-seam-arch">
+        <section className="mkt-section mkt-section-tight mkt-mist mkt-curve-shell">
           <div className="mkt-inner mkt-contact-layout">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Channels</p>
@@ -133,7 +133,7 @@ export function ContactPage() {
                 />
               </label>
               <p className="mkt-contact-note">
-                Opens your email app. No Convex action, Resend or SMTP from this page.
+                Opens your email app. Nothing is stored or sent from this site.
               </p>
               <button type="submit" className="mkt-btn mkt-btn-primary mkt-btn-lg">
                 Open email draft

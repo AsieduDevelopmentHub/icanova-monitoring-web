@@ -69,6 +69,9 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
         </Link>
         <ul className="mkt-nav-links">
           <li>
+            <Link to="/">Home</Link>
+          </li>
+          <li>
             <Link to="/platform">Platform</Link>
           </li>
           <li>
@@ -122,6 +125,9 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
         aria-label="Mobile"
         aria-hidden={!menuOpen}
       >
+        <Link to="/" onClick={() => setMenuOpen(false)}>
+          Home
+        </Link>
         <Link to="/platform" onClick={() => setMenuOpen(false)}>
           Platform
         </Link>
@@ -165,6 +171,9 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
             <div>
               <h3>Product</h3>
               <ul>
+                <li>
+                  <Link to="/">Home</Link>
+                </li>
                 <li>
                   <Link to="/product">Edge Gateway</Link>
                 </li>
@@ -213,7 +222,7 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
           ICANOVA
         </p>
         <p className="mkt-footer-legal mkt-inner">
-          iCanOva Monitoring · Parent company ASIEDU DEVELOPMENT HUB (ADH)
+          © 2026 iCanOva. All rights reserved. · Established 2024
         </p>
       </footer>
     </div>

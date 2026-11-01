@@ -24,7 +24,7 @@ const FLOW = [
   {
     n: "03",
     title: "Post to monitoring",
-    body: "Authenticated HTTPS ingest into Convex — organization-scoped, rate-aware.",
+    body: "Authenticated HTTPS ingest into the monitoring backend — organization-scoped, rate-aware.",
   },
   {
     n: "04",
@@ -33,18 +33,18 @@ const FLOW = [
   },
 ] as const;
 
-const BOUNDARIES = [
+const INDICATORS = [
   {
-    title: "Cloud ≠ Modbus",
-    body: "An online uplink does not mean the serial link to the controller is healthy.",
+    title: "Power",
+    body: "Unit is receiving DC input. Absence here is not a cloud outage and is not a Modbus fault.",
   },
   {
-    title: "Modbus ≠ freshness",
-    body: "A working poll path can still leave a sample too old to act on.",
+    title: "TX",
+    body: "Transmit activity on the RS485 path toward the controller.",
   },
   {
-    title: "Missing ≠ zero",
-    body: "Absent readings stay empty. The gateway and UI never invent calming zeros.",
+    title: "RX",
+    body: "Receive activity from the controller. Quiet RX with live TX is a field clue, not a dashboard invention.",
   },
 ] as const;
 
@@ -56,7 +56,7 @@ export function ProductPage() {
   return (
     <MarketingLayout reveal>
       <main className="mkt-main">
-        <section className="mkt-page-hero mkt-page-hero-split mkt-surface mkt-seam-scoop" aria-labelledby="product-hero-title">
+        <section className="mkt-page-hero mkt-page-hero-split" aria-labelledby="product-hero-title">
           <div className="mkt-inner mkt-page-hero-grid">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Hardware</p>
@@ -97,7 +97,7 @@ export function ProductPage() {
           </div>
         </section>
 
-        <section className="mkt-stats mkt-surface mkt-seam-rise mkt-seam-arch" aria-label="Gateway facts" data-mkt-reveal data-mkt-from="fade">
+        <section className="mkt-stats" aria-label="Gateway facts" data-mkt-reveal data-mkt-from="fade">
           <div className="mkt-inner mkt-stats-row mkt-specs-row">
             {SPECS.map((spec) => (
               <div key={spec.label}>
@@ -108,7 +108,7 @@ export function ProductPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-surface mkt-seam-wave">
+        <section className="mkt-section mkt-blend mkt-curve-arch">
           <div className="mkt-inner mkt-split">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Role</p>
@@ -124,7 +124,7 @@ export function ProductPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-band mkt-surface mkt-seam-arch">
+        <section className="mkt-section mkt-mist mkt-curve-shell">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="up">
               <p className="mkt-eyebrow">Path</p>
@@ -149,14 +149,14 @@ export function ProductPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-dark mkt-surface mkt-seam-scoop">
+        <section className="mkt-section mkt-dark mkt-curve-soft">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="fade">
-              <p className="mkt-eyebrow">Honesty</p>
-              <h2>Signals stay separate at the edge too.</h2>
+              <p className="mkt-eyebrow">Field indicators</p>
+              <h2>Power, transmit and receive stay readable at the cabinet.</h2>
             </div>
             <div className="mkt-truths">
-              {BOUNDARIES.map((item, index) => (
+              {INDICATORS.map((item, index) => (
                 <article
                   key={item.title}
                   data-mkt-reveal
@@ -171,18 +171,35 @@ export function ProductPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-surface mkt-seam-rise mkt-seam-wave">
+        <section className="mkt-section mkt-blend mkt-curve-swell">
           <div className="mkt-inner mkt-split">
             <div data-mkt-reveal data-mkt-from="left">
-              <p className="mkt-eyebrow">Enclosure</p>
-              <h2>Concept casing for product communication.</h2>
+              <p className="mkt-eyebrow">Soft-AP</p>
+              <h2>Local configuration never leaves the enclosure.</h2>
             </div>
             <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
               <p className="mkt-copy">
-                Imagery shows a concept industrial enclosure suited to cabinet installs beside
-                generator controllers. Final casing, mounting hardware and field labeling may change
-                by production revision — treat dimensions as indicative until a released drawing pack
-                is provided.
+                Default hostname is icanova-edge. The Soft-AP SSID follows ICANOVA-EDGE-XXXX. Baud,
+                parity, slave address and GenComm writes are set on the device — iCanOva Monitoring
+                binds the registered unit to an organization and receives HTTPS ingest. It does not
+                become a remote serial console.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mkt-section mkt-mist mkt-curve-scoop">
+          <div className="mkt-inner mkt-split">
+            <div data-mkt-reveal data-mkt-from="left">
+              <p className="mkt-eyebrow">Compatibility</p>
+              <h2>Built around DSE / GenComm register maps.</h2>
+            </div>
+            <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
+              <p className="mkt-copy">
+                The gateway polls compatible Deep Sea Electronics controllers over RS485 Modbus RTU.
+                DSE remains third-party equipment — not the product brand. Imagery shows a concept
+                industrial enclosure for cabinet installs beside the controller. Final casing,
+                mounting hardware and field labeling may change by production revision.
               </p>
             </div>
           </div>

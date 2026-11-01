@@ -21,7 +21,7 @@ export function PageClose({
   const exploreLabel = isAuthenticated ? "Open platform" : "Get started";
 
   return (
-    <section className="mkt-close-band mkt-surface mkt-seam-rise mkt-seam-arch" data-mkt-reveal data-mkt-from="scale">
+    <section className="mkt-close-band" data-mkt-reveal data-mkt-from="scale">
       <div className="mkt-inner mkt-close-card">
         <div>
           <p className="mkt-eyebrow">{eyebrow}</p>

@@ -3,43 +3,26 @@ import { Link } from "react-router";
 import { useConvexAuth } from "convex/react";
 import { MarketingLayout } from "./MarketingLayout";
 
-type Cap = {
-  title: string;
-  body: string;
-  label: string;
-  to: string;
-};
-
-const CAPABILITIES: readonly Cap[] = [
+const CAPABILITIES = [
   {
     title: "Gateway connectivity",
     body: "Track cloud contact for iCanOva Edge Gateways without confusing it with Modbus health or sample freshness.",
-    to: "/gateways",
-    label: "Gateways",
   },
   {
     title: "Live equipment monitoring",
     body: "Inspect generator measurements over Soft-AP or cloud with clear units, timestamps and honest stale or missing states.",
-    to: "/local",
-    label: "Live readings",
   },
   {
     title: "Alarms & notifications",
-    body: "Acknowledge and clear alarms with a preserved lifecycle. Optional email, SMS and VAPID browser push stay channel-independent.",
-    to: "/alarms",
-    label: "Alarms",
+    body: "Acknowledge and clear alarms with a preserved lifecycle. Optional email, SMS and browser push stay channel-independent.",
   },
   {
     title: "History, events & reports",
     body: "Review health transitions, audit activity and bounded exports — without inventing uptime percentages.",
-    to: "/reports",
-    label: "Reports",
   },
   {
     title: "Sites & infrastructure",
     body: "Organize gateways and generators by site with organization isolation and role-aware access.",
-    to: "/sites",
-    label: "Sites",
   },
 ] as const;
 
@@ -62,7 +45,7 @@ const STEPS = [
   {
     n: "04",
     title: "Export what is stored",
-    body: "Bounded reports from Convex data — not fabricated availability scores or energy totals.",
+    body: "Bounded reports from stored operational data — not fabricated availability scores or energy totals.",
   },
 ] as const;
 
@@ -88,7 +71,7 @@ const FAQ = [
   },
   {
     q: "Do I need an account to open the dashboard?",
-    a: "Yes. The operational application — including dashboard, live readings, gateways and alarms — requires Convex Auth. Unsigned visitors are sent to sign-in.",
+    a: "Yes. The operational application — including dashboard, live readings, gateways and alarms — requires a signed-in account.",
   },
   {
     q: "Is Soft-AP configuration delivered from the cloud?",
@@ -96,30 +79,9 @@ const FAQ = [
   },
   {
     q: "Which notification channels exist?",
-    a: "In-app notifications always. Email (Resend), SMS (Arkesel) and optional VAPID browser push when configured — each channel stays independent.",
+    a: "In-app notifications always. Email, SMS and optional browser push when configured — each channel stays independent.",
   },
 ] as const;
-
-function CapLink({
-  item,
-  isAuthenticated,
-}: {
-  item: Cap;
-  isAuthenticated: boolean;
-}) {
-  if (isAuthenticated) {
-    return (
-      <Link className="mkt-text-link" to={item.to}>
-        {item.label}
-      </Link>
-    );
-  }
-  return (
-    <Link className="mkt-text-link" to="/auth/login" state={{ from: item.to }}>
-      Sign in for {item.label}
-    </Link>
-  );
-}
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   const panelId = useId();
@@ -320,7 +282,7 @@ export function Landing() {
   return (
     <MarketingLayout reveal>
       <main className="mkt-main">
-        <section className="mkt-hero mkt-surface mkt-seam-scoop" aria-labelledby="mkt-hero-title">
+        <section className="mkt-hero" aria-labelledby="mkt-hero-title">
           <div className="mkt-hero-copy mkt-inner" data-mkt-reveal data-mkt-from="left">
             <p className="mkt-eyebrow">Intelligent industrial monitoring</p>
             <h1 id="mkt-hero-title">
@@ -346,7 +308,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="mkt-stats mkt-surface mkt-seam-rise mkt-seam-arch" aria-label="Product facts" data-mkt-reveal data-mkt-from="fade">
+        <section className="mkt-stats" aria-label="Product facts" data-mkt-reveal data-mkt-from="fade">
           <div className="mkt-inner mkt-stats-row">
             <div>
               <strong>3</strong>
@@ -363,7 +325,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section id="platform" className="mkt-section mkt-surface mkt-seam-wave">
+        <section id="platform" className="mkt-section mkt-blend mkt-curve-arch">
           <div className="mkt-inner mkt-split">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Platform</p>
@@ -384,13 +346,14 @@ export function Landing() {
           </div>
         </section>
 
-        <section id="capabilities" className="mkt-section mkt-band mkt-surface mkt-seam-arch">
+        <section id="capabilities" className="mkt-section mkt-mist mkt-curve-shell">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="up">
               <p className="mkt-eyebrow">Capabilities</p>
               <h2>What the platform actually does.</h2>
               <p className="mkt-copy mkt-copy-narrow">
-                Every item maps to a real application route. Sign-in is required before the Shell opens.
+                Every item maps to a real application surface. Sign-in is required before the
+                dashboard opens.
               </p>
             </div>
             <ul className="mkt-cap-list">
@@ -405,14 +368,13 @@ export function Landing() {
                     <h3>{item.title}</h3>
                     <p>{item.body}</p>
                   </div>
-                  <CapLink item={item} isAuthenticated={isAuthenticated} />
                 </li>
               ))}
             </ul>
           </div>
         </section>
 
-        <section id="product" className="mkt-section mkt-product-hardware mkt-surface mkt-seam-scoop" aria-labelledby="mkt-product-title">
+        <section id="product" className="mkt-section mkt-product-hardware mkt-curve-swell" aria-labelledby="mkt-product-title">
           <div className="mkt-inner mkt-hardware-layout">
             <div className="mkt-hardware-copy" data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Product</p>
@@ -449,7 +411,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-surface mkt-seam-rise mkt-seam-wave" aria-labelledby="mkt-platform-title">
+        <section className="mkt-section mkt-mist" aria-labelledby="mkt-platform-title">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Platform</p>
@@ -465,7 +427,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-dark mkt-surface mkt-seam-arch" aria-labelledby="mkt-truth-title">
+        <section className="mkt-section mkt-dark mkt-curve-soft" aria-labelledby="mkt-truth-title">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="fade">
               <p className="mkt-eyebrow">Engineering honesty</p>
@@ -487,7 +449,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-surface mkt-seam-wave">
+        <section className="mkt-section mkt-blend mkt-curve-scoop">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="up">
               <p className="mkt-eyebrow">Workflow</p>
@@ -512,7 +474,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section id="faq" className="mkt-section mkt-band mkt-surface mkt-seam-arch">
+        <section id="faq" className="mkt-section mkt-mist mkt-curve-shell">
           <div className="mkt-inner mkt-faq-layout">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Good to know</p>
@@ -526,7 +488,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="mkt-close-band mkt-surface mkt-seam-rise mkt-seam-arch" id="about" data-mkt-reveal data-mkt-from="scale">
+        <section className="mkt-close-band" id="about" data-mkt-reveal data-mkt-from="scale">
           <div className="mkt-inner mkt-close-card">
             <div>
               <p className="mkt-eyebrow">Next step</p>

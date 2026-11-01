@@ -7,131 +7,94 @@ import { PageClose } from "./PageClose";
 const AREAS = [
   {
     title: "Dashboard",
-    body: "Operations overview with cloud contact, Modbus health and freshness kept distinct.",
-    to: "/app",
-    label: "Dashboard",
+    body: "Organization overview with cloud contact, Modbus health and freshness kept in separate columns — never rolled into a single “uptime” score.",
   },
   {
     title: "Live readings",
-    body: "Generator measurements with units, timestamps and honest stale or missing states.",
-    to: "/local",
-    label: "Live readings",
+    body: "Stored generator measurements with units and timestamps. Empty stays empty; stale is labeled, not filled with a decorative zero.",
   },
   {
     title: "Gateways",
-    body: "Identity and cloud connectivity without conflating serial health.",
-    to: "/gateways",
-    label: "Gateways",
-  },
-  {
-    title: "Alarms",
-    body: "Acknowledge and clear with a preserved lifecycle — acknowledgement is not a clear.",
-    to: "/alarms",
-    label: "Alarms",
+    body: "Identity, cloud connectivity and registration metadata. Soft-AP baud, parity and GenComm writes are not edited from the cloud.",
   },
   {
     title: "Sites & generators",
-    body: "Organize infrastructure by site with organization isolation and role-aware access.",
-    to: "/sites",
-    label: "Sites",
+    body: "Site groupings and equipment binding, scoped to the signed-in organization.",
+  },
+  {
+    title: "Alarms",
+    body: "Active, acknowledged and cleared as a preserved lifecycle. Acknowledgement does not invent a clear.",
   },
   {
     title: "Reports & events",
-    body: "Bounded exports and audit activity from stored Convex data — no invented uptime scores.",
-    to: "/reports",
-    label: "Reports",
+    body: "Bounded exports and audit activity from stored operational data — no fabricated availability or energy totals.",
+  },
+  {
+    title: "Administration",
+    body: "Users, custom roles, notification settings and an operations desk — gated by permission, not by marketing claims.",
   },
 ] as const;
 
-const SIGNALS = [
-  {
-    title: "Cloud contact",
-    body: "Whether the Edge Gateway is reaching ingest — not a proxy for Modbus.",
-  },
-  {
-    title: "Modbus health",
-    body: "Whether the serial poll path to the controller is succeeding.",
-  },
-  {
-    title: "Freshness",
-    body: "Whether the latest stored sample is young enough to act on.",
-  },
+const PERMISSIONS = [
+  { name: "View measurements", meaning: "Read live and historical measurements." },
+  { name: "Acknowledge alarms", meaning: "Acknowledge an open condition without clearing it." },
+  { name: "Manage devices", meaning: "Register and bind Edge Gateways." },
+  { name: "Configure notifications", meaning: "Enable email, SMS or browser push for the organization." },
+  { name: "Export reports", meaning: "Download bounded stored history." },
+  { name: "Manage roles", meaning: "Define which permissions a role may hold." },
 ] as const;
 
-function CapLink({
-  to,
-  label,
-  isAuthenticated,
-}: {
-  to: string;
-  label: string;
-  isAuthenticated: boolean;
-}) {
-  if (isAuthenticated) {
-    return (
-      <Link className="mkt-text-link" to={to}>
-        Open {label}
-      </Link>
-    );
-  }
-  return (
-    <Link className="mkt-text-link" to="/auth/login" state={{ from: to }}>
-      Sign in for {label}
-    </Link>
-  );
-}
+const CHANNELS = [
+  { name: "In-app", body: "Always on. Alarm and event notices stay inside the application." },
+  { name: "Email", body: "Optional email delivery. A bounce does not rewrite the alarm record." },
+  { name: "SMS", body: "Optional SMS delivery. Channel failure is independent of lifecycle." },
+  { name: "Browser push", body: "Optional browser notifications. Delivery success is not treated as acknowledgement." },
+] as const;
 
-function PlatformHeroFrame() {
+function PlatformWorkspace() {
   return (
-    <div className="mkt-hero-visual" aria-hidden="true">
-      <div className="mkt-frame mkt-frame-hero">
-        <aside className="mkt-frame-side">
-          <div className="mkt-frame-brand">
-            <strong>iCanOva</strong>
-            <span>Monitoring</span>
-          </div>
-          <div className="mkt-frame-nav">
-            <span className="on">Dashboard</span>
-            <span>Live readings</span>
-            <span>Gateways</span>
-            <span>Alarms</span>
-            <span>Reports</span>
-          </div>
-        </aside>
-        <div className="mkt-frame-main">
-          <header className="mkt-frame-top">
-            <span>Operations overview</span>
-            <span className="mkt-pill">Demo composition</span>
+    <div className="mkt-workspace" aria-hidden="true">
+      <div className="mkt-workspace-board">
+        <article className="mkt-workspace-col">
+          <header>
+            Active <strong>2</strong>
           </header>
-          <div className="mkt-frame-metrics">
-            <div>
-              <span>Cloud</span>
-              <strong>Online</strong>
-            </div>
-            <div>
-              <span>Modbus</span>
-              <strong>OK</strong>
-            </div>
-            <div>
-              <span>Freshness</span>
-              <strong>Fresh</strong>
-            </div>
-            <div>
-              <span>Attention</span>
-              <strong>2 open</strong>
+          <div className="mkt-workspace-item">
+            <span>Link degraded</span>
+            <span>Transport</span>
+          </div>
+          <div className="mkt-workspace-item">
+            <span>Oil pressure low</span>
+            <span>Controller</span>
+          </div>
+        </article>
+        <article className="mkt-workspace-col">
+          <header>
+            Acknowledged <strong>1</strong>
+          </header>
+          <div className="mkt-workspace-item">
+            <span>Batch CRC fail</span>
+            <span>Still open</span>
+          </div>
+        </article>
+        <article className="mkt-workspace-col">
+          <header>
+            Cleared <strong>1</strong>
+          </header>
+          <div className="mkt-workspace-col-empty">
+            <div className="mkt-workspace-item">
+              <span>High coolant</span>
+              <span>Condition ended</span>
             </div>
           </div>
-          <div className="mkt-frame-chart">
-            <svg viewBox="0 0 320 120" preserveAspectRatio="none">
-              <path className="mkt-chart-grid" d="M0 30 H320 M0 60 H320 M0 90 H320" />
-              <path
-                className="mkt-chart-line"
-                d="M0 78 C40 70, 60 88, 90 62 C120 36, 150 48, 180 40 C210 32, 240 58, 270 46 C290 40, 310 28, 320 34"
-              />
-            </svg>
-            <span>Illustrative trend — not live telemetry</span>
-          </div>
-        </div>
+        </article>
+      </div>
+      <div className="mkt-workspace-meta">
+        <span className="mkt-workspace-chip">In-app</span>
+        <span className="mkt-workspace-chip">Email</span>
+        <span className="mkt-workspace-chip">SMS</span>
+        <span className="mkt-workspace-chip">Browser push</span>
+        <span className="mkt-workspace-chip">Roles are permission-scoped</span>
       </div>
     </div>
   );
@@ -148,15 +111,13 @@ export function PlatformPage() {
   return (
     <MarketingLayout reveal>
       <main className="mkt-main">
-        <section className="mkt-hero mkt-surface mkt-seam-scoop" aria-labelledby="platform-hero-title">
+        <section className="mkt-hero" aria-labelledby="platform-hero-title">
           <div className="mkt-hero-copy mkt-inner" data-mkt-reveal data-mkt-from="left">
-            <p className="mkt-eyebrow">Software</p>
-            <h1 id="platform-hero-title">
-              Monitoring that keeps industrial signals honest.
-            </h1>
+            <p className="mkt-eyebrow">Operator application</p>
+            <h1 id="platform-hero-title">The application operators actually work in.</h1>
             <p className="mkt-lede">
-              One authenticated application for gateway contact, equipment measurements, alarms and
-              bounded reporting — designed so operators can trust what they see.
+              iCanOva Monitoring is a signed-in application — roles, alarm lifecycle and
+              notification channels — not a restatement of the homepage pitch.
             </p>
             <div className="mkt-cta-row">
               <Link className="mkt-btn mkt-btn-primary mkt-btn-lg" to={exploreTo}>
@@ -168,72 +129,28 @@ export function PlatformPage() {
             </div>
           </div>
           <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
-            <PlatformHeroFrame />
+            <PlatformWorkspace />
           </div>
         </section>
 
-        <section className="mkt-section mkt-surface mkt-seam-rise mkt-seam-wave">
-          <div className="mkt-inner mkt-split">
-            <div data-mkt-reveal data-mkt-from="left">
-              <p className="mkt-eyebrow">Access</p>
-              <h2>The Shell requires Convex Auth.</h2>
-            </div>
-            <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
-              <p className="mkt-copy">
-                Dashboard, live readings, gateways, alarms and admin routes live behind sign-in.
-                Unsigned visitors are redirected to login. Soft-AP Modbus settings stay on the device;
-                the cloud holds registration, telemetry and organization data.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="mkt-section mkt-band mkt-surface mkt-seam-arch">
+        <section className="mkt-section mkt-mist mkt-curve-shell">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="up">
-              <p className="mkt-eyebrow">Capabilities</p>
-              <h2>What the platform actually does.</h2>
+              <p className="mkt-eyebrow">Application map</p>
+              <h2>Every surface is a signed-in workspace.</h2>
               <p className="mkt-copy mkt-copy-narrow">
-                Every item maps to a real application route — not a marketing checklist of aspirational
-                modules.
+                Visitors sign in before the dashboard opens. The items below are the product — not a
+                brochure of modules we hope to build.
               </p>
             </div>
-            <ul className="mkt-cap-list">
+            <div className="mkt-matrix">
               {AREAS.map((item, index) => (
-                <li
-                  key={item.to}
-                  data-mkt-reveal
-                  data-mkt-from={index % 2 === 0 ? "left" : "right"}
-                  data-mkt-delay={String((index % 3) + 1)}
-                >
-                  <div>
-                    <h3>{item.title}</h3>
-                    <p>{item.body}</p>
-                  </div>
-                  <CapLink
-                    to={item.to}
-                    label={item.label}
-                    isAuthenticated={isAuthenticated}
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <section className="mkt-section mkt-dark mkt-surface mkt-seam-scoop">
-          <div className="mkt-inner">
-            <div data-mkt-reveal data-mkt-from="fade">
-              <p className="mkt-eyebrow">Honesty signals</p>
-              <h2>Three states operators must not conflate.</h2>
-            </div>
-            <div className="mkt-truths">
-              {SIGNALS.map((item, index) => (
                 <article
                   key={item.title}
+                  className="mkt-matrix-row"
                   data-mkt-reveal
-                  data-mkt-from={index === 1 ? "up" : index === 0 ? "left" : "right"}
-                  data-mkt-delay={String(index + 1)}
+                  data-mkt-from="up"
+                  data-mkt-delay={String((index % 3) + 1)}
                 >
                   <h3>{item.title}</h3>
                   <p>{item.body}</p>
@@ -243,27 +160,137 @@ export function PlatformPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-surface mkt-seam-rise mkt-seam-wave">
+        <section className="mkt-section mkt-blend mkt-curve-swell">
           <div className="mkt-inner mkt-split">
             <div data-mkt-reveal data-mkt-from="left">
-              <p className="mkt-eyebrow">Notifications</p>
-              <h2>Channels stay independent.</h2>
+              <p className="mkt-eyebrow">Access model</p>
+              <h2>Organization isolation with named permissions.</h2>
             </div>
             <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
               <p className="mkt-copy">
-                In-app notifications always. Email (Resend), SMS (Arkesel) and optional VAPID browser
-                push when configured — each channel fails or succeeds on its own. Alarm lifecycle in
-                the product is not rewritten by a delivery attempt.
+                A signed-in account is required. Data is scoped to the organization. Roles are not a
+                fixed “admin / viewer” costume — each organization assigns permissions such as
+                viewing measurements, acknowledging alarms, managing devices and exporting reports.
+              </p>
+            </div>
+          </div>
+          <div className="mkt-inner">
+            <ul className="mkt-cap-list">
+              {PERMISSIONS.map((item, index) => (
+                <li
+                  key={item.name}
+                  data-mkt-reveal
+                  data-mkt-from={index % 2 === 0 ? "left" : "right"}
+                  data-mkt-delay={String((index % 3) + 1)}
+                >
+                  <div>
+                    <h3>{item.name}</h3>
+                    <p>{item.meaning}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section className="mkt-section mkt-mist mkt-curve-arch">
+          <div className="mkt-inner mkt-split">
+            <div data-mkt-reveal data-mkt-from="left">
+              <p className="mkt-eyebrow">Boundary</p>
+              <h2>Cloud registration is not Soft-AP control.</h2>
+            </div>
+            <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
+              <p className="mkt-copy">
+                The cloud stores organization membership, gateway registration, telemetry samples,
+                alarms and audit activity. Baud, parity, GenComm writes and Wi-Fi Soft-AP settings
+                stay on the Edge Gateway. The dashboard does not push local Modbus configuration.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mkt-section mkt-dark mkt-curve-soft">
+          <div className="mkt-inner">
+            <div data-mkt-reveal data-mkt-from="fade">
+              <p className="mkt-eyebrow">How signals appear</p>
+              <h2>Operators read three independent columns.</h2>
+            </div>
+            <div className="mkt-truths">
+              <article data-mkt-reveal data-mkt-from="left">
+                <h3>Cloud contact</h3>
+                <p>
+                  Last successful ingest from the gateway. Online here does not paint the serial
+                  path green.
+                </p>
+              </article>
+              <article data-mkt-reveal data-mkt-from="up" data-mkt-delay="1">
+                <h3>Modbus health</h3>
+                <p>
+                  Whether polls to the controller are succeeding. A healthy poll can still be too
+                  old to act on.
+                </p>
+              </article>
+              <article data-mkt-reveal data-mkt-from="right" data-mkt-delay="2">
+                <h3>Freshness</h3>
+                <p>
+                  Age of the latest stored sample. Stale is labeled. Missing is blank — never a
+                  calming zero.
+                </p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section className="mkt-section mkt-blend mkt-curve-scoop">
+          <div className="mkt-inner">
+            <div data-mkt-reveal data-mkt-from="up">
+              <p className="mkt-eyebrow">Notifications</p>
+              <h2>Channels fail on their own.</h2>
+              <p className="mkt-copy mkt-copy-narrow">
+                A delivery attempt does not acknowledge or clear an alarm. Each channel is configured
+                per organization and reported independently.
+              </p>
+            </div>
+            <ul className="mkt-cap-list">
+              {CHANNELS.map((item, index) => (
+                <li
+                  key={item.name}
+                  data-mkt-reveal
+                  data-mkt-from={index % 2 === 0 ? "left" : "right"}
+                  data-mkt-delay={String((index % 3) + 1)}
+                >
+                  <div>
+                    <h3>{item.name}</h3>
+                    <p>{item.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section className="mkt-section mkt-mist">
+          <div className="mkt-inner mkt-split">
+            <div data-mkt-reveal data-mkt-from="left">
+              <p className="mkt-eyebrow">Retention</p>
+              <h2>Export what is stored — then it ages out.</h2>
+            </div>
+            <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
+              <p className="mkt-copy">
+                Telemetry history is bounded (about seven days in the current product). Reports pull
+                from stored records, not invented availability percentages. If a deployment needs a
+                longer retain window, that is a commercial conversation — not a silent change to
+                what the UI pretends to hold.
               </p>
             </div>
           </div>
         </section>
 
         <PageClose
-          title="Bring industrial operations into focus."
-          body="Centralize gateway contact, equipment measurements and alarm response in one coherent monitoring experience."
-          secondaryTo="/product"
-          secondaryLabel="Edge Gateway"
+          title="Open the application, not another brochure."
+          body="Sign in for dashboard, live readings, gateways and alarm lifecycle — or talk to us about a deployment."
+          secondaryTo="/contact"
+          secondaryLabel="Contact"
         />
       </main>
     </MarketingLayout>

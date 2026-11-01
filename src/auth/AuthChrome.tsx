@@ -23,7 +23,7 @@ export function AuthChrome({ children, labelledBy }: AuthChromeProps) {
           {children}
         </section>
         <footer className="auth-form-legal">
-          <span>© iCanOva · ASIEDU DEVELOPMENT HUB</span>
+          <span>© 2026 iCanOva · Established 2024</span>
         </footer>
       </div>
       <aside className="auth-brand-pane" aria-hidden="true">

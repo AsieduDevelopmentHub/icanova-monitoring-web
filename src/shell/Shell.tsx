@@ -235,7 +235,7 @@ export function Shell() {
           <span className="brand-name">Monitoring</span>
         </NavLink>
         <NavList />
-        <p className="sidebar-foot">ADH</p>
+        <p className="sidebar-foot">Est. 2024</p>
       </aside>
       <div className="shell-main">
         <header className="topbar">
