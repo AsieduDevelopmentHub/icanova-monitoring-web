@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { Link } from "react-router";
 import { useConvexAuth } from "convex/react";
+import { BrandWordmark } from "./BrandLogo";
 import { MarketingLayout } from "./MarketingLayout";
 import { HonestySignalsDiagram, SurfacesDiagram } from "./diagrams/SystemDiagrams";
 import { HeroProductFrame, ShowcaseFrames } from "./ShowcaseFrames";
@@ -249,7 +250,10 @@ export function Landing() {
           <div className="mkt-inner mkt-hardware-layout">
             <div className="mkt-hardware-copy" data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Product</p>
-              <h2 id="mkt-product-title">iCaNova Edge Gateway</h2>
+              <h2 id="mkt-product-title" className="mkt-heading-brand">
+                <BrandWordmark />
+                <span className="mkt-heading-brand-rest">Edge Gateway</span>
+              </h2>
               <p className="mkt-copy">
                 Industrial enclosure for Modbus RTU edge connectivity — power, transmit and receive
                 status at a glance. Concept casing for field mounting beside generator controllers.

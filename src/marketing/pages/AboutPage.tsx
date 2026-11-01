@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router";
-import { BrandLogo } from "../BrandLogo";
+import { BrandLogo, BrandWordmark } from "../BrandLogo";
 import { MarketingLayout } from "../MarketingLayout";
 import { PageClose } from "./PageClose";
 import { KnownUnknownDiagram } from "../diagrams/SystemDiagrams";
@@ -22,13 +22,13 @@ const PILLARS = [
 
 const LINES = [
   {
-    title: "iCaNova Monitoring",
+    rest: "Monitoring",
     body: "The cloud application: sites, gateways, generators, live readings, alarms, events and bounded reports.",
     to: "/platform",
     label: "Platform",
   },
   {
-    title: "iCaNova Edge Gateway",
+    rest: "Edge Gateway",
     body: "Hardware that polls controllers over RS485 and uplinks telemetry over HTTPS ingest.",
     to: "/product",
     label: "Hardware",
@@ -107,18 +107,25 @@ export function AboutPage() {
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="up">
               <p className="mkt-eyebrow">Product line</p>
-              <h2>What we ship under iCaNova.</h2>
+              <h2 className="mkt-heading-brand">
+                <span className="mkt-heading-brand-rest">What we ship under</span>
+                <BrandWordmark />
+                <span className="mkt-heading-brand-rest">.</span>
+              </h2>
             </div>
             <ul className="mkt-cap-list">
               {LINES.map((item, index) => (
                 <li
-                  key={item.title}
+                  key={item.rest}
                   data-mkt-reveal
                   data-mkt-from={index % 2 === 0 ? "left" : "right"}
                   data-mkt-delay={String(index + 1)}
                 >
                   <div>
-                    <h3>{item.title}</h3>
+                    <h3 className="mkt-heading-brand">
+                      <BrandWordmark />
+                      <span className="mkt-heading-brand-rest">{item.rest}</span>
+                    </h3>
                     <p>{item.body}</p>
                   </div>
                   <Link className="mkt-text-link" to={item.to}>

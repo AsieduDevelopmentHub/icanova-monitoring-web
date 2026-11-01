@@ -298,6 +298,20 @@ a.brand-lockup:hover .brand-mark {
   line-height: 1.05;
 }
 
+.auth-callback-wordmark.mkt-inline-wordmark {
+  display: block;
+  width: auto;
+  height: 1.35rem;
+  margin: 0 0 var(--space-2);
+}
+
+@supports (height: 1cap) {
+  .auth-callback-wordmark.mkt-inline-wordmark {
+    height: 1.1cap;
+    font-size: 1.35rem;
+  }
+}
+
 .brand-name {
   color: var(--muted-nav);
   font-size: 0.68rem;

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
+import { BrandWordmark } from "../../../marketing/BrandLogo";
 import { getBearerToken } from "../../../platform/bearer";
 import { completeLoginFromCallback, readOidcConfig } from "./oidc";
 
@@ -53,7 +54,7 @@ export function AuthCallback() {
     <div className="auth-screen">
       <section className="auth-panel" aria-labelledby="auth-callback-title">
         <header className="page-head">
-          <p className="brand-mark">iCaNova</p>
+          <BrandWordmark className="auth-callback-wordmark" />
           <h1 id="auth-callback-title">Auth0 callback</h1>
           <p role="status">{message}</p>
           {failed ? (

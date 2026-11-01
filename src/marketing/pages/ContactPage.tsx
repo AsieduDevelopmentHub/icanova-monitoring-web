@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
+import { BrandWordmark } from "../BrandLogo";
 import { MarketingLayout } from "../MarketingLayout";
 
 /** Temporary delivery target — UI shows branded labels only. */
@@ -54,7 +55,10 @@ export function ContactPage() {
         <section className="mkt-page-hero" aria-labelledby="contact-hero-title">
           <div className="mkt-inner mkt-page-hero-copy" data-mkt-reveal data-mkt-from="up">
             <p className="mkt-eyebrow">Contact</p>
-            <h1 id="contact-hero-title">Talk to iCaNova</h1>
+            <h1 id="contact-hero-title" className="mkt-heading-brand">
+              <span className="mkt-heading-brand-rest">Talk to</span>
+              <BrandWordmark />
+            </h1>
             <p className="mkt-lede">
               Reach the team about Edge Gateways, monitoring access or partnership. The form opens
               your email app with a prefilled draft — nothing is sent from this site.

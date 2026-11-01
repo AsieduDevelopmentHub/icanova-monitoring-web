@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router";
+import { BrandWordmark } from "../BrandLogo";
 import { MarketingLayout } from "../MarketingLayout";
 import { PageClose } from "./PageClose";
 import { EdgePathDiagram, EdgeRoleDiagram, SoftApDiagram } from "../diagrams/SystemDiagrams";

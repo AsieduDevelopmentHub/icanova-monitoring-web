@@ -1801,6 +1801,13 @@
   max-width: 16ch;
 }
 
+.mkt-page-hero-copy h1.mkt-heading-brand,
+.mkt-page-hero-brand h1.mkt-heading-brand,
+.mkt h2.mkt-heading-brand,
+.mkt h3.mkt-heading-brand {
+  max-width: min(100%, 28rem);
+}
+
 .mkt-brand-hero-mark {
   margin: 0 0 var(--space-3);
   font-family: var(--font-display);
@@ -1835,34 +1842,68 @@
 
 .mkt-brand-hero-wordmark {
   display: block;
-  width: min(100%, 22rem);
-  height: auto;
+  /* Track page title size so mobile/desktop stay proportional */
+  width: auto;
+  height: calc(var(--mkt-display) * 0.78);
+  max-width: min(100%, 20rem);
+  object-fit: contain;
+  object-position: left center;
   margin: 0 0 var(--space-4);
 }
 
 .mkt-inline-wordmark {
   display: inline-block;
-  height: 0.92em;
   width: auto;
-  vertical-align: -0.12em;
+  /* Fallback ≈ capital height of the parent type */
+  height: 0.72em;
+  vertical-align: -0.06em;
 }
 
 .mkt-heading-brand {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.28em 0.35em;
+  align-items: baseline;
+  column-gap: 0.32em;
+  row-gap: 0.1em;
   max-width: none;
+  line-height: 1.12;
 }
 
 .mkt-heading-brand .mkt-inline-wordmark {
-  height: 0.88em;
-  vertical-align: middle;
+  flex: none;
+  align-self: center;
+  /* Match adjacent title capitals; slight optical bump for logo strokes */
+  height: 0.74em;
+}
+
+.mkt h1.mkt-heading-brand .mkt-inline-wordmark {
+  height: 0.7em;
+}
+
+.mkt h2.mkt-heading-brand .mkt-inline-wordmark {
+  height: 0.74em;
+}
+
+.mkt h3.mkt-heading-brand .mkt-inline-wordmark {
+  height: 0.8em;
+}
+
+@supports (height: 1cap) {
+  .mkt-inline-wordmark,
+  .mkt-heading-brand .mkt-inline-wordmark,
+  .mkt h1.mkt-heading-brand .mkt-inline-wordmark,
+  .mkt h2.mkt-heading-brand .mkt-inline-wordmark,
+  .mkt h3.mkt-heading-brand .mkt-inline-wordmark {
+    height: 1.06cap;
+  }
 }
 
 .mkt-heading-brand-rest {
   font: inherit;
+  font-size: 1em;
+  font-weight: inherit;
   letter-spacing: inherit;
+  line-height: inherit;
   color: inherit;
 }
 
@@ -2471,6 +2512,11 @@
 }
 
 @media (max-width: 719px) {
+  .mkt-brand-hero-wordmark {
+    height: calc(var(--mkt-display) * 0.7);
+    max-width: min(100%, 14.5rem);
+  }
+
   .mkt-hero::before,
   .mkt-page-hero::before {
     top: 4.75rem;
