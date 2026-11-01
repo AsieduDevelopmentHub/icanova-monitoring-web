@@ -4,6 +4,8 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { FilterBar, FilterSelect } from "../ui/FilterBar";
+import { PageSkeleton } from "../ui/Skeleton";
+import { SessionPulse } from "../ui/SessionPulse";
 import { sessionView } from "./session";
 import { rejectedSessionNotice, unsignedNotice } from "./sessionGates";
 import { FleetBoundary } from "./boundary";
@@ -21,7 +23,7 @@ export function LiveGate({ children }: { children: (org: OrgRow) => ReactNode })
     );
   }
   if (isLoading) {
-    return <p className="empty">Checking session…</p>;
+    return <SessionPulse compact label="Checking session" />;
   }
   if (!isAuthenticated) {
     const notice = unsignedNotice("No organization query is running.");
@@ -66,7 +68,7 @@ function OrgBody({ children }: { children: (org: OrgRow) => ReactNode }) {
 
   const gate = sessionView(true, me === undefined ? undefined : me);
   if (gate === "loading" || orgs === undefined || (gate === "rejected" && !ensureError)) {
-    return <p className="empty">Loading organizations.</p>;
+    return <PageSkeleton rows={4} label="Loading organizations" />;
   }
   if (gate === "rejected") {
     const notice = rejectedSessionNotice();
@@ -100,21 +102,29 @@ function OrgBody({ children }: { children: (org: OrgRow) => ReactNode }) {
   );
 }
 
+const ALL_SITES = "__all__";
+
 export function SiteSelect({
   organizationId,
+  allowAll = false,
   children,
 }: {
   organizationId: string;
-  children: (siteId: Id<"sites">, siteName: string, moreSites: boolean) => ReactNode;
+  allowAll?: boolean;
+  children: (
+    siteId: Id<"sites"> | null,
+    siteName: string,
+    moreSites: boolean,
+  ) => ReactNode;
 }) {
   const [cursor, setCursor] = useState<string | null>(null);
-  const [picked, setPicked] = useState("");
+  const [picked, setPicked] = useState(allowAll ? ALL_SITES : "");
   const sites = useQuery(api.sites.list, {
     organizationId: id<"organizations">(organizationId),
     paginationOpts: { numItems: 50, cursor },
   });
   if (sites === undefined) {
-    return <p className="empty">Loading sites.</p>;
+    return <PageSkeleton rows={3} label="Loading sites" />;
   }
   const page = Array.isArray(sites.page) ? sites.page : [];
   if (page.length === 0 && cursor === null) {
@@ -125,15 +135,20 @@ export function SiteSelect({
       </p>
     );
   }
-  const selected = page.find((site) => site._id === picked) ?? page[0];
+  const allSelected = allowAll && (picked === ALL_SITES || picked === "");
+  const selected = allSelected ? null : page.find((site) => site._id === picked) ?? page[0];
+  const options = [
+    ...(allowAll ? [{ value: ALL_SITES, label: "All Sites" }] : []),
+    ...page.map((site) => ({ value: site._id, label: site.name })),
+  ];
   return (
     <div className="stack">
       <FilterBar label="Site">
         <FilterSelect
           label="Site"
-          value={selected?._id ?? ""}
+          value={allSelected ? ALL_SITES : (selected?._id ?? "")}
           onChange={setPicked}
-          options={page.map((site) => ({ value: site._id, label: site.name }))}
+          options={options}
         />
       </FilterBar>
       {sites.isDone === false ? (
@@ -146,7 +161,11 @@ export function SiteSelect({
           ) : null}
         </p>
       ) : null}
-      {selected ? children(id<"sites">(selected._id), selected.name, sites.isDone === false) : null}
+      {allSelected
+        ? children(null, "All Sites", sites.isDone === false)
+        : selected
+          ? children(id<"sites">(selected._id), selected.name, sites.isDone === false)
+          : null}
     </div>
   );
 }

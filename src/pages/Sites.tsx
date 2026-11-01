@@ -17,6 +17,7 @@ import {
 } from "../telemetry/deviceHealthView";
 import { DataTable } from "../ui/DataTable";
 import { StatusMark } from "../ui/StatusMark";
+import { PageSkeleton, Skeleton } from "../ui/Skeleton";
 
 type SiteRow = { _id: string; name: string };
 
@@ -48,7 +49,7 @@ function SiteList({
   });
   const canManage = permissions.includes("manage.sites");
   if (sites === undefined) {
-    return <p className="empty">Loading sites.</p>;
+    return <PageSkeleton rows={5} label="Loading sites" />;
   }
   const page = (Array.isArray(sites.page) ? sites.page : []) as SiteRow[];
   const selected = page.find((site) => site._id === picked) ?? page[0];
@@ -191,7 +192,7 @@ function SiteDetail({
   const canManage = permissions.includes("manage.sites");
 
   if (generators === undefined || current === undefined || summary === undefined || gateways === undefined) {
-    return <p className="empty">Loading {siteName}.</p>;
+    return <Skeleton lines={5} />;
   }
   const registered = Array.isArray(generators.page) ? generators.page : [];
   const readings = Array.isArray(current.rows) ? current.rows : [];

@@ -42,9 +42,11 @@ export function Monitor() {
       <LiveGate>
         {(org) => (
           <SiteSelect organizationId={org.organizationId}>
-            {(siteId, siteName) => (
-              <SiteReadings organizationId={org.organizationId} siteId={siteId} siteName={siteName} />
-            )}
+            {(siteId, siteName) =>
+              siteId ? (
+                <SiteReadings organizationId={org.organizationId} siteId={siteId} siteName={siteName} />
+              ) : null
+            }
           </SiteSelect>
         )}
       </LiveGate>

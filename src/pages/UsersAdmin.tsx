@@ -5,7 +5,7 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { OrgGate } from "../admin/OrgGate";
 import { accessMessage } from "../fleet/access";
 import { Panel } from "../ui/Panel";
-import { Skeleton } from "../ui/Skeleton";
+import { PageSkeleton } from "../ui/Skeleton";
 
 export function UsersAdmin() {
   return (
@@ -24,7 +24,7 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   if (roster === undefined || roles === undefined) {
-    return <Skeleton lines={5} />;
+    return <PageSkeleton rows={5} label="Loading users" />;
   }
   const selectedUser = roster.some((row) => row.userId === userId) ? userId : (roster[0]?.userId ?? "");
   const selectedRole = roles.some((role) => role.roleId === roleId) ? roleId : (roles[0]?.roleId ?? "");

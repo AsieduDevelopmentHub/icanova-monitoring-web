@@ -25,6 +25,7 @@ import { DataTable } from "../ui/DataTable";
 import { FilterBar, FilterSearch, FilterSelect } from "../ui/FilterBar";
 import { Metric } from "../ui/Metric";
 import { StatusMark } from "../ui/StatusMark";
+import { PageSkeleton } from "../ui/Skeleton";
 
 const demoRows = demoAlarms(demoSamples);
 
@@ -343,7 +344,7 @@ function AlarmTable({
     paginationOpts: { numItems: 50, cursor: narrowed ? null : cursor },
   });
   if (data === undefined) {
-    return <p className="empty">Loading alarms.</p>;
+    return <PageSkeleton rows={6} label="Loading alarms" />;
   }
   const records = filterAlarmCenter((data.rows as StoredAlarmRow[]).map(toAlarmRecord), filter);
   const copy = alarmListCopy({

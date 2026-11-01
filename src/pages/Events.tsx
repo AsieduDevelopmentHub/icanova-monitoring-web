@@ -9,6 +9,7 @@ import { FleetBoundary } from "../fleet/boundary";
 import { auditActor, auditTime } from "../telemetry/fleetView";
 import { DataTable } from "../ui/DataTable";
 import { Tabs } from "../ui/Tabs";
+import { PageSkeleton } from "../ui/Skeleton";
 
 type AuditRow = {
   _id: string;
@@ -40,11 +41,13 @@ export function Events() {
         {(org) =>
           mode === "health" ? (
             <SiteSelect organizationId={org.organizationId}>
-              {(siteId, siteName) => (
-                <FleetBoundary key={siteId}>
-                  <HealthTimeline organizationId={org.organizationId} siteId={siteId} siteName={siteName} />
-                </FleetBoundary>
-              )}
+              {(siteId, siteName) =>
+                siteId ? (
+                  <FleetBoundary key={siteId}>
+                    <HealthTimeline organizationId={org.organizationId} siteId={siteId} siteName={siteName} />
+                  </FleetBoundary>
+                ) : null
+              }
             </SiteSelect>
           ) : (
             <AuditList organizationId={org.organizationId} />
@@ -69,7 +72,7 @@ function HealthTimeline({
     siteId,
   });
   if (data === undefined) {
-    return <p className="empty">Loading health timeline.</p>;
+    return <PageSkeleton rows={5} label="Loading health timeline" />;
   }
   return (
     <div className="stack">
@@ -131,7 +134,7 @@ function AuditList({ organizationId }: { organizationId: string }) {
     paginationOpts: { numItems: 50, cursor },
   });
   if (data === undefined) {
-    return <p className="empty">Loading audit events.</p>;
+    return <PageSkeleton rows={5} label="Loading audit events" />;
   }
   const page = (Array.isArray(data.page) ? data.page : []) as AuditRow[];
   return (

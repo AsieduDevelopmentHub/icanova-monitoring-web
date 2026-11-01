@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router";
 import { OtpInput } from "../ui/OtpInput";
 import { PasswordField } from "../ui/PasswordField";
+import { SessionPulse } from "../ui/SessionPulse";
 import { AuthChrome } from "./AuthChrome";
 import {
   PASSWORD_RULE_HINT,
@@ -47,7 +48,7 @@ export function AuthPasswordReset() {
   if (isLoading) {
     return (
       <AuthChrome>
-        <p role="status">Checking session…</p>
+        <SessionPulse compact label="Checking session" />
       </AuthChrome>
     );
   }

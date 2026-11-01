@@ -16,6 +16,8 @@ import {
 } from "../telemetry/deviceHealthView";
 import { DataTable } from "../ui/DataTable";
 import { FilterBar, FilterSearch, FilterSelect } from "../ui/FilterBar";
+import { PageSkeleton, Skeleton } from "../ui/Skeleton";
+import { SessionPulse } from "../ui/SessionPulse";
 import { StatusMark } from "../ui/StatusMark";
 
 export function Gateways() {
@@ -59,7 +61,7 @@ function DemoInventory() {
 function SignedInventory() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   if (isLoading) {
-    return <p className="empty">Checking session…</p>;
+    return <SessionPulse compact label="Checking session" />;
   }
   if (!isAuthenticated) {
     return (
@@ -81,7 +83,7 @@ function OrgInventory() {
   const [picked, setPicked] = useState("");
   const [params, setParams] = useSearchParams();
   if (orgs === undefined) {
-    return <p className="empty">Loading organizations.</p>;
+    return <PageSkeleton rows={4} label="Loading organizations" />;
   }
   if (!Array.isArray(orgs) || orgs.length === 0) {
     return <p className="empty">This account has no organization membership.</p>;
@@ -179,7 +181,7 @@ function OrgHealth({ organizationId }: { organizationId: string }) {
     organizationId: id<"organizations">(organizationId),
   });
   if (summary === undefined) {
-    return <p className="empty">Loading fleet health.</p>;
+    return <Skeleton lines={5} />;
   }
   if (!summary.ready) {
     return (
@@ -221,7 +223,7 @@ function RegisterGateway({
   const [ok, setOk] = useState<string | null>(null);
 
   if (sites === undefined) {
-    return <p className="empty">Loading sites for registration.</p>;
+    return <Skeleton lines={5} />;
   }
   const page = Array.isArray(sites.page) ? sites.page : [];
   const siteId = page.some((site) => site._id === siteFilter) ? siteFilter : (page[0]?._id ?? "");
@@ -335,7 +337,7 @@ function DeviceTable({
   }, [sites]);
 
   if (data === undefined) {
-    return <p className="empty">Loading devices.</p>;
+    return <Skeleton lines={5} />;
   }
   const now = Date.now();
   const rows = data.rows.filter((row) => {

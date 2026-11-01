@@ -9,6 +9,7 @@ import { demoAlarms } from "../telemetry/alarms";
 import { demoSamples } from "../telemetry/demoLog";
 import { DEMO_SOURCE } from "../telemetry/logModel";
 import { StatusMark } from "../ui/StatusMark";
+import { PageSkeleton } from "../ui/Skeleton";
 import {
   acknowledgementLabel,
   alarmTime,
@@ -87,7 +88,7 @@ function StoredAlarm({ alarmId }: { alarmId: string }) {
   if (data === undefined) {
     return (
       <section className="page">
-        <p className="empty">Loading the alarm.</p>
+        <PageSkeleton rows={6} label="Loading alarm" />
       </section>
     );
   }

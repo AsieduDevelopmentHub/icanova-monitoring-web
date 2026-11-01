@@ -17,7 +17,7 @@ import {
 import { Button } from "../ui/Button";
 import { DataTable } from "../ui/DataTable";
 import { Panel } from "../ui/Panel";
-import { Skeleton } from "../ui/Skeleton";
+import { PageSkeleton, Skeleton } from "../ui/Skeleton";
 import { StatusMark } from "../ui/StatusMark";
 import { DiagnosticPanel } from "./DiagnosticPanel";
 
@@ -84,7 +84,7 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
   if (detail === undefined) {
     return (
       <section className="page">
-        <Skeleton lines={8} />
+        <PageSkeleton rows={8} label="Loading gateway" />
       </section>
     );
   }
@@ -235,7 +235,7 @@ function HealthEvents({ deviceId }: { deviceId: string }) {
     paginationOpts: { numItems: 20, cursor: null },
   });
   if (page === undefined) {
-    return <p className="empty">Loading health history.</p>;
+    return <Skeleton lines={5} />;
   }
   return (
     <section className="ops-section" aria-labelledby="gw-activity-title">
@@ -283,7 +283,7 @@ function StoredFrames({ deviceId }: { deviceId: string }) {
     search: "",
   });
   if (data === undefined) {
-    return <p className="empty">Loading diagnostics.</p>;
+    return <Skeleton lines={5} />;
   }
   const rows = [...data.rows].reverse().map((row) => ({
     key: row._id,

@@ -5,6 +5,7 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { OrgGate } from "../admin/OrgGate";
 import { accessMessage } from "../fleet/access";
 import { DataTable } from "../ui/DataTable";
+import { PageSkeleton } from "../ui/Skeleton";
 
 export function Maintenance() {
   return (
@@ -26,7 +27,7 @@ function Records({ organizationId }: { organizationId: Id<"organizations"> }) {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   if (page === undefined || generators === undefined) {
-    return <p className="empty">Loading maintenance records.</p>;
+    return <PageSkeleton rows={5} label="Loading maintenance" />;
   }
   const selected = generators.some((row) => row.generatorId === generatorId)
     ? generatorId

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Metric } from "../ui/Metric";
+import { PageSkeleton, Skeleton } from "../ui/Skeleton";
 import { StatusMark } from "../ui/StatusMark";
 import {
   formatReading,
@@ -53,7 +54,7 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
   if (detail === undefined) {
     return (
       <section className="page">
-        <p className="empty">Loading the generator.</p>
+        <PageSkeleton rows={8} label="Loading generator" />
       </section>
     );
   }
@@ -172,7 +173,11 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
             {history.results.length === 0 ? (
               <tr>
                 <td colSpan={4}>
-                  {history.status === "LoadingFirstPage" ? "Loading history." : "No buckets stored."}
+                  {history.status === "LoadingFirstPage" ? (
+                    <Skeleton lines={3} />
+                  ) : (
+                    "No buckets stored."
+                  )}
                 </td>
               </tr>
             ) : (
@@ -242,7 +247,7 @@ function HistoryCharts({ generatorId }: { generatorId: string }) {
           ]}
         />
       </FilterBar>
-      {series === undefined ? <p className="empty">Loading history.</p> : null}
+      {series === undefined ? <Skeleton lines={4} /> : null}
       {series?.capped ? <p className="meta">Read limit reached.</p> : null}
       {series ? (
         <MetricStrip

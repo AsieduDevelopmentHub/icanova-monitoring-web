@@ -8,6 +8,8 @@ import {
   unsignedNotice,
 } from "../fleet/sessionGates";
 import { Metric } from "../ui/Metric";
+import { PageSkeleton } from "../ui/Skeleton";
+import { SessionPulse } from "../ui/SessionPulse";
 import { StatusMark } from "../ui/StatusMark";
 
 type Denied = { denied: true; required: string; note: string };
@@ -43,7 +45,7 @@ export function Ops() {
 function SignedOps() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   if (isLoading) {
-    return <p className="empty">Checking session…</p>;
+    return <SessionPulse compact label="Checking session" />;
   }
   if (!isAuthenticated) {
     const notice = unsignedNotice("No operational query is running.");
@@ -63,7 +65,7 @@ function SignedOps() {
 function OpsBoard() {
   const orgs = useQuery(api.organizations.mine, {});
   if (orgs === undefined) {
-    return <p className="empty">Loading organizations.</p>;
+    return <PageSkeleton rows={4} label="Loading organizations" />;
   }
   if (!Array.isArray(orgs) || orgs.length === 0) {
     return <p className="empty">This account has no organization membership.</p>;
@@ -100,7 +102,7 @@ function Overview({ organizationId, orgName }: { organizationId: string; orgName
     organizationId: id<"organizations">(organizationId),
   });
   if (data === undefined) {
-    return <p className="empty">Loading operational overview.</p>;
+    return <PageSkeleton rows={8} label="Loading operational overview" />;
   }
 
   return (

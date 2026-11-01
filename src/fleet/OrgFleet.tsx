@@ -5,6 +5,8 @@ import { Link } from "react-router";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { FilterBar, FilterSelect } from "../ui/FilterBar";
+import { PageSkeleton, Skeleton } from "../ui/Skeleton";
+import { SessionPulse } from "../ui/SessionPulse";
 import { StatusMark } from "../ui/StatusMark";
 import { formatReading } from "../telemetry/readings";
 import { storedFreshness } from "../telemetry/freshness";
@@ -20,7 +22,7 @@ const firstPage = { numItems: 50, cursor: null };
 export function OrgFleet() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   if (isLoading) {
-    return <p className="empty">Checking session…</p>;
+    return <SessionPulse compact label="Checking session" />;
   }
   if (!isAuthenticated) {
     return (
@@ -46,7 +48,7 @@ function SignedFleet() {
   const [formError, setFormError] = useState<string | null>(null);
 
   if (orgs === undefined) {
-    return <p className="empty">Loading organizations.</p>;
+    return <PageSkeleton rows={4} label="Loading organizations" />;
   }
   if (!Array.isArray(orgs)) {
     return <p className="empty">The organization list was not readable.</p>;
@@ -118,7 +120,7 @@ function SiteColumn({ organizationId }: { organizationId: Id<"organizations"> })
   const [formError, setFormError] = useState<string | null>(null);
 
   if (sites === undefined) {
-    return <p className="empty">Loading sites.</p>;
+    return <Skeleton lines={5} />;
   }
   const page = Array.isArray(sites.page) ? (sites.page as Named[]) : [];
   const siteId = page.some((site) => site._id === pickedSite) ? pickedSite : (page[0]?._id ?? "");
@@ -190,7 +192,7 @@ function Devices({
   const [formError, setFormError] = useState<string | null>(null);
 
   if (devices === undefined) {
-    return <p className="empty">Loading devices.</p>;
+    return <Skeleton lines={5} />;
   }
   const page = Array.isArray(devices.page) ? (devices.page as Named[]) : [];
   const selectedDevice = page.some((device) => device._id === deviceId) ? deviceId : (page[0]?._id ?? "");
@@ -287,7 +289,7 @@ function CurrentTable({
 }) {
   const data = useQuery(api.telemetry.currentForSite, { organizationId, siteId });
   if (data === undefined) {
-    return <p className="empty">Loading current readings.</p>;
+    return <Skeleton lines={5} />;
   }
   const rows = Array.isArray(data.rows) ? data.rows : [];
   return (

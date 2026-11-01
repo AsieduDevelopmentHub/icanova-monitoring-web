@@ -16,6 +16,7 @@ import { DataTable } from "../ui/DataTable";
 import { Metric } from "../ui/Metric";
 import { StatusMark } from "../ui/StatusMark";
 import { useState } from "react";
+import { Skeleton } from "../ui/Skeleton";
 
 export function SiteAlarmPanel({
   organizationId,
@@ -48,7 +49,7 @@ function SiteAlarmBody({
     siteId,
   });
   if (data === undefined) {
-    return <p className="empty">Loading alarms for this site.</p>;
+    return <Skeleton lines={5} />;
   }
   const summary = siteAlarmSummary(
     (data.rows as StoredAlarmRow[]).map(toAlarmRecord),
@@ -126,13 +127,13 @@ export function GeneratorAlarms({
   const acknowledge = useMutation(api.alarms.acknowledge);
   const [error, setError] = useState<string | null>(null);
   if (orgs === undefined) {
-    return <p className="empty">Loading alarms.</p>;
+    return <Skeleton lines={5} />;
   }
   if (!allowed) {
     return <p className="meta">Alarm records require view.alarms.</p>;
   }
   if (data === undefined) {
-    return <p className="empty">Loading alarms for this generator.</p>;
+    return <Skeleton lines={5} />;
   }
   const rows = (data.rows as StoredAlarmRow[]).map(toAlarmRecord);
   const open = rows.filter((row) => row.status === "active" || row.status === "acknowledged");

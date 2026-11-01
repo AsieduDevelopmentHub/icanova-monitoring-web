@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation } from "react-router";
 import { api } from "../../convex/_generated/api";
 import { PasswordField } from "../ui/PasswordField";
+import { SessionPulse } from "../ui/SessionPulse";
 import { AuthChrome } from "./AuthChrome";
 import {
   PASSWORD_RULE_HINT,
@@ -70,7 +71,7 @@ export function AuthLogin() {
   if (isLoading) {
     return (
       <AuthChrome>
-        <p role="status">Checking session…</p>
+        <SessionPulse compact label="Checking session" />
       </AuthChrome>
     );
   }

@@ -1,5 +1,6 @@
 import { useConvexAuth } from "convex/react";
 import { Navigate, Outlet, useLocation } from "react-router";
+import { SessionPulse } from "../ui/SessionPulse";
 
 /** Blocks Shell ops routes until Convex Auth has a session. Soft-AP routes stay outside this layout. */
 export function RequireAuth() {
@@ -24,10 +25,8 @@ export function RequireAuth() {
 
   if (isLoading) {
     return (
-      <div className="auth-shell">
-        <section className="auth-panel auth-card">
-          <p role="status">Checking session…</p>
-        </section>
+      <div className="auth-shell auth-shell-pending">
+        <SessionPulse label="Checking session" />
       </div>
     );
   }

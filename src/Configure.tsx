@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchCatalog } from "./api";
 import { formatWord, type GenCatalog, type GenReg } from "./gencomm";
+import { Skeleton } from "./ui/Skeleton";
 
 export function Configure() {
   const [catalog, setCatalog] = useState<GenCatalog | null>(null);
@@ -70,7 +71,7 @@ export function Configure() {
     return <p className="err">{error}</p>;
   }
   if (!catalog || !page) {
-    return <p className="empty">Loading GenComm pages…</p>;
+    return <Skeleton lines={5} />;
   }
 
   const writableCount = catalog.pages.reduce(

@@ -214,7 +214,111 @@ export const currentForSite = query({
       if (current && current.organizationId !== args.organizationId) {
         throw new Error("Forbidden");
       }
-      rows.push(rowFromCurrent(generator, current));
+      rows.push({ ...rowFromCurrent(generator, current), siteId: args.siteId, siteName: site.name });
+    }
+    return { rows, capped };
+  },
+});
+
+/**
+ * Org fleet rollup from siteSummaries — Command Center status strip / All Sites.
+ * No fake telemetry; empty tallies when summaries are missing.
+ */
+export const fleetSummary = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "view.telemetry");
+    const sites = await ctx.db
+      .query("sites")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .take(200);
+    const summaries = await ctx.db
+      .query("siteSummaries")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .take(200);
+    const bySite = new Map(summaries.map((row) => [row.siteId, row]));
+    let generators = 0;
+    let reporting = 0;
+    let linkOk = 0;
+    let linkFail = 0;
+    let linkDegraded = 0;
+    let gatewayOnline = 0;
+    let gatewayOffline = 0;
+    let telemetryStale = 0;
+    let overallUnhealthy = 0;
+    let overallDegraded = 0;
+    let readySites = 0;
+    let lastTelemetryAt: number | null = null;
+    for (const site of sites) {
+      const summary = bySite.get(site._id);
+      if (!summary) continue;
+      readySites += 1;
+      generators += summary.generators ?? 0;
+      reporting += summary.reporting ?? 0;
+      linkOk += summary.linkOk ?? 0;
+      linkFail += summary.linkFail ?? 0;
+      linkDegraded += summary.linkDegraded ?? 0;
+      gatewayOnline += summary.gatewayOnline ?? 0;
+      gatewayOffline += summary.gatewayOffline ?? 0;
+      telemetryStale += summary.telemetryStale ?? 0;
+      overallUnhealthy += summary.overallUnhealthy ?? 0;
+      overallDegraded += summary.overallDegraded ?? 0;
+      if (
+        summary.lastTelemetryAt != null &&
+        (lastTelemetryAt === null || summary.lastTelemetryAt > lastTelemetryAt)
+      ) {
+        lastTelemetryAt = summary.lastTelemetryAt;
+      }
+    }
+    return {
+      ready: readySites > 0,
+      sites: sites.length,
+      readySites,
+      generators,
+      reporting,
+      linkOk,
+      linkFail,
+      linkDegraded,
+      gatewayOnline,
+      gatewayOffline,
+      telemetryStale,
+      overallUnhealthy,
+      overallDegraded,
+      lastTelemetryAt,
+    };
+  },
+});
+
+/** Latest rows across the organization (bounded). Includes site labels for All Sites. */
+export const currentForOrg = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "view.telemetry");
+    const sites = await ctx.db
+      .query("sites")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .take(80);
+    const siteName = new Map(sites.map((s) => [s._id, s.name]));
+    const generators = await ctx.db
+      .query("generators")
+      .withIndex("by_org_site", (q) => q.eq("organizationId", args.organizationId))
+      .take(MAX_PAGE + 1);
+    const capped = generators.length > MAX_PAGE;
+    const page = generators.slice(0, MAX_PAGE);
+    const rows = [];
+    for (const generator of page) {
+      const current = await ctx.db
+        .query("telemetryCurrent")
+        .withIndex("by_generator", (q) => q.eq("generatorId", generator._id))
+        .unique();
+      if (current && current.organizationId !== args.organizationId) {
+        throw new Error("Forbidden");
+      }
+      rows.push({
+        ...rowFromCurrent(generator, current),
+        siteId: generator.siteId,
+        siteName: siteName.get(generator.siteId) ?? "Site",
+      });
     }
     return { rows, capped };
   },

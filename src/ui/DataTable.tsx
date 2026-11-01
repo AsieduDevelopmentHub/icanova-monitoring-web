@@ -14,6 +14,7 @@ export function DataTable<T>({
   empty,
   caption,
   dense,
+  rowClassName,
 }: {
   columns: Column<T>[];
   rows: T[];
@@ -21,6 +22,7 @@ export function DataTable<T>({
   empty: string;
   caption?: string;
   dense?: boolean;
+  rowClassName?: (row: T) => string | undefined;
 }) {
   return (
     <div className="table-wrap">
@@ -44,7 +46,7 @@ export function DataTable<T>({
             </tr>
           ) : (
             rows.map((row) => (
-              <tr key={getRowKey(row)}>
+              <tr key={getRowKey(row)} className={rowClassName?.(row)}>
                 {columns.map((column) => (
                   <td
                     key={column.key}

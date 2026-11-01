@@ -13,11 +13,11 @@ import {
   permissionState,
 } from "../notify/webPush";
 import { DataTable } from "../ui/DataTable";
-import { EmptyState } from "../ui/EmptyState";
 import { FilterSelect } from "../ui/FilterBar";
 import { Panel } from "../ui/Panel";
 import { StatusMark } from "../ui/StatusMark";
 import { Tabs } from "../ui/Tabs";
+import { PageSkeleton, Skeleton } from "../ui/Skeleton";
 
 const EVENTS = NOTIFY_EVENT_CATALOG.map((row) => row.event);
 const CHANNELS = ["inapp", "email", "sms", "push"] as const;
@@ -91,7 +91,7 @@ function Inbox({ organizationId }: { organizationId: Id<"organizations"> }) {
   const [error, setError] = useState<string | null>(null);
 
   if (inbox === undefined || sites === undefined || unread === undefined) {
-    return <EmptyState title="Loading inbox" body="Fetching notifications for this organization." />;
+    return <PageSkeleton rows={6} label="Loading inbox" />;
   }
 
   const rows =
@@ -256,7 +256,7 @@ function Settings({ organizationId }: { organizationId: Id<"organizations"> }) {
   const [minSeverity, setMinSeverity] = useState<"critical" | "warning" | "informational">("warning");
 
   if (policies === undefined || preference === undefined) {
-    return <p className="empty">Loading notification settings.</p>;
+    return <Skeleton lines={5} />;
   }
 
   async function run(action: () => Promise<unknown>) {
@@ -384,7 +384,7 @@ function BrowserPushPanel({ organizationId }: { organizationId: Id<"organization
   const permission = permissionState();
 
   if (vapid === undefined || status === undefined || preference === undefined) {
-    return <p className="empty">Loading browser push settings.</p>;
+    return <Skeleton lines={5} />;
   }
 
   async function enablePush() {
@@ -497,7 +497,7 @@ function Delivery({ organizationId }: { organizationId: Id<"organizations"> }) {
   const [error, setError] = useState<string | null>(null);
 
   if (deliveries === undefined) {
-    return <p className="empty">Loading delivery history.</p>;
+    return <Skeleton lines={5} />;
   }
 
   async function run(action: () => Promise<unknown>) {

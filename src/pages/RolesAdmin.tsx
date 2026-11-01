@@ -5,6 +5,7 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { PERMISSIONS } from "../../convex/permissions";
 import { accessMessage } from "../fleet/access";
 import { OrgGate } from "../admin/OrgGate";
+import { PageSkeleton } from "../ui/Skeleton";
 
 export function RolesAdmin() {
   return (
@@ -24,7 +25,7 @@ function RoleEditor({ organizationId }: { organizationId: Id<"organizations"> })
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   if (roles === undefined) {
-    return <p className="empty">Loading roles.</p>;
+    return <PageSkeleton rows={4} label="Loading roles" />;
   }
   const current = roles.find((role) => role.roleId === roleId);
 
