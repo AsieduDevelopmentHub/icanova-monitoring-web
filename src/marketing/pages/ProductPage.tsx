@@ -61,7 +61,10 @@ export function ProductPage() {
           <div className="mkt-inner mkt-page-hero-grid">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Hardware</p>
-              <h1 id="product-hero-title">iCaNova Edge Gateway</h1>
+              <h1 id="product-hero-title" className="mkt-heading-brand">
+                <BrandWordmark />
+                <span className="mkt-heading-brand-rest">Edge Gateway</span>
+              </h1>
               <p className="mkt-lede">
                 Industrial Modbus edge hardware that bridges generator controllers to iCaNova
                 Monitoring — RS485 on the plant floor, HTTPS to the cloud.

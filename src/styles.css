@@ -244,12 +244,45 @@ a {
 
 .brand-lockup {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
   padding: 0 var(--space-2) var(--space-4);
   border-bottom: 1px solid var(--line-nav);
   text-decoration: none;
   color: inherit;
+}
+
+.brand-plate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse 70% 90% at 12% 40%, color-mix(in srgb, var(--color-muted-copper) 24%, transparent), transparent 58%),
+    linear-gradient(145deg, #1a2430, var(--color-graphite));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-muted-copper) 32%, transparent);
+}
+
+.brand-logo-lockup {
+  width: 100%;
+  max-width: 11.5rem;
+  height: auto;
+  display: block;
+}
+
+.brand-logo {
+  width: 2.15rem;
+  height: auto;
+  display: block;
+  flex: none;
+}
+
+.brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 a.brand-lockup:hover .brand-mark {
@@ -2371,16 +2404,47 @@ html[data-theme="dark"] {
 }
 
 .auth-brand-lockup {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  line-height: 1.05;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .auth-brand-lockup-link {
   text-decoration: none;
   color: inherit;
   width: fit-content;
+}
+
+.auth-brand-plate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background:
+    radial-gradient(ellipse 70% 90% at 12% 40%, color-mix(in srgb, var(--color-muted-copper) 26%, transparent), transparent 58%),
+    linear-gradient(145deg, #1a2430, var(--color-graphite));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-muted-copper) 35%, transparent);
+}
+
+.auth-brand-logo-lockup {
+  width: clamp(9rem, 42vw, 12.5rem);
+  height: auto;
+  display: block;
+}
+
+.auth-brand-logo {
+  width: 2.35rem;
+  height: auto;
+  display: block;
+  flex: none;
+}
+
+.auth-brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
 }
 
 .auth-brand-lockup-link:hover .auth-brand-mark {

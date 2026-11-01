@@ -231,8 +231,14 @@ export function Shell() {
       </a>
       <aside className="sidebar" aria-label="Application">
         <NavLink to="/" className="brand-lockup">
-          <span className="brand-mark">iCaNova</span>
-          <span className="brand-name">Monitoring</span>
+          <span className="brand-plate">
+            <img
+              className="brand-logo-lockup"
+              src="/brand/logo-lockup-light.png"
+              alt="iCaNova"
+              decoding="async"
+            />
+          </span>
         </NavLink>
         <NavList />
         <p className="sidebar-foot">Est. 2026</p>

@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 import { useConvexAuth } from "convex/react";
+import { BrandLogo } from "./BrandLogo";
 import "./landing.css";
 
 type MarketingLayoutProps = {
@@ -72,8 +73,9 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
     <div className="mkt">
       <header className={scrolled ? "mkt-nav is-scrolled" : "mkt-nav"}>
         <Link to="/" className="mkt-brand" aria-label="iCaNova Monitoring home">
-          <span className="mkt-brand-mark">iCaNova</span>
-          <span className="mkt-brand-sub">Monitoring</span>
+          <span className="mkt-brand-plate">
+            <BrandLogo variant="lockup" className="mkt-brand-logo-lockup" alt="iCaNova" />
+          </span>
         </Link>
         <ul className="mkt-nav-pill">
           <li>
@@ -95,7 +97,10 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
           </li>
         </ul>
         <div className="mkt-nav-actions">
-          <Link className="mkt-btn mkt-btn-nav" to={isAuthenticated ? "/app" : "/auth/login"}>
+          <Link
+            className="mkt-btn mkt-btn-nav mkt-btn-nav-desktop"
+            to={isAuthenticated ? "/app" : "/auth/login"}
+          >
             {isAuthenticated ? "Dashboard" : "Sign in"}
           </Link>
           <button
@@ -164,7 +169,9 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
       <footer className="mkt-footer">
         <div className="mkt-inner mkt-footer-grid">
           <div>
-            <div className="mkt-footer-brand">iCaNova</div>
+            <div className="mkt-footer-brand">
+              <BrandLogo variant="lockup" className="mkt-footer-logo" alt="iCaNova" />
+            </div>
             <p className="mkt-footer-tag">Imagine. Connect. Innovate.</p>
             <p className="mkt-footer-tag">Intelligent technology for connected industries.</p>
           </div>
@@ -219,9 +226,9 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
             </div>
           </div>
         </div>
-        <p className="mkt-footer-mark" aria-hidden="true">
-          ICANOVA
-        </p>
+        <div className="mkt-footer-mark" aria-hidden="true">
+          <BrandLogo variant="wordmark" className="mkt-footer-mark-img" alt="" />
+        </div>
         <p className="mkt-footer-legal mkt-inner">
           © 2026 iCaNova. All rights reserved. · Established 2026
         </p>

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router";
+import { BrandLogo } from "../BrandLogo";
 import { MarketingLayout } from "../MarketingLayout";
 import { PageClose } from "./PageClose";
 import { KnownUnknownDiagram } from "../diagrams/SystemDiagrams";
@@ -45,9 +46,7 @@ export function AboutPage() {
         <section className="mkt-page-hero mkt-page-hero-brand" aria-labelledby="about-hero-title">
           <div className="mkt-inner" data-mkt-reveal data-mkt-from="up">
             <p className="mkt-eyebrow">Brand</p>
-            <p className="mkt-brand-hero-mark" aria-hidden="true">
-              iCaNova
-            </p>
+            <BrandLogo variant="wordmarkDark" className="mkt-brand-hero-wordmark" alt="iCaNova" />
             <h1 id="about-hero-title">Intelligent technology for connected industries.</h1>
             <p className="mkt-lede">
               iCaNova builds monitoring that operators can trust — equipment, Edge Gateways and

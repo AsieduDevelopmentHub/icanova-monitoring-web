@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
+import { BrandLogo } from "../marketing/BrandLogo";
 import { AuthTechDiagram } from "./AuthTechDiagram";
 
 type AuthChromeProps = {
@@ -44,8 +45,9 @@ export function AuthChrome({ children, labelledBy }: AuthChromeProps) {
 export function AuthFormBrand() {
   return (
     <Link to="/" className="auth-brand-lockup auth-brand-lockup-link" aria-label="iCaNova Monitoring home">
-      <span className="auth-brand-mark">iCaNova</span>
-      <span className="auth-brand-sub">Monitoring</span>
+      <span className="auth-brand-plate">
+        <BrandLogo variant="lockup" className="auth-brand-logo-lockup" alt="iCaNova" />
+      </span>
     </Link>
   );
 }

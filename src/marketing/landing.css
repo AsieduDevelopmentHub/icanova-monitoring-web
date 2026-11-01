@@ -40,12 +40,56 @@
 }
 
 .mkt-brand {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  border-radius: 999px;
+  text-decoration: none;
+}
+
+.mkt-brand-plate,
+.mkt a.mkt-btn-nav {
+  --mkt-nav-card-h: 3.05rem;
+  box-sizing: border-box;
+  height: var(--mkt-nav-card-h);
+  min-height: var(--mkt-nav-card-h);
+  border-radius: 999px;
+  box-shadow:
+    0 10px 22px color-mix(in srgb, var(--color-graphite) 16%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-muted-copper) 35%, transparent);
+}
+
+.mkt-brand-plate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.95rem;
+  background:
+    radial-gradient(ellipse 70% 90% at 12% 40%, color-mix(in srgb, var(--color-muted-copper) 28%, transparent), transparent 58%),
+    linear-gradient(145deg, #1a2430, var(--color-graphite));
+}
+
+.mkt-brand-logo-lockup {
+  width: auto;
+  height: calc(var(--mkt-nav-card-h) - 0.7rem);
+  max-width: min(13.25rem, 36vw);
+  object-fit: contain;
+  object-position: left center;
+  display: block;
+}
+
+.mkt-brand-logo {
+  width: clamp(2.15rem, 5.5vw, 2.55rem);
+  height: auto;
+  display: block;
+  flex: none;
+}
+
+.mkt-brand-copy {
   display: flex;
   flex-direction: column;
   gap: 0;
-  line-height: 1.05;
-  border-radius: 999px;
-  transition: background 0.22s ease, box-shadow 0.22s ease, padding 0.22s ease, border-color 0.22s ease;
+  min-width: 0;
 }
 
 .mkt-brand-mark {
@@ -168,9 +212,12 @@
 }
 
 .mkt a.mkt-btn-nav {
-  background: var(--color-graphite);
+  min-width: 7.5rem;
+  padding: 0 1.35rem;
+  background:
+    radial-gradient(ellipse 70% 90% at 12% 40%, color-mix(in srgb, var(--color-muted-copper) 22%, transparent), transparent 58%),
+    linear-gradient(145deg, #1a2430, var(--color-graphite));
   color: #fff;
-  box-shadow: 0 10px 22px color-mix(in srgb, var(--color-graphite) 18%, transparent);
 }
 
 .mkt a.mkt-btn-nav:hover {
@@ -512,9 +559,28 @@
     );
   background-repeat: no-repeat, repeat, repeat;
   background-size: cover, auto, auto;
-  mask-image: radial-gradient(circle at 68% 22%, #000 34%, transparent 76%);
-  -webkit-mask-image: radial-gradient(circle at 68% 22%, #000 34%, transparent 76%);
-  opacity: 1;
+  mask-image: radial-gradient(circle at 78% 18%, #000 28%, transparent 70%);
+  -webkit-mask-image: radial-gradient(circle at 78% 18%, #000 28%, transparent 70%);
+  opacity: 0.45;
+}
+
+/* Veil over circuit so hero/page copy stays readable. */
+.mkt-hero::after,
+.mkt-page-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      100deg,
+      color-mix(in srgb, var(--color-warm-white) 94%, transparent) 0%,
+      color-mix(in srgb, var(--color-warm-white) 86%, transparent) 34%,
+      color-mix(in srgb, var(--color-warm-white) 55%, transparent) 58%,
+      color-mix(in srgb, var(--color-warm-white) 18%, transparent) 76%,
+      transparent 88%
+    );
 }
 
 .mkt-hero > * {
@@ -576,22 +642,14 @@
 
 .mkt-frame-brand {
   display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  align-items: center;
   margin-bottom: var(--space-4);
 }
 
-.mkt-frame-brand strong {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  color: #fff;
-}
-
-.mkt-frame-brand span {
-  font-size: 0.62rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-muted-copper);
+.mkt-frame-brand-logo {
+  width: min(100%, 9.5rem);
+  height: auto;
+  display: block;
 }
 
 .mkt-frame-nav {
@@ -1620,11 +1678,15 @@
 }
 
 .mkt-footer-brand {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: #fff;
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
+}
+
+.mkt-footer-logo {
+  width: min(100%, 15.5rem);
+  height: auto;
+  display: block;
 }
 
 .mkt-footer-tag {
@@ -1660,16 +1722,38 @@
 }
 
 .mkt-footer-mark {
+  --mkt-well-pad-x: clamp(1rem, 4vw, 2.5rem);
+  --mkt-well-pad-y: clamp(1.1rem, 3.2vw, 2rem);
   width: min(100% - 2 * clamp(var(--space-4), 4vw, var(--space-6)), var(--mkt-max));
-  margin: clamp(2.5rem, 6vw, 4rem) auto 0;
-  font-family: var(--font-display);
-  font-size: clamp(3.5rem, 14vw, 8.5rem);
-  font-weight: 700;
-  letter-spacing: -0.05em;
-  line-height: 0.85;
-  color: transparent;
-  -webkit-text-stroke: 1px color-mix(in srgb, #fff 22%, transparent);
+  margin: clamp(2.25rem, 5vw, 3.5rem) auto 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--mkt-well-pad-y) var(--mkt-well-pad-x);
+  border-radius: clamp(1.25rem, 3vw, 2rem);
+  background:
+    radial-gradient(ellipse 70% 80% at 50% 42%, color-mix(in srgb, #000 55%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, #000 42%, var(--color-graphite)), color-mix(in srgb, #000 28%, var(--color-graphite)));
+  box-shadow:
+    inset 0 14px 28px color-mix(in srgb, #000 55%, transparent),
+    inset 0 2px 0 color-mix(in srgb, #000 70%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, #fff 7%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, #000 45%, transparent),
+    0 1px 0 color-mix(in srgb, #fff 5%, transparent);
   user-select: none;
+  pointer-events: none;
+}
+
+.mkt-footer-mark-img {
+  display: block;
+  width: min(96%, 54rem);
+  height: auto;
+  opacity: 0.7;
+  filter:
+    drop-shadow(0 1px 0 color-mix(in srgb, #000 55%, transparent))
+    drop-shadow(0 -1px 0 color-mix(in srgb, #fff 8%, transparent))
+    drop-shadow(0 10px 18px color-mix(in srgb, #000 35%, transparent))
+    drop-shadow(0 0 22px color-mix(in srgb, var(--color-muted-copper) 30%, transparent));
 }
 
 .mkt-footer-legal {
@@ -1725,6 +1809,61 @@
   letter-spacing: -0.045em;
   line-height: 0.95;
   color: var(--color-graphite);
+}
+
+.mkt-brand-hero-plate {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: min(100%, 34rem);
+  margin: 0 0 var(--space-4);
+  padding: clamp(1.1rem, 3vw, 1.6rem) clamp(1.1rem, 3.2vw, 1.75rem);
+  border-radius: var(--mkt-radius-lg);
+  background:
+    radial-gradient(ellipse 80% 70% at 12% 30%, color-mix(in srgb, var(--color-muted-copper) 22%, transparent), transparent 55%),
+    linear-gradient(145deg, #18222c, var(--color-graphite));
+  box-shadow:
+    0 18px 40px color-mix(in srgb, var(--color-graphite) 18%, transparent),
+    0 1px 0 color-mix(in srgb, #fff 12%, transparent) inset;
+}
+
+.mkt-brand-hero-logo {
+  width: min(100%, 28rem);
+  height: auto;
+  display: block;
+}
+
+.mkt-brand-hero-wordmark {
+  display: block;
+  width: min(100%, 22rem);
+  height: auto;
+  margin: 0 0 var(--space-4);
+}
+
+.mkt-inline-wordmark {
+  display: inline-block;
+  height: 0.92em;
+  width: auto;
+  vertical-align: -0.12em;
+}
+
+.mkt-heading-brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.28em 0.35em;
+  max-width: none;
+}
+
+.mkt-heading-brand .mkt-inline-wordmark {
+  height: 0.88em;
+  vertical-align: middle;
+}
+
+.mkt-heading-brand-rest {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
 }
 
 .mkt-page-hero-grid {
@@ -2148,13 +2287,11 @@
     justify-self: start;
   }
 
-  .mkt-nav.is-scrolled .mkt-brand {
-    padding: 0.42rem 1rem 0.4rem;
-    background: color-mix(in srgb, #fff 88%, var(--color-warm-white));
-    border: 1px solid color-mix(in srgb, #fff 70%, var(--color-light-silver));
+  .mkt-nav.is-scrolled .mkt-brand-plate,
+  .mkt-nav.is-scrolled a.mkt-btn-nav {
     box-shadow:
-      0 10px 28px color-mix(in srgb, var(--color-graphite) 7%, transparent),
-      0 1px 0 color-mix(in srgb, #fff 80%, transparent);
+      0 12px 28px color-mix(in srgb, var(--color-graphite) 20%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--color-muted-copper) 45%, transparent);
   }
 
   .mkt-nav-pill {
@@ -2286,6 +2423,41 @@
 }
 
 @media (max-width: 899px) {
+  .mkt-nav {
+    gap: var(--space-2);
+    padding: 0.7rem clamp(var(--space-3), 3.5vw, var(--space-5)) 0.55rem;
+  }
+
+  .mkt-brand-plate,
+  .mkt a.mkt-btn-nav {
+    --mkt-nav-card-h: 2.65rem;
+  }
+
+  .mkt-brand-plate {
+    padding: 0.28rem 0.7rem;
+  }
+
+  .mkt-brand-logo-lockup {
+    max-width: min(11.5rem, 58vw);
+  }
+
+  /* Sign-in lives in the drawer on mobile — keeps the top bar to brand + menu. */
+  .mkt-btn-nav-desktop {
+    display: none;
+  }
+
+  .mkt-nav-actions {
+    gap: 0;
+  }
+
+  .mkt-menu-btn {
+    min-width: 2.65rem;
+    min-height: 2.65rem;
+    border-radius: 999px;
+    border-color: color-mix(in srgb, var(--color-graphite) 14%, transparent);
+    background: color-mix(in srgb, #fff 70%, var(--color-warm-white));
+  }
+
   .mkt-nav,
   .mkt-nav.is-scrolled {
     background: color-mix(in srgb, var(--color-warm-white) 78%, transparent);
@@ -2301,10 +2473,13 @@
 @media (max-width: 719px) {
   .mkt-hero::before,
   .mkt-page-hero::before {
-    top: -16%;
-    right: -22%;
-    width: 18.5rem;
-    height: 18.5rem;
+    top: 4.75rem;
+    right: -28%;
+    width: 15.5rem;
+    height: 15.5rem;
+    opacity: 0.34;
+    mask-image: radial-gradient(circle at 72% 30%, #000 26%, transparent 68%);
+    -webkit-mask-image: radial-gradient(circle at 72% 30%, #000 26%, transparent 68%);
   }
 
   .mkt-hero,

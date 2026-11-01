@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { BrandLogo } from "./BrandLogo";
 
 const ALARM_FRAMES = [
   [
@@ -241,8 +242,7 @@ export function HeroProductFrame() {
       <div className="mkt-frame mkt-frame-hero">
         <aside className="mkt-frame-side">
           <div className="mkt-frame-brand">
-            <strong>iCaNova</strong>
-            <span>Monitoring</span>
+            <BrandLogo variant="lockup" className="mkt-frame-brand-logo" alt="" />
           </div>
           <div className="mkt-frame-nav">
             <span>Dashboard</span>
