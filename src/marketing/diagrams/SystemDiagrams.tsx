@@ -245,7 +245,7 @@ export function SurfacesDiagram() {
           ORG
         </text>
       </g>
-      <Chip x="214" y="276" w="132" label="SIGNED-IN APP" led={OK} />
+      <Chip x={214} y={276} w={132} label="SIGNED-IN APP" led={OK} />
     </DiagramStage>
   );
 }
@@ -280,21 +280,21 @@ export function AccessModelDiagram() {
         />
       ))}
       <path
-        d="M430 168 H510"
+        d="M430 168 H488"
         fill="none"
         stroke={STEEL}
         strokeWidth="1.5"
         strokeDasharray="4 6"
       />
-      <g transform="translate(528 168)">
+      <g transform="translate(506 168)">
         <circle r="14" fill="none" stroke={STEEL} strokeWidth="1.4" />
-        <text className="mkt-diagram-label" x="-22" y="32">
+        <text className="mkt-diagram-label" x="0" y="32" textAnchor="middle">
           OUTSIDE
         </text>
       </g>
       {!reduce ? (
         <circle r="3" fill={STEEL} opacity="0.4">
-          <animateMotion dur="3.2s" repeatCount="indefinite" path="M510 168 H440" />
+          <animateMotion dur="3.2s" repeatCount="indefinite" path="M488 168 H440" />
         </circle>
       ) : null}
       <text className="mkt-diagram-note" x="244" y="292" textAnchor="middle">
@@ -319,7 +319,7 @@ export function AppMapDiagram() {
   ];
   return (
     <DiagramStage id={id}>
-      <Chip x="28" y="28" w="128" label="SESSION ON" led={OK} />
+      <Chip x={28} y={28} w={128} label="SESSION ON" led={OK} />
       {tiles.map((label, i) => {
         const col = i % 4;
         const row = Math.floor(i / 4);
@@ -361,10 +361,10 @@ export function BoundaryDiagram() {
         CLOUD STORE
       </text>
       {["BAUD", "PARITY", "GENCOMM"].map((item, i) => (
-        <Chip key={item} x="58" y={108 + i * 42} w="156" label={item} led={STEEL} delay={`${i * 0.3}s`} />
+        <Chip key={item} x={58} y={108 + i * 42} w={156} label={item} led={STEEL} delay={`${i * 0.3}s`} />
       ))}
       {["ORG", "TELEMETRY", "ALARMS"].map((item, i) => (
-        <Chip key={item} x="346" y={108 + i * 42} w="156" label={item} led={INFO} delay={`${0.15 + i * 0.3}s`} />
+        <Chip key={item} x={346} y={108 + i * 42} w={156} label={item} led={INFO} delay={`${0.15 + i * 0.3}s`} />
       ))}
       <path d="M236 160 H324" fill="none" stroke={`url(#${id}-line)`} strokeWidth="2" />
       <Packet path="M236 160 H324" dur="2.8s" color={COPPER} reduce={reduce} />
@@ -455,8 +455,8 @@ export function RetentionDiagram() {
           </g>
         );
       })}
-      <Chip x="28" y="236" w="148" label="AGES OUT" led={STEEL} />
-      <Chip x="196" y="236" w="168" label="EXPORT STORED" led={OK} delay="0.4s" />
+      <Chip x={28} y={236} w={148} label="AGES OUT" led={STEEL} />
+      <Chip x={196} y={236} w={168} label="EXPORT STORED" led={OK} delay="0.4s" />
       <text className="mkt-diagram-note" x="280" y="298" textAnchor="middle">
         no invented availability %
       </text>
@@ -470,7 +470,7 @@ export function EdgeRoleDiagram() {
   const reduce = usePrefersReducedMotion();
   return (
     <DiagramStage id={id}>
-      <Node x="86" y="160" label="CONTROLLER" sub="RS485" fill={OK} glowId={`${id}-glow`} />
+      <Node x={86} y={160} label="CONTROLLER" sub="RS485" fill={OK} glowId={`${id}-glow`} />
       <path d="M110 160 H230" fill="none" stroke={`url(#${id}-line)`} strokeWidth="1.8" className="mkt-diagram-dash" />
       <g transform="translate(280 160)">
         <circle r="34" fill={`url(#${id}-glow)`} className="mkt-diagram-glow" />
@@ -480,12 +480,12 @@ export function EdgeRoleDiagram() {
         </text>
       </g>
       <path d="M326 160 H470" fill="none" stroke={`url(#${id}-line)`} strokeWidth="1.8" />
-      <Node x="490" y="160" label="MONITORING" sub="HTTPS" fill={INFO} glowId={`${id}-glow`} />
+      <Node x={490} y={160} label="MONITORING" sub="HTTPS" fill={INFO} glowId={`${id}-glow`} />
       <Packet path="M110 160 H230" dur="2.6s" color={OK} reduce={reduce} />
       <Packet path="M326 160 H470" dur="3.1s" begin="0.5s" color={COPPER} reduce={reduce} />
-      <Chip x="70" y="236" w="100" label="TX / RX" led={INFO} />
-      <Chip x="196" y="236" w="132" label="ON DEVICE" led={COPPER} delay="0.35s" />
-      <Chip x="352" y="236" w="132" label="REGISTER" led={OK} delay="0.7s" />
+      <Chip x={70} y={236} w={100} label="TX / RX" led={INFO} />
+      <Chip x={196} y={236} w={132} label="ON DEVICE" led={COPPER} delay="0.35s" />
+      <Chip x={352} y={236} w={132} label="REGISTER" led={OK} delay="0.7s" />
     </DiagramStage>
   );
 }
@@ -535,14 +535,14 @@ export function SoftApDiagram() {
       <text className="mkt-diagram-kicker" x="88" y="74">
         ENCLOSURE
       </text>
-      <Chip x="92" y="96" w="206" label="icanova-edge" led={OK} />
-      <Chip x="92" y="138" w="206" label="SSID ICANOVA-…" led={INFO} delay="0.3s" />
-      <Chip x="92" y="180" w="206" label="BAUD · PARITY" led={COPPER} delay="0.55s" />
+      <Chip x={92} y={96} w={206} label="icanova-edge" led={OK} />
+      <Chip x={92} y={138} w={206} label="SSID ICANOVA-…" led={INFO} delay="0.3s" />
+      <Chip x={92} y={180} w={206} label="BAUD · PARITY" led={COPPER} delay="0.55s" />
       <text className="mkt-diagram-note" x="195" y="246" textAnchor="middle">
         not a remote serial console
       </text>
       <path d="M320 160 H430" fill="none" stroke={STEEL} strokeWidth="1.5" />
-      <Node x="470" y="160" label="CLOUD" sub="ingest only" fill={INFO} glowId={`${id}-glow`} />
+      <Node x={470} y={160} label="CLOUD" sub="ingest only" fill={INFO} glowId={`${id}-glow`} />
       <Packet path="M320 160 H430" dur="3s" color={COPPER} reduce={reduce} />
     </DiagramStage>
   );
@@ -571,8 +571,8 @@ export function KnownUnknownDiagram() {
       <text className="mkt-diagram-note" x="407" y="156" textAnchor="middle">
         EMPTY
       </text>
-      <Chip x="64" y="204" w="120" label="FRESH" led={OK} />
-      <Chip x="318" y="204" w="168" label="NOT 0.0" led={WARN} delay="0.4s" />
+      <Chip x={64} y={204} w={120} label="FRESH" led={OK} />
+      <Chip x={318} y={204} w={168} label="NOT 0.0" led={WARN} delay="0.4s" />
     </DiagramStage>
   );
 }

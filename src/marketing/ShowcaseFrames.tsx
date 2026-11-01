@@ -38,7 +38,7 @@ function usePrefersReducedMotion() {
 export function ShowcaseFrames() {
   const reduce = usePrefersReducedMotion();
   const [rpm, setRpm] = useState(1545);
-  const [hz, setHz] = useState(50.0);
+  const [hz, setHz] = useState(50.02);
   const [oil, setOil] = useState(56);
   const [age, setAge] = useState(12);
   const [cloud, setCloud] = useState<"Online" | "Degraded">("Online");
@@ -53,7 +53,7 @@ export function ShowcaseFrames() {
         setTrace((points) => [...points.slice(-8), next]);
         return next;
       });
-      setHz((prev) => walk(prev, 49.9, 50.1, 0.06, 1));
+      setHz((prev) => walk(prev, 49.85, 50.16, 0.14, 2));
       setOil((prev) => walk(prev, 54, 58, 1.2, 0));
       setAge((prev) => (prev >= 86 ? 8 : prev + 3 + Math.round(Math.random() * 4)));
       setCloud((prev) => (Math.random() > 0.82 ? (prev === "Online" ? "Degraded" : "Online") : prev));
@@ -137,7 +137,7 @@ export function ShowcaseFrames() {
                 {rpm}
               </Reading>
               <Reading label="Freq" unit="Hz">
-                {hz.toFixed(1)}
+                {hz.toFixed(2)}
               </Reading>
               <Reading label="Oil" unit="psi">
                 {oil}
@@ -189,16 +189,16 @@ function Reading({
 export function HeroProductFrame() {
   const reduce = usePrefersReducedMotion();
   const [rpm, setRpm] = useState(1545);
-  const [fuel, setFuel] = useState(75);
+  const [fuel, setFuel] = useState(75.4);
   const [voltage, setVoltage] = useState(401.2);
   const [hours, setHours] = useState(4138.81);
   const [starts] = useState(4185);
   const [battery, setBattery] = useState(13.6);
-  const [hz, setHz] = useState(50.0);
+  const [hz, setHz] = useState(50.02);
   const [oil, setOil] = useState(56);
   const [coolant, setCoolant] = useState(86);
   const [charge, setCharge] = useState(14.2);
-  const [l1a, setL1a] = useState(4.8);
+  const [l1a, setL1a] = useState(18.7);
   const [energy] = useState(19711.6);
   const [trace, setTrace] = useState<number[]>([1542, 1548, 1545, 1540, 1551, 1547, 1545]);
 
@@ -210,14 +210,14 @@ export function HeroProductFrame() {
         setTrace((points) => [...points.slice(-11), next]);
         return next;
       });
-      setFuel((prev) => walk(prev, 74, 76, 0.4, 0));
+      setFuel((prev) => walk(prev, 74.6, 75.8, 0.35, 1));
       setVoltage((prev) => walk(prev, 398.4, 403.6, 0.6, 1));
       setBattery((prev) => walk(prev, 13.4, 13.8, 0.12, 1));
-      setHz((prev) => walk(prev, 49.9, 50.1, 0.06, 1));
+      setHz((prev) => walk(prev, 49.85, 50.16, 0.14, 2));
       setOil((prev) => walk(prev, 54, 58, 1.2, 0));
       setCoolant((prev) => walk(prev, 84, 91, 1.4, 0));
       setCharge((prev) => walk(prev, 14.1, 14.3, 0.08, 1));
-      setL1a((prev) => walk(prev, 4.5, 7.3, 0.8, 1));
+      setL1a((prev) => walk(prev, 18.0, 20.0, 0.5, 1));
     }, 1100);
     const hoursId = window.setInterval(() => {
       setHours((prev) => round(prev + 0.01, 2));
@@ -270,7 +270,7 @@ export function HeroProductFrame() {
                 </span>
               }
             >
-              {fuel}
+              {fuel.toFixed(1)}
             </Reading>
             <Reading label="L1-L2" unit="V">
               {voltage.toFixed(1)}
@@ -295,7 +295,7 @@ export function HeroProductFrame() {
               {battery.toFixed(1)}
             </Reading>
             <Reading label="Freq" unit="Hz">
-              {hz.toFixed(1)}
+              {hz.toFixed(2)}
             </Reading>
             <Reading label="Oil" unit="psi">
               {oil}
