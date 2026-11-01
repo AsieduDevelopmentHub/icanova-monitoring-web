@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { Link } from "react-router";
 import { useConvexAuth } from "convex/react";
-import "./landing.css";
+import { MarketingLayout } from "./MarketingLayout";
 
 type Cap = {
   title: string;
@@ -310,7 +310,6 @@ function ShowcaseFrames() {
 
 export function Landing() {
   const { isAuthenticated } = useConvexAuth();
-  const [menuOpen, setMenuOpen] = useState(false);
   const exploreTo = isAuthenticated ? "/app" : "/auth/login";
   const exploreLabel = isAuthenticated ? "Open dashboard" : "Get started";
 
@@ -318,133 +317,10 @@ export function Landing() {
     document.title = "iCanOva Monitoring · Industrial operations visibility";
   }, []);
 
-  useEffect(() => {
-    const root = document.querySelector(".mkt");
-    if (!root) return;
-    const nodes = root.querySelectorAll<HTMLElement>("[data-mkt-reveal]");
-    if (nodes.length === 0) return;
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      nodes.forEach((node) => node.classList.add("is-in"));
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-in");
-            observer.unobserve(entry.target);
-          }
-        }
-      },
-      { root: null, rootMargin: "0px 0px -6% 0px", threshold: 0.08 },
-    );
-    nodes.forEach((node) => {
-      const rect = node.getBoundingClientRect();
-      if (rect.top < window.innerHeight * 0.92 && rect.bottom > 0) {
-        node.classList.add("is-in");
-        return;
-      }
-      observer.observe(node);
-    });
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <div className="mkt">
-      <header className="mkt-nav">
-        <Link to="/" className="mkt-brand" aria-label="iCanOva Monitoring home">
-          <span className="mkt-brand-mark">iCanOva</span>
-          <span className="mkt-brand-sub">Monitoring</span>
-        </Link>
-        <ul className="mkt-nav-links">
-          <li>
-            <a href="#platform">Platform</a>
-          </li>
-          <li>
-            <a href="#capabilities">Capabilities</a>
-          </li>
-          <li>
-            <a href="#product">Product</a>
-          </li>
-          <li>
-            <a href="#faq">FAQ</a>
-          </li>
-        </ul>
-        <div className="mkt-nav-actions">
-          {isAuthenticated ? (
-            <Link className="mkt-link" to="/app">
-              Dashboard
-            </Link>
-          ) : (
-            <Link className="mkt-link" to="/auth/login">
-              Sign in
-            </Link>
-          )}
-          <Link className="mkt-btn mkt-btn-primary" to={exploreTo}>
-            {isAuthenticated ? "Open platform" : "Get started"}
-          </Link>
-          <button
-            type="button"
-            className="mkt-menu-btn"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            <span className="mkt-menu-icon" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </span>
-          </button>
-        </div>
-      </header>
-      {menuOpen ? (
-        <button
-          type="button"
-          className="mkt-menu-backdrop"
-          aria-label="Close menu"
-          onClick={() => setMenuOpen(false)}
-        />
-      ) : null}
-      <nav
-        className={menuOpen ? "mkt-drawer open" : "mkt-drawer"}
-        aria-label="Mobile"
-        aria-hidden={!menuOpen}
-      >
-        <a href="#platform" onClick={() => setMenuOpen(false)}>
-          Platform
-        </a>
-        <a href="#capabilities" onClick={() => setMenuOpen(false)}>
-          Capabilities
-        </a>
-        <a href="#product" onClick={() => setMenuOpen(false)}>
-          Product
-        </a>
-        <a href="#faq" onClick={() => setMenuOpen(false)}>
-          FAQ
-        </a>
-        <div className="mkt-drawer-actions">
-          <Link
-            className="mkt-btn mkt-btn-secondary"
-            to="/auth/login"
-            onClick={() => setMenuOpen(false)}
-          >
-            Sign in
-          </Link>
-          <Link
-            className="mkt-btn mkt-btn-primary"
-            to={exploreTo}
-            onClick={() => setMenuOpen(false)}
-          >
-            {exploreLabel}
-          </Link>
-        </div>
-      </nav>
-
+    <MarketingLayout reveal>
       <main className="mkt-main">
-        <section className="mkt-hero" aria-labelledby="mkt-hero-title">
+        <section className="mkt-hero mkt-surface mkt-seam-scoop" aria-labelledby="mkt-hero-title">
           <div className="mkt-hero-copy mkt-inner" data-mkt-reveal data-mkt-from="left">
             <p className="mkt-eyebrow">Intelligent industrial monitoring</p>
             <h1 id="mkt-hero-title">
@@ -460,9 +336,9 @@ export function Landing() {
               <Link className="mkt-btn mkt-btn-primary mkt-btn-lg" to={exploreTo}>
                 {exploreLabel}
               </Link>
-              <a className="mkt-btn mkt-btn-ghost mkt-btn-lg" href="#product">
+              <Link className="mkt-btn mkt-btn-ghost mkt-btn-lg" to="/product">
                 See the product
-              </a>
+              </Link>
             </div>
           </div>
           <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
@@ -470,7 +346,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="mkt-stats" aria-label="Product facts" data-mkt-reveal data-mkt-from="fade">
+        <section className="mkt-stats mkt-surface mkt-seam-rise mkt-seam-arch" aria-label="Product facts" data-mkt-reveal data-mkt-from="fade">
           <div className="mkt-inner mkt-stats-row">
             <div>
               <strong>3</strong>
@@ -487,21 +363,28 @@ export function Landing() {
           </div>
         </section>
 
-        <section id="platform" className="mkt-section">
+        <section id="platform" className="mkt-section mkt-surface mkt-seam-wave">
           <div className="mkt-inner mkt-split">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Platform</p>
               <h2>Most monitoring flattens signals. iCanOva keeps them separate.</h2>
             </div>
-            <p className="mkt-copy" data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
-              Built for gateways, generators and site infrastructure. Cloud contact is not Modbus
-              health. A stale sample is not a failed link. Operators see what is known — and what is
-              not — so engineering and operations can act with confidence.
-            </p>
+            <div data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
+              <p className="mkt-copy">
+                Built for gateways, generators and site infrastructure. Cloud contact is not Modbus
+                health. A stale sample is not a failed link. Operators see what is known — and what is
+                not — so engineering and operations can act with confidence.
+              </p>
+              <p className="mkt-section-more">
+                <Link className="mkt-text-link" to="/platform">
+                  Platform overview
+                </Link>
+              </p>
+            </div>
           </div>
         </section>
 
-        <section id="capabilities" className="mkt-section mkt-band">
+        <section id="capabilities" className="mkt-section mkt-band mkt-surface mkt-seam-arch">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="up">
               <p className="mkt-eyebrow">Capabilities</p>
@@ -529,7 +412,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section id="product" className="mkt-section mkt-product-hardware" aria-labelledby="mkt-product-title">
+        <section id="product" className="mkt-section mkt-product-hardware mkt-surface mkt-seam-scoop" aria-labelledby="mkt-product-title">
           <div className="mkt-inner mkt-hardware-layout">
             <div className="mkt-hardware-copy" data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Product</p>
@@ -543,6 +426,11 @@ export function Landing() {
                 <li>Wide DC input</li>
                 <li>Power · TX · RX indicators</li>
               </ul>
+              <p className="mkt-section-more">
+                <Link className="mkt-text-link" to="/product">
+                  Edge Gateway details
+                </Link>
+              </p>
             </div>
             <figure className="mkt-hardware-figure" data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
               <div className="mkt-hardware-stage">
@@ -561,7 +449,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="mkt-section" aria-labelledby="mkt-platform-title">
+        <section className="mkt-section mkt-surface mkt-seam-rise mkt-seam-wave" aria-labelledby="mkt-platform-title">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Platform</p>
@@ -577,7 +465,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-dark" aria-labelledby="mkt-truth-title">
+        <section className="mkt-section mkt-dark mkt-surface mkt-seam-arch" aria-labelledby="mkt-truth-title">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="fade">
               <p className="mkt-eyebrow">Engineering honesty</p>
@@ -599,7 +487,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="mkt-section">
+        <section className="mkt-section mkt-surface mkt-seam-wave">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="up">
               <p className="mkt-eyebrow">Workflow</p>
@@ -624,7 +512,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section id="faq" className="mkt-section mkt-band">
+        <section id="faq" className="mkt-section mkt-band mkt-surface mkt-seam-arch">
           <div className="mkt-inner mkt-faq-layout">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Good to know</p>
@@ -638,7 +526,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="mkt-close-band" id="about" data-mkt-reveal data-mkt-from="scale">
+        <section className="mkt-close-band mkt-surface mkt-seam-rise mkt-seam-arch" id="about" data-mkt-reveal data-mkt-from="scale">
           <div className="mkt-inner mkt-close-card">
             <div>
               <p className="mkt-eyebrow">Next step</p>
@@ -661,70 +549,6 @@ export function Landing() {
           </div>
         </section>
       </main>
-
-      <footer className="mkt-footer">
-        <div className="mkt-inner mkt-footer-grid">
-          <div>
-            <div className="mkt-footer-brand">iCanOva</div>
-            <p className="mkt-footer-tag">Imagine. Connect. Innovate.</p>
-            <p className="mkt-footer-tag">Intelligent technology for connected industries.</p>
-          </div>
-          <div className="mkt-footer-cols">
-            <div>
-              <h3>Product</h3>
-              <ul>
-                <li>
-                  <a href="#capabilities">Capabilities</a>
-                </li>
-                <li>
-                  {isAuthenticated ? (
-                    <Link to="/app">Dashboard</Link>
-                  ) : (
-                    <Link to="/auth/login" state={{ from: "/app" }}>
-                      Dashboard
-                    </Link>
-                  )}
-                </li>
-                <li>
-                  {isAuthenticated ? (
-                    <Link to="/local">Live readings</Link>
-                  ) : (
-                    <Link to="/auth/login" state={{ from: "/local" }}>
-                      Live readings
-                    </Link>
-                  )}
-                </li>
-                <li>
-                  <a href="#faq">FAQ</a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3>Access</h3>
-              <ul>
-                <li>
-                  <Link to="/auth/login">Sign in</Link>
-                </li>
-                <li>
-                  <Link to={exploreTo}>{exploreLabel}</Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3>Company</h3>
-              <ul>
-                <li>ASIEDU DEVELOPMENT HUB (ADH)</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <p className="mkt-footer-mark" aria-hidden="true">
-          ICANOVA
-        </p>
-        <p className="mkt-footer-legal mkt-inner">
-          iCanOva Monitoring · Parent company ASIEDU DEVELOPMENT HUB (ADH)
-        </p>
-      </footer>
-    </div>
+    </MarketingLayout>
   );
 }

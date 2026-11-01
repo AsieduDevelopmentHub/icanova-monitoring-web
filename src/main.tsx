@@ -6,6 +6,12 @@ import { Configure } from "./Configure";
 import { startAnalytics } from "./analytics";
 import { Monitor } from "./local/Monitor";
 import { Landing } from "./marketing/Landing";
+import { AboutPage } from "./marketing/pages/AboutPage";
+import { ContactPage } from "./marketing/pages/ContactPage";
+import { PlatformPage } from "./marketing/pages/PlatformPage";
+import { PrivacyPage } from "./marketing/pages/PrivacyPage";
+import { ProductPage } from "./marketing/pages/ProductPage";
+import { TermsPage } from "./marketing/pages/TermsPage";
 import { AlarmDetail } from "./pages/AlarmDetail";
 import { Alarms } from "./pages/Alarms";
 import { Dashboard } from "./pages/Dashboard";
@@ -53,6 +59,12 @@ createRoot(document.getElementById("root")!).render(
         <AppErrorBoundary>
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/product" element={<ProductPage />} />
+            <Route path="/platform" element={<PlatformPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
             <Route path="/login" element={<Navigate to="/auth/login" replace />} />
             <Route path="/auth/login" element={<AuthLogin />} />
             <Route path="/auth/reset" element={<AuthPasswordReset />} />

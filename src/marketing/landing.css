@@ -6,10 +6,13 @@
   --mkt-h2: clamp(1.85rem, 3.4vw, 2.75rem);
   --mkt-radius: 14px;
   --mkt-radius-lg: 22px;
+  --mkt-surface-radius: clamp(1.35rem, 3.2vw, 2.15rem);
+  --mkt-section-gap: clamp(0.75rem, 1.9vw, 1.4rem);
+  --mkt-page-wash: color-mix(in srgb, var(--color-deep-navy) 5.5%, var(--color-warm-white));
   min-height: 100vh;
   width: 100%;
   overflow-x: clip;
-  background: var(--color-warm-white);
+  background: var(--mkt-page-wash);
   color: var(--color-graphite);
   font-family: var(--font-body);
 }
@@ -221,6 +224,8 @@
 .mkt-main {
   display: flex;
   flex-direction: column;
+  gap: var(--mkt-section-gap);
+  padding: 0 clamp(0.55rem, 1.8vw, 1.2rem) clamp(1.5rem, 3.5vw, 2.75rem);
 }
 
 .mkt-inner {
@@ -234,6 +239,109 @@
 
 .mkt-band {
   background: color-mix(in srgb, var(--color-light-silver) 28%, var(--color-warm-white));
+}
+
+/*
+ * Section composition — floating surfaces + non-linear seams.
+ * Inspiration: stacked rounded panels with wash gaps; scooped / arched edges
+ * instead of always-straight horizontal dividers.
+ */
+.mkt-surface {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--mkt-surface-radius);
+  background: var(--color-warm-white);
+  box-shadow:
+    0 1px 0 rgba(17, 24, 32, 0.035),
+    0 16px 42px rgba(17, 24, 32, 0.055);
+  overflow: clip;
+}
+
+.mkt-surface.mkt-band {
+  background: color-mix(in srgb, var(--color-light-silver) 24%, #fff);
+}
+
+.mkt-surface.mkt-dark {
+  box-shadow:
+    0 1px 0 rgba(17, 24, 32, 0.2),
+    0 20px 52px rgba(17, 24, 32, 0.28);
+}
+
+.mkt-surface.mkt-stats {
+  border-block: 0;
+}
+
+/* Soft convex ends — large bottom corner radii */
+.mkt-seam-arch {
+  border-bottom-left-radius: clamp(2.25rem, 7vw, 4.75rem);
+  border-bottom-right-radius: clamp(2.25rem, 7vw, 4.75rem);
+}
+
+/* Concave center scoop into the page wash (smooth, not a sharp V) */
+.mkt-seam-scoop {
+  border-bottom-left-radius: clamp(1.25rem, 3vw, 2rem);
+  border-bottom-right-radius: clamp(1.25rem, 3vw, 2rem);
+  clip-path: polygon(
+    0% 0%,
+    100% 0%,
+    100% 90%,
+    96% 91.5%,
+    88% 94%,
+    76% 97%,
+    62% 99%,
+    50% 100%,
+    38% 99%,
+    24% 97%,
+    12% 94%,
+    4% 91.5%,
+    0% 90%
+  );
+}
+
+/* Gentle asymmetric wave */
+.mkt-seam-wave {
+  border-bottom-left-radius: clamp(1rem, 2.5vw, 1.75rem);
+  border-bottom-right-radius: clamp(2rem, 6vw, 3.5rem);
+  clip-path: polygon(
+    0% 0%,
+    100% 0%,
+    100% 91%,
+    92% 94%,
+    78% 99%,
+    64% 96%,
+    50% 93%,
+    36% 96%,
+    22% 100%,
+    8% 95%,
+    0% 92%
+  );
+}
+
+/* Top edge only — for panels that tuck under a scoop above */
+.mkt-seam-rise {
+  border-top-left-radius: clamp(2rem, 6vw, 3.75rem);
+  border-top-right-radius: clamp(2rem, 6vw, 3.75rem);
+}
+
+/* Pull the next panel slightly into the scoop wash */
+.mkt-seam-scoop + .mkt-surface,
+.mkt-seam-wave + .mkt-surface {
+  margin-top: calc(var(--mkt-section-gap) * -0.45);
+}
+
+@media (max-width: 640px) {
+  .mkt-seam-scoop,
+  .mkt-seam-wave {
+    /* Softer arch on small screens; clip can feel harsh on narrow widths */
+    clip-path: none;
+    border-bottom-left-radius: clamp(1.75rem, 10vw, 2.75rem);
+    border-bottom-right-radius: clamp(1.75rem, 10vw, 2.75rem);
+  }
+
+  .mkt-seam-scoop + .mkt-surface,
+  .mkt-seam-wave + .mkt-surface {
+    margin-top: 0;
+  }
 }
 
 .mkt-eyebrow {
@@ -314,6 +422,22 @@
     radial-gradient(ellipse 70% 55% at 85% 20%, color-mix(in srgb, var(--color-muted-copper) 14%, transparent), transparent 55%),
     radial-gradient(ellipse 50% 40% at 10% 90%, color-mix(in srgb, var(--color-deep-navy) 6%, transparent), transparent 50%),
     var(--color-warm-white);
+}
+
+.mkt-hero.mkt-surface,
+.mkt-page-hero.mkt-surface {
+  /* Hero wash already sets fill; keep surface shadow/radius */
+  background:
+    radial-gradient(ellipse 70% 55% at 85% 20%, color-mix(in srgb, var(--color-muted-copper) 14%, transparent), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 10% 90%, color-mix(in srgb, var(--color-deep-navy) 6%, transparent), transparent 50%),
+    var(--color-warm-white);
+}
+
+.mkt-hero.mkt-seam-scoop,
+.mkt-hero.mkt-seam-wave,
+.mkt-page-hero.mkt-seam-scoop,
+.mkt-page-hero.mkt-seam-wave {
+  padding-bottom: clamp(3.75rem, 9vw, 6.5rem);
 }
 
 .mkt-hero-copy {
@@ -920,12 +1044,22 @@
 
 /* —— Closing CTA —— */
 .mkt-close-band {
-  padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(4rem, 8vw, 6rem);
+  padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(3rem, 7vw, 4.75rem);
+}
+
+.mkt-close-band.mkt-surface {
+  background:
+    radial-gradient(ellipse 80% 60% at 100% 0%, color-mix(in srgb, var(--color-muted-copper) 14%, transparent), transparent 55%),
+    color-mix(in srgb, var(--color-light-silver) 28%, #fff);
 }
 
 .mkt-close-card {
   display: grid;
   gap: var(--space-5);
+  padding: clamp(1.25rem, 3vw, 2rem) 0 0;
+}
+
+.mkt-close-band:not(.mkt-surface) .mkt-close-card {
   padding: clamp(2rem, 4vw, 3rem);
   border-radius: var(--mkt-radius-lg);
   background:
@@ -947,9 +1081,13 @@
 
 /* —— Footer —— */
 .mkt-footer {
+  margin: 0 clamp(0.55rem, 1.8vw, 1.2rem) clamp(0.75rem, 1.9vw, 1.4rem);
+  border-radius: clamp(2rem, 6vw, 3.75rem) clamp(2rem, 6vw, 3.75rem) var(--mkt-surface-radius) var(--mkt-surface-radius);
   background: var(--color-graphite);
   color: color-mix(in srgb, #fff 72%, transparent);
   padding: clamp(3rem, 6vw, 4.5rem) 0 clamp(2rem, 4vw, 3rem);
+  box-shadow: 0 18px 48px rgba(17, 24, 32, 0.22);
+  overflow: clip;
 }
 
 .mkt-footer-grid {
@@ -1014,6 +1152,234 @@
   margin-top: var(--space-4);
   font-size: 0.78rem;
   color: color-mix(in srgb, #fff 45%, transparent);
+}
+
+.mkt-section-more {
+  margin: 1.1rem 0 0;
+}
+
+.mkt-section-tight {
+  padding-top: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+/* Detail page heroes & compositions */
+.mkt-page-hero {
+  position: relative;
+  padding: clamp(2.75rem, 7vw, 5rem) 0 clamp(2.5rem, 5vw, 4rem);
+  background:
+    radial-gradient(ellipse 70% 55% at 85% 15%, color-mix(in srgb, var(--color-muted-copper) 14%, transparent), transparent 55%),
+    radial-gradient(ellipse 45% 40% at 8% 85%, color-mix(in srgb, var(--color-deep-navy) 7%, transparent), transparent 50%),
+    var(--color-warm-white);
+}
+
+.mkt-page-hero-brand {
+  text-align: left;
+}
+
+.mkt-page-hero-copy h1,
+.mkt-page-hero-brand h1 {
+  max-width: 16ch;
+}
+
+.mkt-brand-hero-mark {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 8vw, 5.5rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+  color: var(--color-graphite);
+}
+
+.mkt-page-hero-grid {
+  display: grid;
+  gap: clamp(1.75rem, 4vw, 3rem);
+  align-items: center;
+}
+
+.mkt-page-hero-figure {
+  margin: 0;
+}
+
+.mkt-page-product-stage {
+  min-height: clamp(220px, 36vw, 340px);
+}
+
+.mkt-stats-row.mkt-specs-row strong {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted-copper);
+}
+
+.mkt-stats-row.mkt-specs-row span {
+  display: block;
+  margin-top: 0.35rem;
+  max-width: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-graphite);
+}
+
+.mkt-truths-light article {
+  padding-top: var(--space-4);
+  border-top: 1px solid color-mix(in srgb, var(--color-graphite) 12%, transparent);
+}
+
+.mkt-truths-light p {
+  color: var(--color-industrial-steel);
+}
+
+.mkt-copy-on-dark {
+  color: color-mix(in srgb, #fff 78%, transparent);
+}
+
+.mkt-contact-layout {
+  display: grid;
+  gap: clamp(2rem, 5vw, 3.5rem);
+  align-items: start;
+}
+
+.mkt-contact-channels {
+  margin-top: 1.5rem;
+  display: grid;
+  gap: 1.15rem;
+}
+
+.mkt-contact-channel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-graphite) 10%, transparent);
+}
+
+.mkt-contact-channel-label {
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-muted-copper);
+}
+
+.mkt-contact-channel-addr {
+  font-size: 1.15rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--color-graphite);
+}
+
+.mkt-contact-channel-hint {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--color-industrial-steel);
+}
+
+.mkt-contact-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.mkt-contact-panel {
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  border-radius: var(--mkt-radius-lg);
+  border: 1px solid color-mix(in srgb, var(--color-light-silver) 80%, transparent);
+  background: color-mix(in srgb, #fff 72%, var(--color-warm-white));
+  box-shadow: 0 18px 48px rgba(17, 24, 32, 0.08);
+}
+
+.mkt-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.mkt-field > span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-graphite);
+}
+
+.mkt-field input,
+.mkt-field select,
+.mkt-field textarea {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--color-graphite) 16%, transparent);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--color-graphite);
+  font: inherit;
+  line-height: 1.4;
+}
+
+.mkt-field textarea {
+  resize: vertical;
+  min-height: 9rem;
+}
+
+.mkt-field input:focus,
+.mkt-field select:focus,
+.mkt-field textarea:focus {
+  outline: 2px solid color-mix(in srgb, var(--color-muted-copper) 55%, transparent);
+  outline-offset: 1px;
+}
+
+.mkt-contact-note {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--color-industrial-steel);
+}
+
+.mkt-legal-stack {
+  max-width: 40rem;
+  display: grid;
+  gap: 0;
+}
+
+.mkt-legal-block {
+  padding: 1.35rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--color-graphite) 12%, transparent);
+}
+
+.mkt-legal-block h2 {
+  margin: 0 0 0.45rem;
+  max-width: none;
+  font-size: 1.15rem;
+}
+
+.mkt-legal-block p {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.65;
+  color: var(--color-industrial-steel);
+}
+
+.mkt-legal-foot {
+  margin: 1.5rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-graphite) 12%, transparent);
+  font-size: 0.95rem;
+  color: var(--color-industrial-steel);
+}
+
+@media (min-width: 720px) {
+  .mkt-specs-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .mkt-contact-layout {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .mkt-page-hero-grid {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  }
 }
 
 @media (min-width: 720px) {

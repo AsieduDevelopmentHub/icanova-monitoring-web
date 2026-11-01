@@ -1,0 +1,221 @@
+import { useEffect, useState, type ReactNode } from "react";
+import { Link, useLocation } from "react-router";
+import { useConvexAuth } from "convex/react";
+import "./landing.css";
+
+type MarketingLayoutProps = {
+  children: ReactNode;
+  /** When true, add scroll-reveal observer for `[data-mkt-reveal]` nodes. */
+  reveal?: boolean;
+};
+
+export function MarketingLayout({ children, reveal = false }: MarketingLayoutProps) {
+  const { isAuthenticated } = useConvexAuth();
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const exploreTo = isAuthenticated ? "/app" : "/auth/login";
+  const exploreLabel = isAuthenticated ? "Open platform" : "Get started";
+
+  useEffect(() => {
+    setMenuOpen(false);
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!reveal) return;
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-mkt-reveal]"));
+    if (!nodes.length) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      nodes.forEach((node) => node.classList.add("is-in"));
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-in");
+            observer.unobserve(entry.target);
+          }
+        }
+      },
+      { root: null, rootMargin: "0px 0px -6% 0px", threshold: 0.08 },
+    );
+    nodes.forEach((node) => {
+      const rect = node.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 0.92 && rect.bottom > 0) {
+        node.classList.add("is-in");
+        return;
+      }
+      observer.observe(node);
+    });
+    return () => observer.disconnect();
+  }, [reveal, location.pathname]);
+
+  return (
+    <div className="mkt">
+      <header className="mkt-nav">
+        <Link to="/" className="mkt-brand" aria-label="iCanOva Monitoring home">
+          <span className="mkt-brand-mark">iCanOva</span>
+          <span className="mkt-brand-sub">Monitoring</span>
+        </Link>
+        <ul className="mkt-nav-links">
+          <li>
+            <Link to="/platform">Platform</Link>
+          </li>
+          <li>
+            <Link to="/product">Product</Link>
+          </li>
+          <li>
+            <Link to="/about">About</Link>
+          </li>
+          <li>
+            <Link to="/contact">Contact</Link>
+          </li>
+        </ul>
+        <div className="mkt-nav-actions">
+          {isAuthenticated ? (
+            <Link className="mkt-link" to="/app">
+              Dashboard
+            </Link>
+          ) : (
+            <Link className="mkt-link" to="/auth/login">
+              Sign in
+            </Link>
+          )}
+          <Link className="mkt-btn mkt-btn-primary" to={exploreTo}>
+            {isAuthenticated ? "Open platform" : "Get started"}
+          </Link>
+          <button
+            type="button"
+            className="mkt-menu-btn"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <span className="mkt-menu-icon" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
+        </div>
+      </header>
+      {menuOpen ? (
+        <button
+          type="button"
+          className="mkt-menu-backdrop"
+          aria-label="Close menu"
+          onClick={() => setMenuOpen(false)}
+        />
+      ) : null}
+      <nav
+        className={menuOpen ? "mkt-drawer open" : "mkt-drawer"}
+        aria-label="Mobile"
+        aria-hidden={!menuOpen}
+      >
+        <Link to="/platform" onClick={() => setMenuOpen(false)}>
+          Platform
+        </Link>
+        <Link to="/product" onClick={() => setMenuOpen(false)}>
+          Product
+        </Link>
+        <Link to="/about" onClick={() => setMenuOpen(false)}>
+          About
+        </Link>
+        <Link to="/contact" onClick={() => setMenuOpen(false)}>
+          Contact
+        </Link>
+        <div className="mkt-drawer-actions">
+          <Link
+            className="mkt-btn mkt-btn-secondary"
+            to="/auth/login"
+            onClick={() => setMenuOpen(false)}
+          >
+            Sign in
+          </Link>
+          <Link
+            className="mkt-btn mkt-btn-primary"
+            to={exploreTo}
+            onClick={() => setMenuOpen(false)}
+          >
+            {exploreLabel}
+          </Link>
+        </div>
+      </nav>
+
+      {children}
+
+      <footer className="mkt-footer">
+        <div className="mkt-inner mkt-footer-grid">
+          <div>
+            <div className="mkt-footer-brand">iCanOva</div>
+            <p className="mkt-footer-tag">Imagine. Connect. Innovate.</p>
+            <p className="mkt-footer-tag">Intelligent technology for connected industries.</p>
+          </div>
+          <div className="mkt-footer-cols">
+            <div>
+              <h3>Product</h3>
+              <ul>
+                <li>
+                  <Link to="/product">Edge Gateway</Link>
+                </li>
+                <li>
+                  <Link to="/platform">Platform</Link>
+                </li>
+                <li>
+                  <Link to="/#capabilities">Capabilities</Link>
+                </li>
+                <li>
+                  <Link to="/#faq">FAQ</Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3>Access</h3>
+              <ul>
+                <li>
+                  <Link to="/auth/login">Sign in</Link>
+                </li>
+                <li>
+                  <Link to={exploreTo}>{exploreLabel}</Link>
+                </li>
+                <li>
+                  <Link to="/contact">Contact</Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3>Company</h3>
+              <ul>
+                <li>
+                  <Link to="/about">About iCanOva</Link>
+                </li>
+                <li>
+                  <Link to="/privacy">Privacy</Link>
+                </li>
+                <li>
+                  <Link to="/terms">Terms</Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <p className="mkt-footer-mark" aria-hidden="true">
+          ICANOVA
+        </p>
+        <p className="mkt-footer-legal mkt-inner">
+          iCanOva Monitoring · Parent company ASIEDU DEVELOPMENT HUB (ADH)
+        </p>
+      </footer>
+    </div>
+  );
+}
