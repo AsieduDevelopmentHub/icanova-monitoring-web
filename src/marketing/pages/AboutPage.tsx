@@ -63,7 +63,7 @@ export function AboutPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-mist mkt-curve-shell">
+        <section className="mkt-section mkt-mist mkt-edge-wave">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="fade">
               <p className="mkt-eyebrow">Tagline</p>
@@ -102,7 +102,7 @@ export function AboutPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-mist mkt-curve-swell">
+        <section className="mkt-section mkt-mist mkt-edge-pop">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="up">
               <p className="mkt-eyebrow">Product line</p>
@@ -145,7 +145,7 @@ export function AboutPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-blend mkt-curve-scoop">
+        <section className="mkt-section mkt-blend mkt-edge-clip">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="up">
               <p className="mkt-eyebrow">Discipline</p>

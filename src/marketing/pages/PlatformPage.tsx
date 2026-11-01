@@ -160,7 +160,7 @@ export function PlatformPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-blend mkt-curve-swell">
+        <section className="mkt-section mkt-blend mkt-edge-pop">
           <div className="mkt-inner mkt-split">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Access model</p>
@@ -193,7 +193,7 @@ export function PlatformPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-mist mkt-curve-arch">
+        <section className="mkt-section mkt-mist mkt-edge-clip">
           <div className="mkt-inner mkt-split">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Boundary</p>
@@ -241,7 +241,7 @@ export function PlatformPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-blend mkt-curve-scoop">
+        <section className="mkt-section mkt-blend mkt-edge-wave">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="up">
               <p className="mkt-eyebrow">Notifications</p>

@@ -1,5 +1,5 @@
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth, useConvex, useQuery } from "convex/react";
+import { useConvexAuth, useConvex } from "convex/react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation } from "react-router";
 import { api } from "../../convex/_generated/api";
@@ -22,7 +22,7 @@ export function AuthLogin() {
   const { signIn } = useAuthActions();
   const convex = useConvex();
   const location = useLocation();
-  const signupEnabled = useQuery(api.authPublic.signupEnabled);
+  const [signupEnabled, setSignupEnabled] = useState<boolean | undefined>(undefined);
   const [mode, setMode] = useState<Mode>("signIn");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -31,6 +31,21 @@ export function AuthLogin() {
   useEffect(() => {
     document.title = "Sign in · iCanOva Monitoring";
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void convex
+      .query(api.authPublic.signupEnabled, {})
+      .then((enabled) => {
+        if (!cancelled) setSignupEnabled(enabled);
+      })
+      .catch(() => {
+        if (!cancelled) setSignupEnabled(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [convex]);
 
   useEffect(() => {
     if (signupEnabled === false && mode === "signUp") {

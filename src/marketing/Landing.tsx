@@ -325,7 +325,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section id="platform" className="mkt-section mkt-blend mkt-curve-arch">
+        <section id="platform" className="mkt-section mkt-blend mkt-edge-wave">
           <div className="mkt-inner mkt-split">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Platform</p>
@@ -374,7 +374,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section id="product" className="mkt-section mkt-product-hardware mkt-curve-swell" aria-labelledby="mkt-product-title">
+        <section id="product" className="mkt-section mkt-product-hardware mkt-edge-pop" aria-labelledby="mkt-product-title">
           <div className="mkt-inner mkt-hardware-layout">
             <div className="mkt-hardware-copy" data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Product</p>
@@ -411,7 +411,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-mist" aria-labelledby="mkt-platform-title">
+        <section className="mkt-section mkt-mist mkt-edge-clip" aria-labelledby="mkt-platform-title">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Platform</p>
@@ -427,7 +427,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-dark mkt-curve-soft" aria-labelledby="mkt-truth-title">
+        <section className="mkt-section mkt-dark mkt-edge-cut" aria-labelledby="mkt-truth-title">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="fade">
               <p className="mkt-eyebrow">Engineering honesty</p>
@@ -449,7 +449,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-blend mkt-curve-scoop">
+        <section className="mkt-section mkt-blend mkt-edge-wave-tight">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="up">
               <p className="mkt-eyebrow">Workflow</p>

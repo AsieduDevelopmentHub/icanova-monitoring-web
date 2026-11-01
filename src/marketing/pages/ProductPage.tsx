@@ -108,7 +108,7 @@ export function ProductPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-blend mkt-curve-arch">
+        <section className="mkt-section mkt-blend mkt-edge-wave">
           <div className="mkt-inner mkt-split">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Role</p>
@@ -149,7 +149,7 @@ export function ProductPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-dark mkt-curve-soft">
+        <section className="mkt-section mkt-dark mkt-edge-cut">
           <div className="mkt-inner">
             <div data-mkt-reveal data-mkt-from="fade">
               <p className="mkt-eyebrow">Field indicators</p>
@@ -171,7 +171,7 @@ export function ProductPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-blend mkt-curve-swell">
+        <section className="mkt-section mkt-blend mkt-edge-pop">
           <div className="mkt-inner mkt-split">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Soft-AP</p>
@@ -188,7 +188,7 @@ export function ProductPage() {
           </div>
         </section>
 
-        <section className="mkt-section mkt-mist mkt-curve-scoop">
+        <section className="mkt-section mkt-mist">
           <div className="mkt-inner mkt-split">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Compatibility</p>
