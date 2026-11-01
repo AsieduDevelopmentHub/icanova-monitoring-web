@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { useConvexAuth } from "convex/react";
 import { MarketingLayout } from "./MarketingLayout";
 import { HonestySignalsDiagram, SurfacesDiagram } from "./diagrams/SystemDiagrams";
-import { ShowcaseFrames } from "./ShowcaseFrames";
+import { HeroProductFrame, ShowcaseFrames } from "./ShowcaseFrames";
 
 const CAPABILITIES = [
   {
@@ -85,9 +85,18 @@ const FAQ = [
   },
 ] as const;
 
-function FaqItem({ q, a }: { q: string; a: string }) {
+function FaqItem({
+  q,
+  a,
+  open,
+  onToggle,
+}: {
+  q: string;
+  a: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const panelId = useId();
-  const [open, setOpen] = useState(false);
   return (
     <div className={`mkt-faq-item${open ? " open" : ""}`}>
       <button
@@ -95,7 +104,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
         className="mkt-faq-q"
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => setOpen((v) => !v)}
+        onClick={onToggle}
       >
         <span>{q}</span>
         <span className="mkt-faq-icon" aria-hidden="true">
@@ -109,81 +118,19 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
-function HeroProductFrame() {
+function FaqList() {
+  const [openQuestion, setOpenQuestion] = useState<string | null>(null);
   return (
-    <div className="mkt-hero-visual" aria-hidden="true">
-      <div className="mkt-frame mkt-frame-hero">
-        <aside className="mkt-frame-side">
-          <div className="mkt-frame-brand">
-            <strong>iCanOva</strong>
-            <span>Monitoring</span>
-          </div>
-          <div className="mkt-frame-nav">
-            <span className="on">Dashboard</span>
-            <span>Live readings</span>
-            <span>Gateways</span>
-            <span>Alarms</span>
-            <span>Reports</span>
-          </div>
-        </aside>
-        <div className="mkt-frame-main">
-          <header className="mkt-frame-top">
-            <span>Operations overview</span>
-            <span className="mkt-pill">Demo composition</span>
-          </header>
-          <div className="mkt-frame-metrics">
-            <div>
-              <span>Cloud</span>
-              <strong>Online</strong>
-            </div>
-            <div>
-              <span>Modbus</span>
-              <strong>OK</strong>
-            </div>
-            <div>
-              <span>Freshness</span>
-              <strong>Fresh</strong>
-            </div>
-            <div>
-              <span>Attention</span>
-              <strong>2 open</strong>
-            </div>
-          </div>
-          <div className="mkt-frame-chart">
-            <svg viewBox="0 0 320 120" preserveAspectRatio="none">
-              <path
-                className="mkt-chart-grid"
-                d="M0 30 H320 M0 60 H320 M0 90 H320"
-              />
-              <path
-                className="mkt-chart-line"
-                d="M0 78 C40 70, 60 88, 90 62 C120 36, 150 48, 180 40 C210 32, 240 58, 270 46 C290 40, 310 28, 320 34"
-              />
-            </svg>
-            <span>Illustrative trend — not live telemetry</span>
-          </div>
-          <div className="mkt-frame-table">
-            <div className="mkt-frame-tr head">
-              <span>Site</span>
-              <span>Cloud</span>
-              <span>Modbus</span>
-              <span>Age</span>
-            </div>
-            <div className="mkt-frame-tr">
-              <span>Plant North</span>
-              <span>Online</span>
-              <span>OK</span>
-              <span>42s</span>
-            </div>
-            <div className="mkt-frame-tr">
-              <span>Yard B</span>
-              <span>Online</span>
-              <span>Degraded</span>
-              <span>3m</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="mkt-faq" data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
+      {FAQ.map((item) => (
+        <FaqItem
+          key={item.q}
+          q={item.q}
+          a={item.a}
+          open={openQuestion === item.q}
+          onToggle={() => setOpenQuestion((current) => (current === item.q ? null : item.q))}
+        />
+      ))}
     </div>
   );
 }
@@ -266,7 +213,7 @@ export function Landing() {
         </section>
 
         <section id="capabilities" className="mkt-section mkt-mist mkt-curve-shell">
-          <div className="mkt-inner mkt-split mkt-split-visual">
+          <div className="mkt-inner mkt-split mkt-split-visual mkt-split-visual-flip">
             <div>
               <div data-mkt-reveal data-mkt-from="up">
                 <p className="mkt-eyebrow">Capabilities</p>
@@ -404,11 +351,7 @@ export function Landing() {
               <p className="mkt-eyebrow">Good to know</p>
               <h2>Frequently asked questions</h2>
             </div>
-            <div className="mkt-faq" data-mkt-reveal data-mkt-from="right" data-mkt-delay="1">
-              {FAQ.map((item) => (
-                <FaqItem key={item.q} q={item.q} a={item.a} />
-              ))}
-            </div>
+            <FaqList />
           </div>
         </section>
 

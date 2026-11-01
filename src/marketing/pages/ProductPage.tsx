@@ -127,7 +127,7 @@ export function ProductPage() {
         </section>
 
         <section className="mkt-section mkt-mist mkt-curve-shell">
-          <div className="mkt-inner mkt-split mkt-split-visual">
+          <div className="mkt-inner mkt-split mkt-split-visual mkt-split-visual-flip">
             <div>
               <div data-mkt-reveal data-mkt-from="up">
                 <p className="mkt-eyebrow">Path</p>

@@ -13,8 +13,16 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
   const { isAuthenticated } = useConvexAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const exploreTo = isAuthenticated ? "/app" : "/auth/login";
   const exploreLabel = isAuthenticated ? "Open platform" : "Get started";
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -62,7 +70,7 @@ export function MarketingLayout({ children, reveal = false }: MarketingLayoutPro
 
   return (
     <div className="mkt">
-      <header className="mkt-nav">
+      <header className={scrolled ? "mkt-nav is-scrolled" : "mkt-nav"}>
         <Link to="/" className="mkt-brand" aria-label="iCanOva Monitoring home">
           <span className="mkt-brand-mark">iCanOva</span>
           <span className="mkt-brand-sub">Monitoring</span>

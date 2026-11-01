@@ -87,7 +87,7 @@ export function AboutPage() {
         </section>
 
         <section className="mkt-section mkt-blend">
-          <div className="mkt-inner mkt-split mkt-split-visual">
+          <div className="mkt-inner mkt-split mkt-split-visual mkt-split-visual-flip">
             <div data-mkt-reveal data-mkt-from="left">
               <p className="mkt-eyebrow">Mission</p>
               <h2>Honest visibility for industrial operations.</h2>
