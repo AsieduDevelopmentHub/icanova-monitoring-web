@@ -68,8 +68,9 @@ function Picker({
   emptyLayout: "list" | "desk";
 }) {
   const orgs = useQuery(api.organizations.mine, {});
+  const platform = useQuery(api.platformAdmin.isCapable, {});
   const [picked, setPicked] = useState("");
-  if (orgs === undefined) {
+  if (orgs === undefined || platform === undefined) {
     return <PageSkeleton rows={3} label="Loading organizations" />;
   }
   if (!Array.isArray(orgs) || orgs.length === 0) {
@@ -86,14 +87,17 @@ function Picker({
   const organizationId = orgs.some((org) => org.organizationId === picked)
     ? picked
     : orgs[0].organizationId;
+  const showOrgPicker = platform.capable && orgs.length > 1;
   return (
     <div className="stack">
-      <FilterSelect
-        label="Organization"
-        value={organizationId}
-        onChange={setPicked}
-        options={orgs.map((org) => ({ value: org.organizationId, label: org.name }))}
-      />
+      {showOrgPicker ? (
+        <FilterSelect
+          label="Organization"
+          value={organizationId}
+          onChange={setPicked}
+          options={orgs.map((org) => ({ value: org.organizationId, label: org.name }))}
+        />
+      ) : null}
       <FleetBoundary key={organizationId}>{children(organizationId as Id<"organizations">)}</FleetBoundary>
     </div>
   );

@@ -29,6 +29,8 @@ export function AuthLogin() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [orgNames, setOrgNames] = useState<string[]>([]);
+  const [showOrgHint, setShowOrgHint] = useState(false);
   const returnTo = safeReturnPath((location.state as { from?: unknown } | null)?.from, "/app");
 
   useEffect(() => {
@@ -49,6 +51,30 @@ export function AuthLogin() {
       cancelled = true;
     };
   }, [convex]);
+
+  useEffect(() => {
+    if (mode !== "request") {
+      setShowOrgHint(false);
+      setOrgNames([]);
+      return;
+    }
+    let cancelled = false;
+    void convex
+      .query(api.accessRequests.organizationHints, {})
+      .then((hints) => {
+        if (cancelled) return;
+        setShowOrgHint(hints.show === true);
+        setOrgNames(hints.show ? hints.names : []);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setShowOrgHint(false);
+        setOrgNames([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [convex, mode]);
 
   useEffect(() => {
     if (signupEnabled === false && mode === "signUp") {
@@ -207,10 +233,19 @@ export function AuthLogin() {
               <span>Work email</span>
               <input name="email" type="email" required disabled={pending} autoComplete="email" />
             </label>
-            <label className="field">
-              <span>Organization (optional)</span>
-              <input name="organizationHint" type="text" disabled={pending} />
-            </label>
+            {showOrgHint ? (
+              <label className="field">
+                <span>Organization (optional)</span>
+                <select name="organizationHint" disabled={pending} defaultValue="">
+                  <option value="">Select organization</option>
+                  {orgNames.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label className="field">
               <span>Note (optional)</span>
               <input name="note" type="text" disabled={pending} />

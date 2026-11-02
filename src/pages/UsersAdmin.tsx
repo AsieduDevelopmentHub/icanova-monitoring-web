@@ -6,7 +6,6 @@ import { OrgGate } from "../admin/OrgGate";
 import { accessMessage } from "../fleet/access";
 import { Dialog } from "../ui/Overlay";
 import { Panel } from "../ui/Panel";
-import { PasswordField } from "../ui/PasswordField";
 import { PageSkeleton } from "../ui/Skeleton";
 
 export function UsersAdmin() {
@@ -20,13 +19,16 @@ export function UsersAdmin() {
 function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
   const roster = useQuery(api.organizations.roster, { organizationId });
   const roles = useQuery(api.organizations.listRoles, { organizationId });
+  const pending = useQuery(api.memberRequests.listPending, { organizationId });
   const grant = useMutation(api.organizations.grant);
+  const confirm = useAction(api.memberRequests.confirm);
   const [userId, setUserId] = useState("");
   const [roleId, setRoleId] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  if (roster === undefined || roles === undefined) {
+  if (roster === undefined || roles === undefined || pending === undefined) {
     return <PageSkeleton rows={5} label="Loading users" />;
   }
   const selectedUser = roster.some((row) => row.userId === userId) ? userId : (roster[0]?.userId ?? "");
@@ -34,11 +36,12 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (pending) {
+    if (pendingAction) {
       return;
     }
     setError(null);
-    setPending(true);
+    setMessage(null);
+    setPendingAction(true);
     try {
       await grant({
         organizationId,
@@ -48,7 +51,23 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
     } catch (caught) {
       setError(accessMessage(caught));
     } finally {
-      setPending(false);
+      setPendingAction(false);
+    }
+  }
+
+  async function onConfirm(requestId: Id<"memberRequests">) {
+    setError(null);
+    setMessage(null);
+    setPendingAction(true);
+    try {
+      const result = await confirm({ organizationId, requestId });
+      setMessage(
+        `Confirmed ${result.email}. Temporary password ready for the confirmation email: ${result.temporaryPassword}`,
+      );
+    } catch (caught) {
+      setError(accessMessage(caught));
+    } finally {
+      setPendingAction(false);
     }
   }
 
@@ -56,7 +75,7 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
     <div className="stack">
       <div className="filter-bar">
         <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
-          Create user
+          Request user
         </button>
       </div>
       <Panel title="Membership">
@@ -91,14 +110,35 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
                 ))}
               </select>
             </label>
-            <button type="submit" className="btn btn-primary" disabled={pending}>
-              {pending ? "Granting…" : "Grant role"}
+            <button type="submit" className="btn btn-primary" disabled={pendingAction}>
+              {pendingAction ? "Granting…" : "Grant role"}
             </button>
           </div>
         </form>
         {error ? <p className="err">{error}</p> : null}
+        {message ? <p className="notice" role="status">{message}</p> : null}
       </Panel>
-      <CreateMemberDialog
+      <Panel title="Pending member requests">
+        {pending.length === 0 ? <p className="empty">No pending requests.</p> : null}
+        <ul>
+          {pending.map((row) => (
+            <li key={row.requestId} className="btn-row">
+              <span>
+                {row.name} · {row.email} · {row.roleName}
+              </span>
+              <button
+                type="button"
+                className="btn"
+                disabled={pendingAction}
+                onClick={() => void onConfirm(row.requestId)}
+              >
+                Confirm &amp; email
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Panel>
+      <RequestMemberDialog
         open={createOpen}
         organizationId={organizationId}
         roles={roles}
@@ -108,7 +148,7 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
   );
 }
 
-function CreateMemberDialog({
+function RequestMemberDialog({
   open,
   organizationId,
   roles,
@@ -119,7 +159,7 @@ function CreateMemberDialog({
   roles: Array<{ roleId: Id<"roles">; name: string }>;
   onClose: () => void;
 }) {
-  const createMember = useAction(api.organizations.createMember);
+  const requestMember = useMutation(api.memberRequests.request);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const defaultRole =
@@ -131,13 +171,12 @@ function CreateMemberDialog({
     setPending(true);
     const form = new FormData(event.currentTarget);
     try {
-      await createMember({
+      await requestMember({
         organizationId,
         email: String(form.get("email") ?? ""),
-        username: String(form.get("username") ?? ""),
-        name: String(form.get("name") ?? "") || undefined,
-        password: String(form.get("password") ?? ""),
+        name: String(form.get("name") ?? ""),
         roleId: String(form.get("roleId") ?? "") as Id<"roles">,
+        note: String(form.get("note") ?? "") || undefined,
       });
       onClose();
     } catch (caught) {
@@ -148,21 +187,20 @@ function CreateMemberDialog({
   }
 
   return (
-    <Dialog open={open} title="Create user" onClose={onClose}>
+    <Dialog open={open} title="Request user" onClose={onClose}>
       <form className="stack" onSubmit={(event) => void onSubmit(event)}>
+        <p className="meta">
+          Submits a member request. Confirming it provisions the account and prepares the email
+          notification.
+        </p>
         <label className="field">
-          <span>Display name</span>
-          <input name="name" disabled={pending} />
-        </label>
-        <label className="field">
-          <span>Username</span>
-          <input name="username" required minLength={3} maxLength={32} disabled={pending} />
+          <span>Full name</span>
+          <input name="name" required disabled={pending} />
         </label>
         <label className="field">
           <span>Email</span>
           <input name="email" type="email" required disabled={pending} />
         </label>
-        <PasswordField label="Temporary password" name="password" required minLength={8} disabled={pending} />
         <label className="field">
           <span>Role</span>
           <select name="roleId" defaultValue={defaultRole} required disabled={pending}>
@@ -173,9 +211,13 @@ function CreateMemberDialog({
             ))}
           </select>
         </label>
+        <label className="field">
+          <span>Note (optional)</span>
+          <input name="note" disabled={pending} />
+        </label>
         {error ? <p className="err">{error}</p> : null}
         <button type="submit" className="btn btn-primary" disabled={pending || !defaultRole}>
-          {pending ? "Creating…" : "Create user"}
+          {pending ? "Submitting…" : "Submit request"}
         </button>
       </form>
     </Dialog>

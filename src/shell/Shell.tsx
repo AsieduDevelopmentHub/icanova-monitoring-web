@@ -68,6 +68,51 @@ function accordionState(openGroup: NavGroup | null): Record<NavGroup, boolean> {
   return next;
 }
 
+function useNavAccess() {
+  const { isAuthenticated } = useConvexAuth();
+  const live = Boolean(import.meta.env.VITE_CONVEX_URL) && isAuthenticated;
+  const orgs = useQuery(api.organizations.mine, live ? {} : "skip");
+  const platform = useQuery(api.platformAdmin.isCapable, live ? {} : "skip");
+  const activated = Array.isArray(orgs) && orgs.length > 0;
+  const permissions = new Set(orgs?.[0]?.permissions ?? []);
+  const platformCapable = platform?.capable === true;
+  return { activated, permissions, platformCapable, ready: orgs !== undefined };
+}
+
+function navItemsForAccess(access: {
+  activated: boolean;
+  permissions: Set<string>;
+  platformCapable: boolean;
+}) {
+  if (!access.activated) {
+    return NAV.filter((item) => item.to === "/app");
+  }
+  return NAV.filter((item) => {
+    if (item.to === "/admin/platform") {
+      return access.platformCapable;
+    }
+    if (item.group !== "Administration") {
+      return true;
+    }
+    if (item.to === "/sites") {
+      return access.permissions.has("manage.sites") || access.permissions.has("view.dashboard");
+    }
+    if (item.to === "/admin/users" || item.to === "/admin/roles") {
+      return access.permissions.has("manage.users");
+    }
+    if (item.to === "/admin/settings") {
+      return access.permissions.has("manage.devices") || access.permissions.has("manage.users");
+    }
+    if (item.to === "/admin/ops") {
+      return access.permissions.has("view.audit") || access.permissions.has("manage.devices");
+    }
+    if (item.to === "/local/configure") {
+      return access.permissions.has("manage.devices");
+    }
+    return true;
+  });
+}
+
 function NavList({
   onNavigate,
   rail = false,
@@ -78,6 +123,9 @@ function NavList({
   onRailActivate?: (group: NavGroup) => void;
 }) {
   const { pathname } = useLocation();
+  const access = useNavAccess();
+  const items = navItemsForAccess(access);
+  const groups = NAV_GROUPS.filter((group) => items.some((item) => item.group === group));
   const [openGroup, setOpenGroup] = useState<NavGroup | null>(
     () => activeGroupFor(pathname) ?? "Overview",
   );
@@ -95,11 +143,7 @@ function NavList({
   if (rail) {
     return (
       <nav className="side-nav side-nav-rail" aria-label="Primary">
-        {NAV_GROUPS.map((group) => {
-          const items = NAV.filter((item) => item.group === group);
-          if (items.length === 0) {
-            return null;
-          }
+        {groups.map((group) => {
           const active = activeGroupFor(pathname) === group;
           return (
             <button
@@ -123,11 +167,8 @@ function NavList({
 
   return (
     <nav className="side-nav" aria-label="Primary">
-      {NAV_GROUPS.map((group) => {
-        const items = NAV.filter((item) => item.group === group);
-        if (items.length === 0) {
-          return null;
-        }
+      {groups.map((group) => {
+        const groupItems = items.filter((item) => item.group === group);
         const expanded = !collapsed[group];
         return (
           <div key={group} className="nav-group">
@@ -146,7 +187,7 @@ function NavList({
               </span>
             </button>
             <div className="nav-group-links" hidden={!expanded}>
-              {items.map((item) => (
+              {groupItems.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
@@ -184,7 +225,11 @@ function ThemeToggle({ mode, onToggle }: { mode: ThemeMode; onToggle: () => void
 
 function OrgContext({ compact = false }: { compact?: boolean }) {
   const { org } = useOrgContext();
-  if (!org?.name) {
+  const platform = useQuery(
+    api.platformAdmin.isCapable,
+    Boolean(import.meta.env.VITE_CONVEX_URL) ? {} : "skip",
+  );
+  if (!org?.name || platform?.capable !== true) {
     return null;
   }
   return (
@@ -233,7 +278,9 @@ function ProfileMenu({
   const navigate = useNavigate();
   const live = Boolean(import.meta.env.VITE_CONVEX_URL) && isAuthenticated;
   const user = useQuery(api.users.me, live ? {} : "skip");
+  const platform = useQuery(api.platformAdmin.isCapable, live ? {} : "skip");
   const { org } = useOrgContext();
+  const platformCapable = platform?.capable === true;
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -318,7 +365,7 @@ function ProfileMenu({
             <strong>{name}</strong>
             <span>{role}</span>
             {user?.email ? <span className="profile-email">{user.email}</span> : null}
-            {org?.name ? <span className="profile-org">{org.name}</span> : null}
+            {platformCapable && org?.name ? <span className="profile-org">{org.name}</span> : null}
           </div>
           <button type="button" role="menuitem" onClick={() => go("/admin/settings")}>
             Account settings
@@ -346,13 +393,21 @@ function ProfileMenu({
 
 function SidebarBrand({ collapsed }: { collapsed: boolean }) {
   const { org } = useOrgContext();
+  const platform = useQuery(
+    api.platformAdmin.isCapable,
+    Boolean(import.meta.env.VITE_CONVEX_URL) ? {} : "skip",
+  );
+  const showOrg = platform?.capable === true && Boolean(org?.name);
   return (
     <NavLink to="/app" className={`brand-lockup${collapsed ? " is-collapsed" : ""}`}>
       <span className="brand-plate">
         {collapsed ? (
-          <span className="brand-mark-compact" aria-label="iCaNova">
-            i
-          </span>
+          <img
+            className="brand-logo-compact"
+            src="/brand/logo-app-dark.png"
+            alt="iCaNova"
+            decoding="async"
+          />
         ) : (
           <img
             className="brand-logo-lockup"
@@ -362,9 +417,9 @@ function SidebarBrand({ collapsed }: { collapsed: boolean }) {
           />
         )}
       </span>
-      {!collapsed && org?.name ? (
-        <span className="brand-org" title={org.name}>
-          {org.name}
+      {!collapsed && showOrg ? (
+        <span className="brand-org" title={org!.name}>
+          {org!.name}
         </span>
       ) : null}
     </NavLink>

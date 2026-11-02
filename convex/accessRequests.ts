@@ -1,7 +1,27 @@
 import { ConvexError, v } from "convex/values";
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { normalizeEmail } from "./authIdentity";
 import { requireName } from "./identity";
+import { MAX_PAGE } from "./limits";
+
+/**
+ * Public: organization name list for access-request forms.
+ * Returns names only when the platform has more than two organizations;
+ * otherwise the org hint field should be omitted.
+ */
+export const organizationHints = query({
+  args: {},
+  handler: async (ctx) => {
+    const orgs = await ctx.db.query("organizations").take(MAX_PAGE);
+    if (orgs.length <= 2) {
+      return { show: false as const, names: [] as string[] };
+    }
+    return {
+      show: true as const,
+      names: orgs.map((org) => org.name).sort((a, b) => a.localeCompare(b)),
+    };
+  },
+});
 
 /** Public: request access when signup is disabled. Does not create an account. */
 export const submit = mutation({
@@ -17,6 +37,16 @@ export const submit = mutation({
     if (!email) {
       throw new ConvexError("Email is required");
     }
+    const orgs = await ctx.db.query("organizations").take(MAX_PAGE);
+    let organizationHint = args.organizationHint?.trim() || undefined;
+    if (orgs.length <= 2) {
+      organizationHint = undefined;
+    } else if (organizationHint) {
+      const allowed = new Set(orgs.map((org) => org.name));
+      if (!allowed.has(organizationHint)) {
+        throw new ConvexError("Unknown organization");
+      }
+    }
     const existing = await ctx.db
       .query("accessRequests")
       .withIndex("by_email", (q) => q.eq("email", email))
@@ -28,7 +58,7 @@ export const submit = mutation({
     const requestKey = await ctx.db.insert("accessRequests", {
       name,
       email,
-      organizationHint: args.organizationHint?.trim() || undefined,
+      organizationHint,
       note: args.note?.trim() || undefined,
       status: "pending",
       createdAt: Date.now(),

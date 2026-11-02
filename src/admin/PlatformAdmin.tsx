@@ -53,10 +53,54 @@ export function PlatformAdmin() {
         <p>Create organizations and seed administrators. Normal users cannot self-provision orgs.</p>
       </header>
       <div className="stack">
+        <DemoSeedPanel secret={capable.capable ? undefined : secret} />
         <CreateOrgPanel secret={capable.capable ? undefined : secret} />
         <AccessRequestsPanel secret={capable.capable ? undefined : secret} />
       </div>
     </section>
+  );
+}
+
+function DemoSeedPanel({ secret }: { secret?: string }) {
+  const seed = useAction(api.demoSeed.seedDemoFleet);
+  const [error, setError] = useState<string | null>(null);
+  const [ok, setOk] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function onSeed() {
+    setError(null);
+    setOk(null);
+    setPending(true);
+    try {
+      const result = await seed({
+        secret: secret ?? "",
+        organizationName: "Demo Power Ghana",
+      });
+      const users = result.users
+        .map((user) => `${user.roleName}: ${user.email}`)
+        .join(" · ");
+      setOk(
+        `Seeded ${result.sites} sites / ${result.gateways} gateways. Password ${result.password}. ${users}. Unactivated: ${result.unactivated.email}`,
+      );
+    } catch (caught) {
+      setError(accessMessage(caught));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <Panel title="Demo fleet seed">
+      <p className="meta">
+        Creates Demo Power Ghana with 56 regional sites, linked gateways, health/telemetry, and
+        Admin / Sub-admin / Operator / Viewer users plus one unactivated account.
+      </p>
+      {error ? <p className="err">{error}</p> : null}
+      {ok ? <p className="notice" role="status">{ok}</p> : null}
+      <button type="button" className="btn btn-primary" disabled={pending} onClick={() => void onSeed()}>
+        {pending ? "Seeding…" : "Seed demo fleet"}
+      </button>
+    </Panel>
   );
 }
 

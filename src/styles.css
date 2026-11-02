@@ -384,7 +384,7 @@ a.brand-lockup:hover .brand-mark {
   gap: var(--space-2);
   padding: 8px var(--space-2);
   border-left: 2px solid transparent;
-  color: color-mix(in srgb, var(--ink-nav) 92%, var(--muted-nav));
+  color: var(--ink-nav);
   font-size: 0.9rem;
   font-weight: 500;
   line-height: 1.3;
@@ -401,6 +401,15 @@ a.brand-lockup:hover .brand-mark {
   border-left-color: var(--accent);
   color: var(--ink-nav);
   background: var(--shell-nav-active);
+}
+
+.nav-link svg {
+  color: var(--color-titanium);
+}
+
+.nav-link.on svg,
+.nav-link:hover svg {
+  color: var(--ink-nav);
 }
 
 .nav-badge {
@@ -560,8 +569,8 @@ a.brand-lockup:hover .brand-mark {
   min-width: 34px;
   min-height: 34px;
   padding: 2px;
-  border-color: var(--line-strong);
-  background: var(--bg-inset);
+  border-color: transparent;
+  background: transparent;
   color: var(--ink);
 }
 
@@ -1517,14 +1526,32 @@ table.cfg td.num {
   width: 34px;
   height: 34px;
   padding: 0;
-  border: 1px solid var(--line-strong);
+  border: 1px solid transparent;
   border-radius: var(--radius);
-  background: var(--bg-elev);
+  background: transparent;
   color: var(--ink);
 }
 
 .theme-toggle:hover {
-  border-color: var(--accent);
+  background: var(--bg-inset);
+  border-color: transparent;
+}
+
+.topbar .icon-btn {
+  border-color: transparent;
+  background: transparent;
+}
+
+.topbar .icon-btn:hover,
+.topbar .icon-btn:focus-visible {
+  background: var(--bg-inset);
+  border-color: transparent;
+}
+
+.topbar .profile-trigger.compact:hover,
+.topbar .profile-trigger.compact:focus-visible {
+  background: var(--bg-inset);
+  border-color: transparent;
 }
 
 .auth-screen {
@@ -2343,8 +2370,8 @@ table.cfg td.num {
   padding: 0 var(--space-2);
   border: none;
   background: transparent;
-  /* Slightly quieter than nav links — still clearly readable. */
-  color: color-mix(in srgb, var(--ink-nav) 76%, var(--muted-nav));
+  /* Distinct from nav links: titanium label vs warm-white destinations. */
+  color: var(--color-titanium);
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
@@ -2355,21 +2382,23 @@ table.cfg td.num {
 }
 
 .nav-group-toggle:hover {
-  color: color-mix(in srgb, var(--ink-nav) 90%, var(--muted-nav));
+  color: var(--ink-nav);
   border-color: transparent;
 }
 
 .nav-group-toggle .nav-group-label svg {
-  opacity: 0.85;
+  opacity: 0.9;
   color: currentColor;
 }
 
 .nav-group-toggle .nav-chevron {
-  color: color-mix(in srgb, var(--ink-nav) 62%, var(--muted-nav));
+  color: var(--color-titanium);
+  opacity: 0.9;
 }
 
 .nav-group-toggle:hover .nav-chevron {
-  color: color-mix(in srgb, var(--ink-nav) 82%, var(--muted-nav));
+  color: var(--ink-nav);
+  opacity: 1;
 }
 
 .nav-group-links {
@@ -2626,6 +2655,129 @@ html[data-theme="dark"] {
 
 .cc-page .page-head {
   display: none;
+}
+
+.cc-stats-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 1100px) {
+  .cc-stats-grid {
+    grid-template-columns: minmax(0, 1.45fr) minmax(16rem, 0.7fr);
+    align-items: stretch;
+  }
+}
+
+.region-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 280px;
+}
+
+.region-chart-plot {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  min-height: 220px;
+  padding: var(--space-2) 0 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.region-bar-col {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.region-bar-stack {
+  display: flex;
+  width: 100%;
+  max-width: 28px;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  overflow: hidden;
+  border-radius: 3px 3px 0 0;
+}
+
+.region-bar {
+  display: block;
+  width: 100%;
+  min-height: 2px;
+}
+
+.region-bar-label {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  transform: rotate(-38deg);
+  transform-origin: top center;
+  white-space: nowrap;
+}
+
+.region-chart-legend,
+.site-count-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.region-chart-legend span,
+.site-count-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.region-chart-legend i,
+.site-count-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.site-count-stats {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: center;
+}
+
+.site-count-ring {
+  width: min(180px, 100%);
+  height: auto;
+}
+
+.site-count-legend {
+  width: 100%;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.site-count-legend li {
+  justify-content: space-between;
+  width: 100%;
+}
+
+.site-count-legend strong {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--ink);
 }
 
 .cc-layout {
@@ -3035,20 +3187,19 @@ html[data-theme="dark"] {
 }
 
 .shell.nav-collapsed .brand-plate {
-  width: 40px;
-  padding: 0.45rem;
+  width: 44px;
+  padding: 0;
   border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  overflow: hidden;
 }
 
-.brand-mark-compact {
+.brand-logo-compact {
   display: block;
-  color: #f4f1ea;
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  text-align: center;
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
 }
 
 .brand-org {
@@ -3096,8 +3247,8 @@ html[data-theme="dark"] {
   padding: 0;
   border: 1.5px solid var(--accent);
   border-radius: 999px;
-  background: var(--bg-elev);
-  color: var(--ink);
+  background: var(--accent);
+  color: var(--accent-contrast);
   box-shadow:
     0 0 0 2px color-mix(in srgb, var(--bg-nav) 88%, transparent),
     0 2px 8px rgba(17, 24, 32, 0.28);
@@ -3117,8 +3268,8 @@ html[data-theme="dark"] {
 
 .sidebar-collapse-btn:hover,
 .sidebar-collapse-btn:focus-visible {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--accent-dim);
+  border-color: var(--accent-dim);
   color: var(--accent-contrast);
   box-shadow:
     0 0 0 2px color-mix(in srgb, var(--bg-nav) 88%, transparent),
@@ -3143,8 +3294,8 @@ html[data-theme="dark"] {
 }
 
 html[data-theme="dark"] .sidebar-collapse-btn {
-  background: var(--color-deep-navy);
-  color: var(--color-warm-white);
+  background: var(--accent);
+  color: var(--accent-contrast);
   border-color: var(--accent);
   box-shadow:
     0 0 0 2px #0c1016,
@@ -3153,7 +3304,8 @@ html[data-theme="dark"] .sidebar-collapse-btn {
 
 html[data-theme="dark"] .sidebar-collapse-btn:hover,
 html[data-theme="dark"] .sidebar-collapse-btn:focus-visible {
-  background: var(--accent);
+  background: var(--accent-dim);
+  border-color: var(--accent-dim);
   color: var(--accent-contrast);
 }
 
@@ -3247,7 +3399,7 @@ html[data-theme="dark"] .sidebar-collapse-btn:focus-visible {
 
 .nav-group-toggle {
   min-height: 34px;
-  color: color-mix(in srgb, var(--ink-nav) 76%, var(--muted-nav));
+  color: var(--color-titanium);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;

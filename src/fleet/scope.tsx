@@ -56,6 +56,7 @@ function OrgBody({
 }) {
   const me = useQuery(api.users.me, {});
   const orgs = useQuery(api.organizations.mine, {});
+  const platform = useQuery(api.platformAdmin.isCapable, {});
   const ensure = useMutation(api.users.ensure);
   const { signOut } = useAuthActions();
   const [ensureError, setEnsureError] = useState(false);
@@ -100,16 +101,19 @@ function OrgBody({
   }
   const listed = orgs as OrgRow[];
   const org = listed.find((item) => item.organizationId === picked) ?? listed[0];
+  const showOrgPicker = platform?.capable === true && listed.length > 1;
   return (
     <div className="stack">
-      <FilterBar label="Organization">
-        <FilterSelect
-          label="Organization"
-          value={org.organizationId}
-          onChange={setPicked}
-          options={listed.map((item) => ({ value: item.organizationId, label: item.name }))}
-        />
-      </FilterBar>
+      {showOrgPicker ? (
+        <FilterBar label="Organization">
+          <FilterSelect
+            label="Organization"
+            value={org.organizationId}
+            onChange={setPicked}
+            options={listed.map((item) => ({ value: item.organizationId, label: item.name }))}
+          />
+        </FilterBar>
+      ) : null}
       <FleetBoundary key={org.organizationId}>{children(org)}</FleetBoundary>
     </div>
   );

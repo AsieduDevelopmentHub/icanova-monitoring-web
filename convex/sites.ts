@@ -136,6 +136,7 @@ export const provision = mutation({
     organizationId: v.id("organizations"),
     name: v.string(),
     code: v.string(),
+    region: v.optional(v.string()),
     latitude: v.optional(v.number()),
     longitude: v.optional(v.number()),
     deviceId: v.optional(v.id("devices")),
@@ -212,6 +213,7 @@ export const provision = mutation({
       name: string;
       code: string;
       generatorCount: number;
+      region?: string;
       latitude?: number;
       longitude?: number;
       locationUpdatedAt?: number;
@@ -221,6 +223,9 @@ export const provision = mutation({
       code,
       generatorCount: 0,
     };
+    if (args.region?.trim()) {
+      siteFields.region = args.region.trim();
+    }
     if (args.latitude !== undefined && args.longitude !== undefined) {
       siteFields.latitude = requireCoordinate(args.latitude, "latitude");
       siteFields.longitude = requireCoordinate(args.longitude, "longitude");

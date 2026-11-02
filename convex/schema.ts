@@ -111,9 +111,27 @@ export default defineSchema({
     latitude: v.optional(v.number()),
     longitude: v.optional(v.number()),
     locationUpdatedAt: v.optional(v.number()),
+    /** Optional administrative region label (e.g. Ghana region). */
+    region: v.optional(v.string()),
   })
     .index("by_org", ["organizationId"])
-    .index("by_org_code", ["organizationId", "code"]),
+    .index("by_org_code", ["organizationId", "code"])
+    .index("by_org_region", ["organizationId", "region"]),
+
+  /** Org admin requests a member; confirmation provisions the account and notifies by email. */
+  memberRequests: defineTable({
+    organizationId: v.id("organizations"),
+    email: v.string(),
+    name: v.string(),
+    roleId: v.id("roles"),
+    note: v.optional(v.string()),
+    status: v.union(v.literal("pending"), v.literal("confirmed"), v.literal("closed")),
+    createdAt: v.number(),
+    createdBy: v.optional(v.id("users")),
+    confirmedAt: v.optional(v.number()),
+  })
+    .index("by_org_status", ["organizationId", "status"])
+    .index("by_email", ["email"]),
 
   devices: defineTable({
     organizationId: v.id("organizations"),
