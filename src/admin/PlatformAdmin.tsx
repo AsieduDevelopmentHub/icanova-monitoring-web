@@ -53,11 +53,87 @@ export function PlatformAdmin() {
         <p>Create organizations and seed administrators. Normal users cannot self-provision orgs.</p>
       </header>
       <div className="stack">
+        <AttachSelfPanel secret={capable.capable ? undefined : secret} />
         <DemoSeedPanel secret={capable.capable ? undefined : secret} />
         <CreateOrgPanel secret={capable.capable ? undefined : secret} />
         <AccessRequestsPanel secret={capable.capable ? undefined : secret} />
       </div>
     </section>
+  );
+}
+
+function AttachSelfPanel({ secret }: { secret?: string }) {
+  const orgs = useQuery(api.platformAdmin.listOrganizations, { secret });
+  const attach = useMutation(api.platformAdmin.attachSelfToOrganization);
+  const [organizationId, setOrganizationId] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [ok, setOk] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  if (orgs === undefined) {
+    return <PageSkeleton rows={2} label="Loading organizations" />;
+  }
+  const selected =
+    orgs.some((org) => org.organizationId === organizationId)
+      ? organizationId
+      : (orgs[0]?.organizationId ?? "");
+
+  async function onAttach() {
+    if (!selected) {
+      return;
+    }
+    setError(null);
+    setOk(null);
+    setPending(true);
+    try {
+      const result = await attach({
+        secret: secret ?? "",
+        organizationId: selected as Id<"organizations">,
+      });
+      setOk(
+        result.created
+          ? `Membership created as ${result.roleName}. Reload Command Center.`
+          : `Membership updated as ${result.roleName}. Reload Command Center.`,
+      );
+    } catch (caught) {
+      setError(accessMessage(caught));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <Panel title="Activate this platform account">
+      <p className="meta">
+        Platform admin email alone does not grant org membership. Attach yourself to an organization
+        to clear “Account not yet activated.”
+      </p>
+      {orgs.length === 0 ? (
+        <p className="meta">No organizations yet — create one below first.</p>
+      ) : (
+        <div className="filter-bar">
+          <label className="filter-field grow">
+            <span>Organization</span>
+            <select
+              value={selected}
+              onChange={(event) => setOrganizationId(event.target.value)}
+              disabled={pending}
+            >
+              {orgs.map((org) => (
+                <option key={org.organizationId} value={org.organizationId}>
+                  {org.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="button" className="btn btn-primary" disabled={pending || !selected} onClick={() => void onAttach()}>
+            {pending ? "Attaching…" : "Attach my account"}
+          </button>
+        </div>
+      )}
+      {error ? <p className="err">{error}</p> : null}
+      {ok ? <p className="notice" role="status">{ok}</p> : null}
+    </Panel>
   );
 }
 

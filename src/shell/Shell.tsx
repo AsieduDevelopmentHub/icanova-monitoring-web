@@ -84,8 +84,12 @@ function navItemsForAccess(access: {
   permissions: Set<string>;
   platformCapable: boolean;
 }) {
+  // Platform admins must reach /admin/platform even before they have an org membership.
   if (!access.activated) {
-    return NAV.filter((item) => item.to === "/app");
+    return NAV.filter(
+      (item) =>
+        item.to === "/app" || (item.to === "/admin/platform" && access.platformCapable),
+    );
   }
   return NAV.filter((item) => {
     if (item.to === "/admin/platform") {

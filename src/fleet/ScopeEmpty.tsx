@@ -11,7 +11,7 @@ export type ScopeEmptyLayout = "command" | "list" | "desk";
 const COPY: Record<ScopeEmptyReason, { title: string; body: string; action?: ReactNode }> = {
   organization: {
     title: "Account not yet activated",
-    body: "Your account is signed in but has not been activated for an organization. An administrator will confirm your access request and notify you by email.",
+    body: "Your account is signed in but is not a member of an organization yet. Platform admins can create or seed an organization from Platform admin; other users need an administrator to grant membership.",
   },
   sites: {
     title: "No sites yet",
@@ -36,18 +36,26 @@ export function ScopeEmpty({
   showSiteFilter = true,
   caption = "Organization data",
   columns = ["Name", "Status", "Updated"],
+  platformCapable = false,
 }: {
   reason: ScopeEmptyReason;
   layout?: ScopeEmptyLayout;
   showSiteFilter?: boolean;
   caption?: string;
   columns?: string[];
+  platformCapable?: boolean;
 }) {
   const copy = COPY[reason];
   if (reason === "organization") {
     return (
       <div className="stack scope-empty">
-        <EmptyState title={copy.title} body={copy.body} />
+        <EmptyState
+          title={copy.title}
+          body={copy.body}
+          action={
+            platformCapable ? <Link to="/admin/platform">Open Platform admin</Link> : undefined
+          }
+        />
       </div>
     );
   }

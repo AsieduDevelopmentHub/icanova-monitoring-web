@@ -1,8 +1,8 @@
 import { createAccount } from "@convex-dev/auth/server";
 import { ConvexError, v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { action, mutation, query } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { action, mutation, query, type ActionCtx } from "./_generated/server";
+import { api, internal } from "./_generated/api";
 import {
   assertPlatformAdminSecret,
   isPlatformAdminEmail,
@@ -17,23 +17,33 @@ import { MAX_PAGE } from "./limits";
 export const isCapable = query({
   args: {},
   handler: async (ctx) => {
-    const resolved = await resolveAppUser(ctx);
-    if (!resolved) {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
       return { capable: false as const };
     }
-    const email = normalizeEmail(resolved.user.email);
-    return { capable: isPlatformAdminEmail(email) };
+    // Prefer identity email — token-only user rows may omit profile email.
+    const identityEmail = normalizeEmail(identity.email);
+    if (isPlatformAdminEmail(identityEmail)) {
+      return { capable: true as const };
+    }
+    const resolved = await resolveAppUser(ctx);
+    const userEmail = normalizeEmail(resolved?.user.email);
+    return { capable: isPlatformAdminEmail(userEmail) };
   },
 });
 
-async function assertPlatformCaller(
-  ctx: { auth: { getUserIdentity: () => Promise<{ email?: string | null } | null> } },
-  secret: string | undefined,
-) {
+async function assertPlatformCaller(ctx: ActionCtx, secret: string | undefined) {
   const identity = await ctx.auth.getUserIdentity();
   const email = normalizeEmail(identity?.email ?? null);
   if (isPlatformAdminEmail(email)) {
     return;
+  }
+  // JWT often omits email; isCapable resolves the canonical users row.
+  if (identity) {
+    const capable = await ctx.runQuery(api.platformAdmin.isCapable, {});
+    if (capable.capable) {
+      return;
+    }
   }
   assertPlatformAdminSecret(secret);
 }
@@ -225,5 +235,70 @@ export const listOrganizations = query({
       organizationId: org._id,
       name: org.name,
     }));
+  },
+});
+
+/**
+ * Attach the signed-in platform admin (or a secret-authorized userId) to an org.
+ * Platform admin email alone does not create memberships — this does.
+ */
+export const attachSelfToOrganization = mutation({
+  args: {
+    secret: v.optional(v.string()),
+    organizationId: v.id("organizations"),
+    userId: v.optional(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    // Do not call resolveAppUser first — it requires a session and blocks secret bootstrap.
+    const identity = await ctx.auth.getUserIdentity();
+    let resolvedUserId: Id<"users"> | undefined;
+    let emailOk = false;
+    if (identity) {
+      emailOk = isPlatformAdminEmail(normalizeEmail(identity.email));
+      const resolved = await resolveAppUser(ctx);
+      if (resolved) {
+        resolvedUserId = resolved.user._id;
+        emailOk =
+          emailOk || isPlatformAdminEmail(normalizeEmail(resolved.user.email));
+      }
+    }
+    if (!emailOk) {
+      assertPlatformAdminSecret(args.secret);
+    }
+    const userId = args.userId ?? resolvedUserId;
+    if (!userId) {
+      throw new ConvexError("Sign in as a platform admin, or pass userId with the platform secret.");
+    }
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      throw new ConvexError("Organization not found");
+    }
+    const roles = await ctx.db
+      .query("roles")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .take(MAX_PAGE);
+    const role =
+      roles.find((row) => row.name === "Admin") ??
+      roles.find((row) => row.name === "Owner") ??
+      roles[0];
+    if (!role) {
+      throw new ConvexError("Organization has no roles");
+    }
+    const existing = await ctx.db
+      .query("memberships")
+      .withIndex("by_org_user", (q) =>
+        q.eq("organizationId", args.organizationId).eq("userId", userId),
+      )
+      .unique();
+    if (existing) {
+      await ctx.db.patch(existing._id, { roleId: role._id });
+      return { membershipId: existing._id, roleName: role.name, created: false as const };
+    }
+    const membershipId = await ctx.db.insert("memberships", {
+      organizationId: args.organizationId,
+      userId,
+      roleId: role._id,
+    });
+    return { membershipId, roleName: role.name, created: true as const };
   },
 });

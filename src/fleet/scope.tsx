@@ -62,9 +62,15 @@ function OrgBody({
   const [ensureError, setEnsureError] = useState(false);
   const [picked, setPicked] = useState("");
 
-  // Authenticated session with no users row yet → provision once (email-rebind safe).
+  // Provision / rebind: missing users row, or token-only shell without email.
   useEffect(() => {
-    if (me !== null || ensureError) {
+    if (ensureError) {
+      return;
+    }
+    if (me !== null && me !== undefined && me.email) {
+      return;
+    }
+    if (me === undefined) {
       return;
     }
     let cancelled = false;
@@ -97,7 +103,13 @@ function OrgBody({
     );
   }
   if (!Array.isArray(orgs) || orgs.length === 0) {
-    return <ScopeEmpty reason="organization" {...emptyProps} />;
+    return (
+      <ScopeEmpty
+        reason="organization"
+        platformCapable={platform?.capable === true}
+        {...emptyProps}
+      />
+    );
   }
   const listed = orgs as OrgRow[];
   const org = listed.find((item) => item.organizationId === picked) ?? listed[0];

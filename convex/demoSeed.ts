@@ -1,8 +1,8 @@
 import { createAccount } from "@convex-dev/auth/server";
 import { ConvexError, v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { action, internalMutation } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { action, internalMutation, type ActionCtx } from "./_generated/server";
+import { api, internal } from "./_generated/api";
 import {
   assertPlatformAdminSecret,
   isPlatformAdminEmail,
@@ -48,14 +48,18 @@ const DEMO_USERS: ReadonlyArray<{
   },
 ];
 
-async function assertPlatformCaller(
-  ctx: { auth: { getUserIdentity: () => Promise<{ email?: string | null } | null> } },
-  secret: string | undefined,
-) {
+async function assertPlatformCaller(ctx: ActionCtx, secret: string | undefined) {
   const identity = await ctx.auth.getUserIdentity();
   const email = normalizeEmail(identity?.email ?? null);
   if (isPlatformAdminEmail(email)) {
     return;
+  }
+  // JWT often omits email; isCapable resolves the canonical users row.
+  if (identity) {
+    const capable = await ctx.runQuery(api.platformAdmin.isCapable, {});
+    if (capable.capable) {
+      return;
+    }
   }
   assertPlatformAdminSecret(secret);
 }

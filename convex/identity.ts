@@ -19,30 +19,61 @@ export async function userByToken(ctx: DbCtx, tokenIdentifier: string) {
     .unique();
 }
 
-/** Resolve the app users row for the current identity without creating one. */
-export async function resolveAppUser(ctx: DbCtx) {
-  const identity = await requireIdentity(ctx);
-  const byToken = await userByToken(ctx, identity.tokenIdentifier);
-  if (byToken) {
-    return { identity, user: byToken };
+/** Convex Auth tokenIdentifier is often `{issuer}|{usersId}|{sessionId}`. */
+async function userFromAuthToken(ctx: DbCtx, tokenIdentifier: string, subject?: string) {
+  const candidates = new Set<string>();
+  const sub = subject?.trim() ?? "";
+  if (sub.length > 0) {
+    candidates.add(sub);
   }
-  const email = normalizeEmail(identity.email);
-  if (email) {
-    const byEmail = await userByEmail(ctx, email);
-    if (byEmail) {
-      return { identity, user: byEmail };
+  for (const part of tokenIdentifier.split("|")) {
+    const trimmed = part.trim();
+    if (trimmed.startsWith("mn") && trimmed.length > 20) {
+      candidates.add(trimmed);
     }
   }
-  const subject = identity.subject?.trim() ?? "";
-  if (subject.length > 0) {
+  for (const candidate of candidates) {
     try {
-      const byId = await ctx.db.get(subject as Id<"users">);
-      if (byId) {
-        return { identity, user: byId };
+      const row = await ctx.db.get(candidate as Id<"users">);
+      if (row) {
+        return row;
       }
     } catch {
       // not a users id
     }
+  }
+  return null;
+}
+
+/** Resolve the app users row for the current identity without creating one. */
+export async function resolveAppUser(ctx: DbCtx) {
+  const identity = await requireIdentity(ctx);
+  const email = normalizeEmail(identity.email);
+  const byToken = await userByToken(ctx, identity.tokenIdentifier);
+  const byEmail = email ? await userByEmail(ctx, email) : null;
+  const byAuthId = await userFromAuthToken(
+    ctx,
+    identity.tokenIdentifier,
+    identity.subject,
+  );
+
+  // Prefer the email/canonical row when a token-only duplicate also exists.
+  // Memberships are usually on the email user; Convex Auth may create a separate
+  // tokenIdentifier row without email, which previously made the account look unactivated.
+  if (byEmail && byToken && byEmail._id !== byToken._id) {
+    return { identity, user: byEmail };
+  }
+  if (byAuthId && byToken && byAuthId._id !== byToken._id) {
+    return { identity, user: byAuthId };
+  }
+  if (byToken) {
+    return { identity, user: byToken };
+  }
+  if (byEmail) {
+    return { identity, user: byEmail };
+  }
+  if (byAuthId) {
+    return { identity, user: byAuthId };
   }
   return null;
 }
@@ -70,14 +101,30 @@ export async function userByEmail(ctx: DbCtx, email: string) {
  */
 export async function ensureUser(ctx: MutationCtx) {
   const identity = await requireIdentity(ctx);
+  const email = normalizeEmail(identity.email);
   const existing = await userByToken(ctx, identity.tokenIdentifier);
+  const canonical =
+    (email ? await userByEmail(ctx, email) : null) ??
+    (await userFromAuthToken(ctx, identity.tokenIdentifier, identity.subject));
+
+  if (existing && canonical && existing._id !== canonical._id) {
+    // Drop the duplicate token pointer so memberships on the canonical row win.
+    await ctx.db.patch(existing._id, { tokenIdentifier: undefined });
+    await ctx.db.patch(canonical._id, {
+      tokenIdentifier: identity.tokenIdentifier,
+      email: email ?? canonical.email,
+      phone: identity.phoneNumber ?? canonical.phone,
+      name: identity.name ?? canonical.name,
+    });
+    return { identity, user: (await ctx.db.get(canonical._id))! };
+  }
+
   if (existing) {
     const patch: {
       email?: string;
       phone?: string;
       name?: string;
     } = {};
-    const email = normalizeEmail(identity.email);
     if (email && existing.email !== email) {
       patch.email = email;
     }
@@ -98,45 +145,18 @@ export async function ensureUser(ctx: MutationCtx) {
     return { identity, user: existing };
   }
 
-  const email = normalizeEmail(identity.email);
-  if (email) {
-    const byEmail = await userByEmail(ctx, email);
-    if (byEmail) {
-      await ctx.db.patch(byEmail._id, {
-        tokenIdentifier: identity.tokenIdentifier,
-        email,
-        phone: identity.phoneNumber ?? byEmail.phone,
-        name: identity.name ?? byEmail.name,
-      });
-      const rebound = await ctx.db.get(byEmail._id);
-      if (!rebound) {
-        throw new Error("Unauthorized");
-      }
-      return { identity, user: rebound };
+  if (canonical) {
+    await ctx.db.patch(canonical._id, {
+      tokenIdentifier: identity.tokenIdentifier,
+      email: email ?? canonical.email,
+      phone: identity.phoneNumber ?? canonical.phone,
+      name: identity.name ?? canonical.name,
+    });
+    const rebound = await ctx.db.get(canonical._id);
+    if (!rebound) {
+      throw new Error("Unauthorized");
     }
-  }
-
-  // Convex Auth may have already inserted the users row (same subject as user id).
-  const subject = identity.subject?.trim() ?? "";
-  if (subject.length > 0) {
-    try {
-      const byId = await ctx.db.get(subject as Id<"users">);
-      if (byId) {
-        await ctx.db.patch(byId._id, {
-          tokenIdentifier: identity.tokenIdentifier,
-          email: email ?? byId.email,
-          phone: identity.phoneNumber ?? byId.phone,
-          name: identity.name ?? byId.name,
-        });
-        const patched = await ctx.db.get(byId._id);
-        if (!patched) {
-          throw new Error("Unauthorized");
-        }
-        return { identity, user: patched };
-      }
-    } catch {
-      // subject is not a users id — fall through to insert
-    }
+    return { identity, user: rebound };
   }
 
   const userId = await ctx.db.insert("users", {
