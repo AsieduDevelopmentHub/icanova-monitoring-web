@@ -264,6 +264,10 @@ function RecordAlarm({ organizationId }: { organizationId: string }) {
       setError("Create a device before recording an alarm.");
       return;
     }
+    if (!device.siteId) {
+      setError("Selected device is not assigned to a site.");
+      return;
+    }
     setError(null);
     try {
       await raise({

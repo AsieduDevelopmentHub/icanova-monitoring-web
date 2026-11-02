@@ -199,9 +199,14 @@ describe("retention", () => {
       for (const row of events) {
         await ctx.db.patch(row._id, { at: aged });
       }
+      const device = await ctx.db.get(deviceId);
+      const siteId = device?.siteId;
+      if (!siteId) {
+        throw new Error("seeded device missing siteId");
+      }
       await ctx.db.insert("alarms", {
         organizationId,
-        siteId: (await ctx.db.get(deviceId))!.siteId,
+        siteId,
         deviceId,
         generatorId: null,
         kind: "transport",
