@@ -9,21 +9,19 @@ import {
 } from "./authIdentity";
 
 describe("isSignupEnabled / assertSignupAllowed", () => {
-  test("defaults to enabled when unset", () => {
-    expect(isSignupEnabled({} as NodeJS.ProcessEnv)).toBe(true);
+  test("defaults to disabled when unset", () => {
+    expect(isSignupEnabled({} as NodeJS.ProcessEnv)).toBe(false);
   });
 
-  test("disables on 0 / false / off / no", () => {
-    expect(isSignupEnabled({ AUTH_SIGNUP_ENABLED: "0" } as NodeJS.ProcessEnv)).toBe(false);
-    expect(isSignupEnabled({ AUTH_SIGNUP_ENABLED: "false" } as NodeJS.ProcessEnv)).toBe(false);
-    expect(isSignupEnabled({ AUTH_SIGNUP_ENABLED: "OFF" } as NodeJS.ProcessEnv)).toBe(false);
-    expect(isSignupEnabled({ AUTH_SIGNUP_ENABLED: "no" } as NodeJS.ProcessEnv)).toBe(false);
+  test("enables on 1 / true / on / yes", () => {
+    expect(isSignupEnabled({ AUTH_SIGNUP_ENABLED: "1" } as NodeJS.ProcessEnv)).toBe(true);
+    expect(isSignupEnabled({ AUTH_SIGNUP_ENABLED: "true" } as NodeJS.ProcessEnv)).toBe(true);
+    expect(isSignupEnabled({ AUTH_SIGNUP_ENABLED: "ON" } as NodeJS.ProcessEnv)).toBe(true);
+    expect(isSignupEnabled({ AUTH_SIGNUP_ENABLED: "yes" } as NodeJS.ProcessEnv)).toBe(true);
   });
 
   test("assertSignupAllowed throws when disabled", () => {
-    expect(() => assertSignupAllowed({ AUTH_SIGNUP_ENABLED: "0" } as NodeJS.ProcessEnv)).toThrow(
-      ConvexError,
-    );
+    expect(() => assertSignupAllowed({} as NodeJS.ProcessEnv)).toThrow(ConvexError);
   });
 });
 

@@ -70,6 +70,8 @@ export default defineSchema({
   organizations: defineTable({
     name: v.string(),
     createdAt: v.number(),
+    /** Human site codes: digits-only or text (org admin setting). */
+    siteCodeFormat: v.optional(v.union(v.literal("numeric"), v.literal("text"))),
   }),
 
   roles: defineTable({
@@ -86,20 +88,37 @@ export default defineSchema({
     .index("by_org_user", ["organizationId", "userId"])
     .index("by_user", ["userId"]),
 
+  /** Access requests when public signup is disabled. */
+  accessRequests: defineTable({
+    name: v.string(),
+    email: v.string(),
+    organizationHint: v.optional(v.string()),
+    note: v.optional(v.string()),
+    status: v.union(v.literal("pending"), v.literal("closed")),
+    createdAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_status_created", ["status", "createdAt"]),
+
   sites: defineTable({
     organizationId: v.id("organizations"),
     name: v.string(),
+    /** Human-facing site code (unique per org). Optional until backfill. */
+    code: v.optional(v.string()),
     generatorCount: v.optional(v.number()),
     recounting: v.optional(v.boolean()),
     /** Optional WGS84 site coordinates for map placement. */
     latitude: v.optional(v.number()),
     longitude: v.optional(v.number()),
     locationUpdatedAt: v.optional(v.number()),
-  }).index("by_org", ["organizationId"]),
+  })
+    .index("by_org", ["organizationId"])
+    .index("by_org_code", ["organizationId", "code"]),
 
   devices: defineTable({
     organizationId: v.id("organizations"),
-    siteId: v.id("sites"),
+    /** Missing/undefined = unassigned inventory pool. */
+    siteId: v.optional(v.id("sites")),
     name: v.string(),
     identity: v.string(),
     /**
@@ -117,6 +136,7 @@ export default defineSchema({
     ingestCredentialVersion: v.optional(v.number()),
     ingestCredentialRotatedAt: v.optional(v.number()),
   })
+    .index("by_org", ["organizationId"])
     .index("by_org_site", ["organizationId", "siteId"])
     .index("by_org_identity", ["organizationId", "identity"])
     .index("by_identity", ["identity"]),
@@ -166,8 +186,11 @@ export default defineSchema({
     siteId: v.id("sites"),
     deviceId: v.id("devices"),
     name: v.string(),
+    /** Human-facing generator code (unique per org when set). */
+    code: v.optional(v.string()),
   })
     .index("by_org_site", ["organizationId", "siteId"])
+    .index("by_org_code", ["organizationId", "code"])
     .index("by_device", ["deviceId"]),
 
   telemetryCurrent: defineTable({

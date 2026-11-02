@@ -33,6 +33,7 @@ export const NAV: NavItem[] = [
   { to: "/admin/users", label: "Users", icon: "users", group: "Administration" },
   { to: "/admin/roles", label: "Roles", icon: "roles", group: "Administration" },
   { to: "/admin/settings", label: "Settings", icon: "settings", group: "Administration" },
+  { to: "/admin/platform", label: "Platform", icon: "configure", group: "Administration" },
   { to: "/local/configure", label: "Configure", icon: "configure", group: "Administration" },
   { to: "/admin/ops", label: "Ops desk", icon: "configure", group: "Administration" },
 ];
@@ -48,6 +49,19 @@ export const NAV_GROUPS: NavGroup[] = [
 export const NAV_COLLAPSE_DEFAULT: Partial<Record<NavGroup, boolean>> = {
   Administration: true,
 };
+
+/** Section icons for the collapsed sidebar rail. */
+export const NAV_GROUP_ICONS: Record<NavGroup, IconName> = {
+  Overview: "dashboard",
+  Monitor: "local",
+  Analyze: "reports",
+  Operate: "alarm",
+  Administration: "settings",
+};
+
+export function activeGroupFor(pathname: string): NavGroup | undefined {
+  return itemForPath(pathname)?.group;
+}
 
 export function itemForPath(pathname: string): NavItem | undefined {
   const exact = NAV.find((item) => item.to === pathname);

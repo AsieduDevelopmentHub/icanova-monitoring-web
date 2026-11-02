@@ -18,21 +18,26 @@ Requires **username** + **email** + **password**.
 
 Username rules: `3–32` chars, `[a-z0-9._-]`, stored lowercase.
 
+When signup is **disabled** (default), the login page offers **Request access** instead (writes `accessRequests`; no account is created). Platform operators fulfill requests via [platform-admin-bootstrap.md](./platform-admin-bootstrap.md).
+
 ## Kill-switch
 
 | Convex env | Effect |
 |---|---|
-| unset / `1` / `true` | Public signup **enabled** (default) |
-| `0` / `false` / `off` / `no` | Public signup **disabled** (server + SPA hide Sign up) |
+| unset / empty | Public signup **disabled** (controlled platform default) |
+| `0` / `false` / `off` / `no` | Public signup **disabled** |
+| `1` / `true` / `on` / `yes` | Public signup **enabled** |
 
 ```bash
-# Invite-only staging example
+# Invite-only / controlled (recommended staging + production)
 npx convex env set AUTH_SIGNUP_ENABLED 0 --deployment staging
 
-# Re-enable
+# Re-enable open registration (only if intentional)
 npx convex env set AUTH_SIGNUP_ENABLED 1 --deployment staging
 ```
 
-UI reads `api.authPublic.signupEnabled`. A future developer portal can set the same env (or later a DB flag wired to the same query).
+UI reads `api.authPublic.signupEnabled`.
+
+**Do not** enable open signup on production without authorization. Organization create is also restricted to platform admin; see [platform-admin-bootstrap.md](./platform-admin-bootstrap.md).
 
 **Do not** set on `sturgeon` without production authorization.

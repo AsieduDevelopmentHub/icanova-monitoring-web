@@ -15,6 +15,7 @@ import {
   modbusView,
   overallView,
 } from "../telemetry/deviceHealthView";
+import { ProvisionSiteDialog } from "../admin/ProvisionSiteDialog";
 import { SiteLocationPicker } from "../sites/SiteLocationPicker";
 import { DataTable } from "../ui/DataTable";
 import { EmptyState } from "../ui/EmptyState";
@@ -24,6 +25,7 @@ import { PageSkeleton, Skeleton } from "../ui/Skeleton";
 type SiteRow = {
   _id: string;
   name: string;
+  code?: string;
   latitude?: number;
   longitude?: number;
 };
@@ -37,9 +39,19 @@ export function Sites() {
       <LiveGate
         emptyLayout="list"
         emptyCaption="Sites in this organization"
-        emptyColumns={["Name", "Action"]}
+        emptyColumns={["Name", "Code", "Action"]}
       >
-        {(org) => <SiteList organizationId={org.organizationId} permissions={org.permissions} />}
+        {(org) => (
+          <SiteList
+            organizationId={org.organizationId}
+            permissions={org.permissions}
+            siteCodeFormat={
+              "siteCodeFormat" in org && (org.siteCodeFormat === "numeric" || org.siteCodeFormat === "text")
+                ? org.siteCodeFormat
+                : "text"
+            }
+          />
+        )}
       </LiveGate>
     </section>
   );
@@ -48,17 +60,21 @@ export function Sites() {
 function SiteList({
   organizationId,
   permissions,
+  siteCodeFormat,
 }: {
   organizationId: string;
   permissions: readonly string[];
+  siteCodeFormat: "numeric" | "text";
 }) {
   const [cursor, setCursor] = useState<string | null>(null);
   const [picked, setPicked] = useState("");
+  const [provisionOpen, setProvisionOpen] = useState(false);
   const sites = useQuery(api.sites.list, {
     organizationId: id<"organizations">(organizationId),
     paginationOpts: { numItems: 50, cursor },
   });
-  const canManage = permissions.includes("manage.sites");
+  const canManage =
+    permissions.includes("manage.sites") && permissions.includes("manage.devices");
   if (sites === undefined) {
     return <PageSkeleton rows={5} label="Loading sites" />;
   }
@@ -67,17 +83,25 @@ function SiteList({
   return (
     <div className="stack">
       {canManage ? (
-        <CreateSite
-          organizationId={organizationId}
-          onCreated={(siteId) => setPicked(siteId)}
-        />
+        <>
+          <button type="button" className="btn btn-primary" onClick={() => setProvisionOpen(true)}>
+            Provision site
+          </button>
+          <ProvisionSiteDialog
+            open={provisionOpen}
+            organizationId={id<"organizations">(organizationId)}
+            siteCodeFormat={siteCodeFormat}
+            onClose={() => setProvisionOpen(false)}
+            onProvisioned={(result) => setPicked(result.siteId)}
+          />
+        </>
       ) : (
-        <p className="meta">Creating sites requires manage.sites.</p>
+        <p className="meta">Provisioning requires manage.sites and manage.devices.</p>
       )}
       {page.length === 0 ? (
         <EmptyState
           title="No sites yet"
-          body="Create a site for this organization before attaching a gateway or generator."
+          body="Provision a site with its gateway in one workflow."
         />
       ) : null}
       <DataTable
@@ -87,6 +111,11 @@ function SiteList({
         empty="No sites are registered in this organization yet."
         columns={[
           { key: "name", header: "Name", render: (row) => row.name },
+          {
+            key: "code",
+            header: "Code",
+            render: (row) => <span className="tech">{row.code ?? "—"}</span>,
+          },
           {
             key: "open",
             header: "",
@@ -119,53 +148,6 @@ function SiteList({
         </FleetBoundary>
       ) : null}
     </div>
-  );
-}
-
-function CreateSite({
-  organizationId,
-  onCreated,
-}: {
-  organizationId: string;
-  onCreated: (siteId: string) => void;
-}) {
-  const createSite = useMutation(api.sites.create);
-  const [name, setName] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
-    setError(null);
-    setPending(true);
-    try {
-      const siteId = await createSite({
-        organizationId: id<"organizations">(organizationId),
-        name,
-      });
-      setName("");
-      onCreated(siteId);
-    } catch (caught) {
-      setError(accessMessage(caught));
-    } finally {
-      setPending(false);
-    }
-  }
-
-  return (
-    <section className="ops-section" aria-labelledby="site-create-title">
-      <h2 id="site-create-title">Create site</h2>
-      <form className="filter-bar" onSubmit={(event) => void onSubmit(event)}>
-        <label className="filter-field grow">
-          <span>Site name</span>
-          <input value={name} onChange={(event) => setName(event.target.value)} required />
-        </label>
-        <button type="submit" className="btn btn-primary" disabled={pending}>
-          {pending ? "Creating…" : "Create site"}
-        </button>
-      </form>
-      {error ? <p className="err">{error}</p> : null}
-    </section>
   );
 }
 
@@ -291,7 +273,7 @@ function SiteDetail({
             {
               key: "name",
               header: "Gateway",
-              render: (row) => <Link to={`/gateways/${row._id}`}>{row.name}</Link>,
+              render: (row) => <Link to={`/gateways/${row.identity}`}>{row.name}</Link>,
             },
             {
               key: "identity",

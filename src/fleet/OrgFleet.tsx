@@ -44,10 +44,7 @@ export function OrgFleet() {
 
 function SignedFleet() {
   const orgs = useQuery(api.organizations.mine, {});
-  const createOrg = useMutation(api.organizations.create);
   const [pickedOrg, setPickedOrg] = useState("");
-  const [orgName, setOrgName] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
 
   if (orgs === undefined) {
     return <PageSkeleton rows={4} label="Loading organizations" />;
@@ -60,18 +57,6 @@ function SignedFleet() {
     ? pickedOrg
     : (listed[0]?.organizationId ?? "");
   const selected = listed.find((org) => org.organizationId === orgId);
-
-  async function onCreateOrg(event: FormEvent) {
-    event.preventDefault();
-    setFormError(null);
-    try {
-      const id = await createOrg({ name: orgName });
-      setPickedOrg(id);
-      setOrgName("");
-    } catch (error) {
-      setFormError(accessMessage(error));
-    }
-  }
 
   return (
     <div className="stack">
@@ -97,17 +82,10 @@ function SignedFleet() {
       ) : (
         <EmptyState
           title="No organization linked"
-          body="Create an organization below to register sites, gateways, and generators."
+          body="Ask a platform administrator to create an organization and grant your account access."
+          action={<Link to="/admin/platform">Platform admin</Link>}
         />
       )}
-      <form className="filter-bar" onSubmit={onCreateOrg}>
-        <label className="filter-field grow">
-          <span>New organization</span>
-          <input value={orgName} onChange={(event) => setOrgName(event.target.value)} />
-        </label>
-        <button type="submit">Create organization</button>
-      </form>
-      {formError ? <p className="err">{formError}</p> : null}
       {orgId ? (
         <FleetBoundary key={orgId}>
           <SiteColumn organizationId={id<"organizations">(orgId)} />
@@ -117,7 +95,7 @@ function SignedFleet() {
           caption="Sites"
           rows={[]}
           getRowKey={() => "empty"}
-          empty="Sites appear after an organization is created."
+          empty="Sites appear after an organization is linked to your account."
           columns={[
             { key: "name", header: "Site", render: () => null },
             { key: "devices", header: "Devices", render: () => null },
@@ -185,7 +163,7 @@ function SiteColumn({ organizationId }: { organizationId: Id<"organizations"> })
         <>
           <EmptyState
             title="No sites yet"
-            body="Create a site above, then register a gateway with its 12-character efuse MAC identity."
+            body="Create a site above, then register a gateway with its assigned device ID (serial)."
           />
           <DataTable
             caption="Devices"
@@ -276,12 +254,12 @@ function Devices({
           <input value={deviceName} onChange={(event) => setDeviceName(event.target.value)} />
         </label>
         <label className="filter-field grow">
-          <span>Gateway identity (efuse MAC)</span>
+          <span>Gateway device ID (serial)</span>
           <input
             className="tech"
             value={identity}
             onChange={(event) => setIdentity(event.target.value)}
-            placeholder="a1b2c3d4e5f6"
+            placeholder="icn-edge-00042"
           />
         </label>
         <button type="submit" className="btn btn-primary">

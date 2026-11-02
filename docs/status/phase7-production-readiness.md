@@ -18,7 +18,7 @@ This document is the Phase 7A deliverable. Implementation of 7B–7M must not in
 | Convex data | `convex/schema.ts` | Org-scoped devices, telemetry, alarms, health, notify |
 | Frontend | Vite React | `VITE_CONVEX_URL` + bearer JWT via `setBearerToken` |
 
-Tenancy is resolved from the registered device `identity` (12 hex chars of efuse MAC). The gateway does not choose an organization.
+Tenancy is resolved from the registered device `identity` (assigned serial / device ID; legacy 12-hex MAC still accepted). The gateway does not choose an organization.
 
 ---
 

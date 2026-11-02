@@ -26,8 +26,8 @@ import { FleetBoundary } from "./boundary";
 import { GeneratorAlarms } from "./AlarmPanel";
 
 export function ConvexGenerator() {
-  const { id } = useParams();
-  if (!id) {
+  const { id: key } = useParams();
+  if (!key) {
     return (
       <section className="page">
         <header className="page-head">
@@ -38,10 +38,32 @@ export function ConvexGenerator() {
     );
   }
   return (
-    <FleetBoundary key={id}>
-      <ConvexBody generatorId={id} />
+    <FleetBoundary key={key}>
+      <ConvexResolver publicKey={key} />
     </FleetBoundary>
   );
+}
+
+function ConvexResolver({ publicKey }: { publicKey: string }) {
+  const resolved = useQuery(api.generators.resolveKey, { key: publicKey });
+  if (resolved === undefined) {
+    return (
+      <section className="page">
+        <PageSkeleton rows={8} label="Loading generator" />
+      </section>
+    );
+  }
+  if (resolved === null) {
+    return (
+      <section className="page">
+        <header className="page-head">
+          <h1>Generator</h1>
+          <p>Not found.</p>
+        </header>
+      </section>
+    );
+  }
+  return <ConvexBody generatorId={resolved.generatorId} />;
 }
 
 function ConvexBody({ generatorId }: { generatorId: string }) {

@@ -51,7 +51,7 @@ export function accessMessage(error: unknown): string {
     return "That identity is already registered in this organization.";
   }
   if (text.includes("Invalid identity")) {
-    return "Identity must be the 12-character lowercase hex efuse MAC.";
+    return "Device ID must be a registered serial (4–32 letters, digits, hyphens) or legacy 12-character MAC hex.";
   }
   if (text.includes("Unknown permission")) {
     return "That permission is not on the allowlist.";

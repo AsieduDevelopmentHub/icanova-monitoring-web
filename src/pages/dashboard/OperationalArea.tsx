@@ -7,8 +7,13 @@ import { PowerFlowTwinLazy } from "../../viz/PowerFlowTwinLazy";
 import { derivePowerFlow } from "../../viz/powerFlowModel";
 import { GeneratorFleetViz } from "./GeneratorFleetViz";
 import type { BoardRow } from "./types";
-import { engineView, linkView, storedFreshness, twinFromRows } from "./logic";
+import { engineView, linkView, storedFreshness, twinFromRow, twinFromRows } from "./logic";
 import { FleetHealth } from "./FleetHealth";
+
+function extraNumber(row: BoardRow, key: string): number | null {
+  const value = row.extra?.[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
 
 export function OperationalArea({
   rows,
@@ -23,13 +28,16 @@ export function OperationalArea({
   gatewayOnline: boolean | null;
   onSelect: (generatorId: string) => void;
 }) {
-  const twinStatus = twinFromRows(rows);
+  const fleetTwin = twinFromRows(rows);
+  const twinStatus = twinFromRow(primary, fleetTwin);
   const primaryFresh = primary ? storedFreshness(primary.updatedAt, Date.now()) : null;
   const primaryEngine = primary ? engineView(primary.rpm, primary.rpmQuality) : null;
   const primaryLink = primary ? linkView(primary.link) : null;
   const powerReading = primary
     ? storedReading(primary.powerKw, primary.powerQuality, "kW")
     : null;
+  const fuel = primary ? extraNumber(primary, "fuelLevelPct") ?? extraNumber(primary, "fuel") : null;
+  const loadPct = primary ? extraNumber(primary, "loadPct") ?? extraNumber(primary, "load") : null;
   const flow = derivePowerFlow({
     label: primary?.name ?? siteName,
     twinStatus,
@@ -66,9 +74,11 @@ export function OperationalArea({
   return (
     <div className="cc-viz-grid">
       <div className="cc-ops-viz">
-        <GeneratorFleetViz status={twinStatus} label={primary?.name ?? siteName} />
-        <div className="cc-power-slot">
-          <PowerFlowTwinLazy flow={flow} />
+        <div className="cc-hero-row">
+          <GeneratorFleetViz status={twinStatus} label={primary?.name ?? siteName} />
+          <div className="cc-power-slot">
+            <PowerFlowTwinLazy flow={flow} />
+          </div>
         </div>
         {primary ? (
           <div className="metric-grid metric-grid-primary">
@@ -100,6 +110,18 @@ export function OperationalArea({
                 ),
               )}
             />
+            <TechValue
+              label="Battery"
+              value={formatReading(
+                storedReading(
+                  primary.batteryV ?? null,
+                  primary.batteryQuality ?? "unavailable",
+                  "V",
+                ),
+              )}
+            />
+            <TechValue label="Fuel" value={fuel == null ? "—" : `${fuel} %`} />
+            <TechValue label="Load" value={loadPct == null ? "—" : `${loadPct} %`} />
           </div>
         ) : null}
         {rows.length > 0 ? (

@@ -33,6 +33,7 @@ import { Sites } from "./pages/Sites";
 import { Events } from "./pages/Events";
 import { Unavailable } from "./pages/Unavailable";
 import { UsersAdmin } from "./pages/UsersAdmin";
+import { PlatformAdmin } from "./admin/PlatformAdmin";
 import { Platform } from "./platform/Platform";
 import { Shell } from "./shell/Shell";
 import { AppErrorBoundary } from "./ui/AppErrorBoundary";
@@ -87,6 +88,7 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="maintenance" element={<Maintenance />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="admin/ops" element={<Ops />} />
+                <Route path="admin/platform" element={<PlatformAdmin />} />
                 <Route path="admin/users" element={<UsersAdmin />} />
                 <Route path="admin/roles" element={<RolesAdmin />} />
                 <Route path="admin/settings" element={<Settings />} />

@@ -25,18 +25,18 @@ export function EventsSection({
           permissions={permissions}
         />
       ) : (
-        <Panel title="Alarms">
-          <p className="empty">Select a site to inspect active alarms, or open the alarms desk.</p>
+        <Panel title="Alarms" actions={<Link to="/alarms">Alarm desk</Link>}>
           <p className="meta">
-            <Link to="/alarms">Open alarms</Link>
+            All Sites view shows fleet alarm pressure on the status strip. Open the alarm desk for
+            acknowledgment and filters.
           </p>
         </Panel>
       )}
       {siteId ? (
         <RecentActivitySection organizationId={organizationId} siteId={siteId} />
       ) : (
-        <Panel title="Events">
-          <p className="empty">Site-scoped health transitions appear when a site is selected.</p>
+        <Panel title="Events" actions={<Link to="/events">All events</Link>}>
+          <p className="meta">Select a site for health transitions, or open the events timeline.</p>
         </Panel>
       )}
     </div>
@@ -76,7 +76,9 @@ function RecentActivitySection({
           {
             key: "device",
             header: "Gateway",
-            render: (row) => <Link to={`/gateways/${row.deviceId}`}>{row.deviceName}</Link>,
+            render: (row) => (
+              <Link to={`/gateways/${row.deviceIdentity ?? row.deviceId}`}>{row.deviceName}</Link>
+            ),
           },
           { key: "reason", header: "Reason", render: (row) => row.reason },
           {

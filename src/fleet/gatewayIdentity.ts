@@ -1,19 +1,47 @@
 /**
- * Gateway/device identity used for ingest and heartbeat registration.
- * Firmware reports the ESP32 efuse MAC as 12 lowercase hex characters.
+ * Cloud link identity for gateways.
+ * Preferred: assigned product serial / device id set on the gateway (`device.id`).
+ * Legacy: 12-char lowercase hex efuse MAC.
  */
+
+const MAC_RE = /^[0-9a-f]{12}$/;
+const SERIAL_RE = /^[a-z0-9][a-z0-9-]{3,31}$/;
+
 export function normalizeGatewayIdentity(raw: string): string {
-  return raw.trim().toLowerCase().replace(/[^0-9a-f]/g, "");
+  const trimmed = raw.trim().toLowerCase();
+  if (!trimmed) {
+    return "";
+  }
+  if (/^[0-9a-f:.\-\s]+$/i.test(trimmed)) {
+    const hex = trimmed.replace(/[^0-9a-f]/g, "");
+    if (MAC_RE.test(hex)) {
+      return hex;
+    }
+  }
+  return trimmed.replace(/[^a-z0-9-]/g, "");
+}
+
+export function isGatewayIdentity(identity: string): boolean {
+  if (MAC_RE.test(identity)) {
+    return true;
+  }
+  if (!SERIAL_RE.test(identity)) {
+    return false;
+  }
+  if (identity.startsWith("-") || identity.endsWith("-") || identity.includes("--")) {
+    return false;
+  }
+  return true;
 }
 
 /** Returns an operator-facing error, or null when the identity is acceptable for registration. */
 export function gatewayIdentityError(raw: string): string | null {
   const normalized = normalizeGatewayIdentity(raw);
   if (!normalized) {
-    return "Enter the gateway identity (12-character efuse MAC).";
+    return "Enter the gateway device ID (serial), for example icn-edge-00042.";
   }
-  if (!/^[0-9a-f]{12}$/.test(normalized)) {
-    return "Identity must be the 12-character lowercase hex efuse MAC (example: a1b2c3d4e5f6).";
+  if (!isGatewayIdentity(normalized)) {
+    return "Device ID must be 4–32 characters: letters, digits, and hyphens (example: icn-edge-00042). Legacy 12-character MAC hex is still accepted.";
   }
   return null;
 }

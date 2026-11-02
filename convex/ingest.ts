@@ -4,6 +4,7 @@ import { internalMutation } from "./_generated/server";
 import { observeCommunicationLink } from "./alarms";
 import { resolveDeviceByIdentity } from "./deviceIdentity";
 import { recordAcceptedBatch } from "./deviceHealth";
+import { isGatewayIdentity } from "./gatewayIdentity";
 import { INGEST_MAX_SAMPLES } from "./limits";
 import { METRIC_KEYS } from "./metrics";
 import { orderBatch } from "./order";
@@ -31,10 +32,11 @@ const ncuSample = v.object({
 const links = new Set(["ok", "degraded", "fail", "unknown"]);
 
 /**
- * Station collector entry. Caller supplies the efuse MAC (and optionally the
- * organization resolved from device credential / ops). Exactly one *active*
- * device must resolve; inactive duplicates are ignored. Two+ active rows for
- * the same MAC without an organization hint remain ambiguous (HTTP 409).
+ * Station collector entry. Caller supplies the registered device id (assigned
+ * serial, or legacy MAC) and optionally the organization from device credential /
+ * ops. Exactly one *active* device must resolve; inactive duplicates are ignored.
+ * Two+ active rows for the same identity without an organization hint remain
+ * ambiguous (HTTP 409).
  */
 export const acceptBatch = internalMutation({
   args: {
@@ -46,7 +48,7 @@ export const acceptBatch = internalMutation({
     organizationId: v.optional(v.id("organizations")),
   },
   handler: async (ctx, args) => {
-    if (!/^[0-9a-f]{12}$/.test(args.identity)) {
+    if (!isGatewayIdentity(args.identity)) {
       return { status: "unknown" as const, accepted: 0 };
     }
     if (!Number.isInteger(args.boot) || !Number.isInteger(args.seq) || args.seq < 1) {

@@ -163,14 +163,14 @@ describe("tenant isolation", () => {
     expect(await t.query(api.organizations.mine, {})).toEqual([]);
   });
 
-  test("gateway identity must be a 12-character hex MAC", async () => {
+  test("gateway identity must be a valid device serial or legacy MAC", async () => {
     const { asA, orgA, siteA } = await seed();
     await expect(
       asA.mutation(api.devices.create, {
         organizationId: orgA,
         siteId: siteA,
         name: "Bad",
-        identity: "not-a-mac",
+        identity: "ab",
       }),
     ).rejects.toThrow(/Invalid identity/);
   });

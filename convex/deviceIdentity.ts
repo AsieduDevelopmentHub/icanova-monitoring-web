@@ -1,6 +1,7 @@
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { deviceIsActive } from "./deviceLifecycle";
+import { isGatewayIdentity } from "./gatewayIdentity";
 
 export type DeviceIdentityResolution =
   | { status: "unknown" }
@@ -11,7 +12,7 @@ export type DeviceIdentityResolution =
 const IDENTITY_MATCH_CAP = 16;
 
 /**
- * Resolve a gateway MAC to at most one device row.
+ * Resolve a registered device id (assigned serial, or legacy MAC) to at most one device row.
  * Prefer active registrations. Optional organizationId disambiguates cross-org clones.
  * Two or more active rows (after filters) remain ambiguous.
  */
@@ -20,7 +21,7 @@ export async function resolveDeviceByIdentity(
   identity: string,
   opts?: { organizationId?: Id<"organizations"> },
 ): Promise<DeviceIdentityResolution> {
-  if (!/^[0-9a-f]{12}$/.test(identity)) {
+  if (!isGatewayIdentity(identity)) {
     return { status: "unknown" };
   }
   const all = await ctx.db

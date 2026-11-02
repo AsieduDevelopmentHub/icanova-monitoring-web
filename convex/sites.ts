@@ -1,11 +1,18 @@
+import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
-import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
+import { isGatewayIdentity, normalizeGatewayIdentity } from "./gatewayIdentity";
 import { assertSameOrg, requireName, requirePermission } from "./identity";
-import { boundedPage } from "./limits";
+import { boundedPage, MAX_PAGE } from "./limits";
+import { emitDeviceRegistered } from "./notifyEmit";
+import {
+  codeFromName,
+  normalizeSiteCodeFormat,
+  requireSiteCode,
+} from "./siteCodes";
 
 export async function requireSite(
   ctx: QueryCtx | MutationCtx,
@@ -18,6 +25,19 @@ export async function requireSite(
   }
   assertSameOrg(site.organizationId, organizationId);
   return site;
+}
+
+function requireCoordinate(value: number, kind: "latitude" | "longitude"): number {
+  if (!Number.isFinite(value)) {
+    throw new Error(`${kind} must be a finite number`);
+  }
+  if (kind === "latitude" && (value < -90 || value > 90)) {
+    throw new Error("latitude must be between -90 and 90");
+  }
+  if (kind === "longitude" && (value < -180 || value > 180)) {
+    throw new Error("longitude must be between -180 and 180");
+  }
+  return value;
 }
 
 export const list = query({
@@ -34,21 +54,239 @@ export const list = query({
   },
 });
 
+export const byCode = query({
+  args: {
+    organizationId: v.id("organizations"),
+    code: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "view.dashboard");
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      throw new Error("Forbidden");
+    }
+    const code = requireSiteCode(args.code, normalizeSiteCodeFormat(org.siteCodeFormat));
+    const site = await ctx.db
+      .query("sites")
+      .withIndex("by_org_code", (q) =>
+        q.eq("organizationId", args.organizationId).eq("code", code),
+      )
+      .unique();
+    if (!site) {
+      return null;
+    }
+    return {
+      siteId: site._id,
+      name: site.name,
+      code: site.code ?? code,
+      latitude: site.latitude ?? null,
+      longitude: site.longitude ?? null,
+    };
+  },
+});
+
+/**
+ * Legacy bare create — still permission-gated.
+ * Prefer `provision` so a gateway is assigned in the same workflow.
+ */
 export const create = mutation({
   args: {
     organizationId: v.id("organizations"),
     name: v.string(),
+    code: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "manage.sites");
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      throw new Error("Forbidden");
+    }
+    const format = normalizeSiteCodeFormat(org.siteCodeFormat);
     const name = requireName(args.name, "Site name");
+    const code = requireSiteCode(
+      args.code?.trim() || codeFromName(name, format, Date.now() % 100000),
+      format,
+    );
+    const clash = await ctx.db
+      .query("sites")
+      .withIndex("by_org_code", (q) =>
+        q.eq("organizationId", args.organizationId).eq("code", code),
+      )
+      .unique();
+    if (clash) {
+      throw new ConvexError("Site code already in use");
+    }
     const siteId = await ctx.db.insert("sites", {
       organizationId: args.organizationId,
       name,
+      code,
       generatorCount: 0,
     });
     await writeAudit(ctx, args.organizationId, "site.create", siteId);
     return siteId;
+  },
+});
+
+/**
+ * Atomic site + gateway provision (hybrid 2C).
+ * Assign an unassigned device or register a new gateway identity.
+ */
+export const provision = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    code: v.string(),
+    latitude: v.optional(v.number()),
+    longitude: v.optional(v.number()),
+    deviceId: v.optional(v.id("devices")),
+    gatewayName: v.optional(v.string()),
+    gatewayIdentity: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "manage.sites");
+    await requirePermission(ctx, args.organizationId, "manage.devices");
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      throw new Error("Forbidden");
+    }
+    const format = normalizeSiteCodeFormat(org.siteCodeFormat);
+    const name = requireName(args.name, "Site name");
+    const code = requireSiteCode(args.code, format);
+    const clash = await ctx.db
+      .query("sites")
+      .withIndex("by_org_code", (q) =>
+        q.eq("organizationId", args.organizationId).eq("code", code),
+      )
+      .unique();
+    if (clash) {
+      throw new ConvexError("Site code already in use");
+    }
+
+    let deviceId = args.deviceId ?? null;
+    let gatewayNameForEmit = "";
+    let createdNew = false;
+    if (deviceId) {
+      const device = await ctx.db.get(deviceId);
+      if (!device || device.organizationId !== args.organizationId) {
+        throw new ConvexError("Gateway not found in this organization");
+      }
+      if (device.siteId) {
+        throw new ConvexError("Gateway is already assigned to a site");
+      }
+      gatewayNameForEmit = device.name;
+    } else {
+      const gatewayName = requireName(args.gatewayName ?? "", "Gateway name");
+      const identity = normalizeGatewayIdentity(args.gatewayIdentity ?? "");
+      if (!isGatewayIdentity(identity)) {
+        throw new ConvexError("Invalid gateway identity");
+      }
+      gatewayNameForEmit = gatewayName;
+      const existing = await ctx.db
+        .query("devices")
+        .withIndex("by_org_identity", (q) =>
+          q.eq("organizationId", args.organizationId).eq("identity", identity),
+        )
+        .unique();
+      if (existing) {
+        if (existing.siteId) {
+          throw new ConvexError("Gateway identity is already assigned");
+        }
+        deviceId = existing._id;
+        if (existing.name !== gatewayName) {
+          await ctx.db.patch(existing._id, { name: gatewayName });
+        }
+      } else {
+        deviceId = await ctx.db.insert("devices", {
+          organizationId: args.organizationId,
+          name: gatewayName,
+          identity,
+          lifecycle: "active",
+          lifecycleChangedAt: Date.now(),
+        });
+        createdNew = true;
+      }
+    }
+
+    const siteFields: {
+      organizationId: Id<"organizations">;
+      name: string;
+      code: string;
+      generatorCount: number;
+      latitude?: number;
+      longitude?: number;
+      locationUpdatedAt?: number;
+    } = {
+      organizationId: args.organizationId,
+      name,
+      code,
+      generatorCount: 0,
+    };
+    if (args.latitude !== undefined && args.longitude !== undefined) {
+      siteFields.latitude = requireCoordinate(args.latitude, "latitude");
+      siteFields.longitude = requireCoordinate(args.longitude, "longitude");
+      siteFields.locationUpdatedAt = Date.now();
+    }
+    const siteId = await ctx.db.insert("sites", siteFields);
+    await ctx.db.patch(deviceId, { siteId });
+    if (createdNew) {
+      await emitDeviceRegistered(ctx, {
+        organizationId: args.organizationId,
+        siteId,
+        deviceId,
+        deviceName: gatewayNameForEmit,
+      });
+    }
+    await writeAudit(ctx, args.organizationId, "site.provision", siteId);
+    return {
+      siteId,
+      code,
+      name,
+      deviceId,
+    };
+  },
+});
+
+/** Backfill missing site codes for an organization. */
+export const backfillCodes = mutation({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "manage.sites");
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      throw new Error("Forbidden");
+    }
+    const format = normalizeSiteCodeFormat(org.siteCodeFormat);
+    const sites = await ctx.db
+      .query("sites")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .take(MAX_PAGE);
+    let updated = 0;
+    let index = 1;
+    for (const site of sites) {
+      if (site.code) {
+        index += 1;
+        continue;
+      }
+      let candidate = codeFromName(site.name, format, index);
+      let suffix = 0;
+      while (true) {
+        const tryCode = suffix === 0 ? candidate : `${candidate}-${suffix}`.slice(0, 32);
+        const clash = await ctx.db
+          .query("sites")
+          .withIndex("by_org_code", (q) =>
+            q.eq("organizationId", args.organizationId).eq("code", tryCode),
+          )
+          .unique();
+        if (!clash) {
+          await ctx.db.patch(site._id, { code: tryCode });
+          updated += 1;
+          break;
+        }
+        suffix += 1;
+      }
+      index += 1;
+    }
+    return { updated };
   },
 });
 
@@ -71,19 +309,6 @@ export const rename = mutation({
     return { siteId: site._id, changed: true as const };
   },
 });
-
-function requireCoordinate(value: number, kind: "latitude" | "longitude"): number {
-  if (!Number.isFinite(value)) {
-    throw new Error(`${kind} must be a finite number`);
-  }
-  if (kind === "latitude" && (value < -90 || value > 90)) {
-    throw new Error("latitude must be between -90 and 90");
-  }
-  if (kind === "longitude" && (value < -180 || value > 180)) {
-    throw new Error("longitude must be between -180 and 180");
-  }
-  return value;
-}
 
 /** Set WGS84 coordinates for a site (cloud source of truth for maps). */
 export const setLocation = mutation({
@@ -117,8 +342,8 @@ export const setLocationForIdentity = internalMutation({
     organizationId: v.optional(v.id("organizations")),
   },
   handler: async (ctx, args) => {
-    const identity = args.identity.trim().toLowerCase();
-    if (!/^[0-9a-f]{12}$/.test(identity)) {
+    const identity = normalizeGatewayIdentity(args.identity);
+    if (!isGatewayIdentity(identity)) {
       return { status: "invalid" as const };
     }
     const latitude = requireCoordinate(args.latitude, "latitude");
@@ -139,6 +364,9 @@ export const setLocationForIdentity = internalMutation({
     const device = scoped[0];
     if (device.lifecycle === "inactive") {
       return { status: "inactive" as const };
+    }
+    if (!device.siteId) {
+      return { status: "unassigned" as const };
     }
     const site = await ctx.db.get(device.siteId);
     if (!site || site.organizationId !== device.organizationId) {

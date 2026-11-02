@@ -21,6 +21,9 @@ Never put an OIDC client **secret** in `VITE_*`. Active SPA login uses Convex Au
 |---|---|---|---|
 | `JWT_PRIVATE_KEY` | Convex Auth (active) | **Yes** | RS256 private key for Convex Auth sessions |
 | `JWKS` | Convex Auth (active) | No (public JWK set JSON) | Public keys for JWT verification |
+| `AUTH_SIGNUP_ENABLED` | Controlled signup | No | Public Password signup. **Unset/default = disabled.** Set `1`/`true` to enable. See [auth-username-and-signup.md](./auth-username-and-signup.md) |
+| `PLATFORM_ADMIN_SECRET` | Platform bootstrap | **Yes** | Shared secret for `/admin/platform` when not on email allowlist. See [platform-admin-bootstrap.md](./platform-admin-bootstrap.md) |
+| `PLATFORM_ADMIN_EMAILS` | Platform bootstrap | No | Comma-separated emails allowed to use platform admin without pasting the secret |
 | `AUTH_JWT_ISSUER` | Future Auth0 only | No (URL) | Not loaded by active `auth.config.ts` |
 | `AUTH_JWKS_URL` | Future Auth0 only | No (URL) | Not loaded by active `auth.config.ts` |
 | `AUTH_JWT_AUDIENCE` | Future Auth0 only | No | Not loaded by active `auth.config.ts` |

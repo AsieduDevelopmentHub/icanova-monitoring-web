@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as accessRequests from "../accessRequests.js";
 import type * as accountSecurity from "../accountSecurity.js";
 import type * as alarms from "../alarms.js";
 import type * as audits from "../audits.js";
@@ -25,6 +26,7 @@ import type * as devices from "../devices.js";
 import type * as diagnostics from "../diagnostics.js";
 import type * as firmwareReleases from "../firmwareReleases.js";
 import type * as formats from "../formats.js";
+import type * as gatewayIdentity from "../gatewayIdentity.js";
 import type * as generators from "../generators.js";
 import type * as http from "../http.js";
 import type * as identity from "../identity.js";
@@ -46,14 +48,18 @@ import type * as notifyEmit from "../notifyEmit.js";
 import type * as notifyTemplates from "../notifyTemplates.js";
 import type * as ops from "../ops.js";
 import type * as order from "../order.js";
+import type * as orgBootstrap from "../orgBootstrap.js";
 import type * as organizations from "../organizations.js";
 import type * as passwordPolicy from "../passwordPolicy.js";
 import type * as passwordResetEmail from "../passwordResetEmail.js";
 import type * as permissions from "../permissions.js";
+import type * as platformAdmin from "../platformAdmin.js";
 import type * as productionConfig from "../productionConfig.js";
 import type * as push from "../push.js";
 import type * as reports from "../reports.js";
+import type * as rolePresets from "../rolePresets.js";
 import type * as rollup from "../rollup.js";
+import type * as siteCodes from "../siteCodes.js";
 import type * as siteSummary from "../siteSummary.js";
 import type * as sites from "../sites.js";
 import type * as stagingWipe from "../stagingWipe.js";
@@ -68,6 +74,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  accessRequests: typeof accessRequests;
   accountSecurity: typeof accountSecurity;
   alarms: typeof alarms;
   audits: typeof audits;
@@ -85,6 +92,7 @@ declare const fullApi: ApiFromModules<{
   diagnostics: typeof diagnostics;
   firmwareReleases: typeof firmwareReleases;
   formats: typeof formats;
+  gatewayIdentity: typeof gatewayIdentity;
   generators: typeof generators;
   http: typeof http;
   identity: typeof identity;
@@ -106,14 +114,18 @@ declare const fullApi: ApiFromModules<{
   notifyTemplates: typeof notifyTemplates;
   ops: typeof ops;
   order: typeof order;
+  orgBootstrap: typeof orgBootstrap;
   organizations: typeof organizations;
   passwordPolicy: typeof passwordPolicy;
   passwordResetEmail: typeof passwordResetEmail;
   permissions: typeof permissions;
+  platformAdmin: typeof platformAdmin;
   productionConfig: typeof productionConfig;
   push: typeof push;
   reports: typeof reports;
+  rolePresets: typeof rolePresets;
   rollup: typeof rollup;
+  siteCodes: typeof siteCodes;
   siteSummary: typeof siteSummary;
   sites: typeof sites;
   stagingWipe: typeof stagingWipe;

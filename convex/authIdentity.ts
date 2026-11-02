@@ -3,13 +3,45 @@ import type { QueryCtx } from "./_generated/server";
 
 const USERNAME_RE = /^[a-z0-9._-]{3,32}$/;
 
-/** `AUTH_SIGNUP_ENABLED=0|false` disables public self-signup. Unset/other → enabled. */
+/**
+ * Public self-signup is off by default (controlled industrial platform).
+ * Set `AUTH_SIGNUP_ENABLED=1|true|on|yes` to re-enable open registration.
+ */
 export function isSignupEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   const raw = env.AUTH_SIGNUP_ENABLED?.trim().toLowerCase();
   if (raw === undefined || raw === "") {
-    return true;
+    return false;
   }
-  return raw !== "0" && raw !== "false" && raw !== "off" && raw !== "no";
+  return raw === "1" || raw === "true" || raw === "on" || raw === "yes";
+}
+
+/** Platform bootstrap: `PLATFORM_ADMIN_SECRET` must match the caller-supplied secret. */
+export function assertPlatformAdminSecret(
+  secret: string | undefined,
+  env: NodeJS.ProcessEnv = process.env,
+): void {
+  const expected = env.PLATFORM_ADMIN_SECRET?.trim() ?? "";
+  if (!expected || !secret || secret !== expected) {
+    throw new ConvexError("Platform admin authorization failed.");
+  }
+}
+
+/** Optional email allowlist (comma-separated) for platform UI after sign-in. */
+export function isPlatformAdminEmail(
+  email: string | null | undefined,
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  const raw = env.PLATFORM_ADMIN_EMAILS?.trim().toLowerCase() ?? "";
+  if (!raw || !email) {
+    return false;
+  }
+  const set = new Set(
+    raw
+      .split(",")
+      .map((part) => part.trim().toLowerCase())
+      .filter(Boolean),
+  );
+  return set.has(email.trim().toLowerCase());
 }
 
 export function assertSignupAllowed(env: NodeJS.ProcessEnv = process.env): void {

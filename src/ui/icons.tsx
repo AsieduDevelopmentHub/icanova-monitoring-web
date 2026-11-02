@@ -21,7 +21,11 @@ export type IconName =
   | "sun"
   | "moon"
   | "eye"
-  | "eyeOff";
+  | "eyeOff"
+  | "chevronLeft"
+  | "chevronRight"
+  | "chevronDown"
+  | "chevronUp";
 
 function Svg({ children }: { children: ReactNode }) {
   return (
@@ -170,6 +174,26 @@ const ICONS: Record<IconName, ReactNode> = {
       <path d="M10.6 10.6A2.5 2.5 0 0 0 13.4 13.4" />
       <path d="M9.9 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17.3 17.3 0 0 1-3.2 3.9" />
       <path d="M6.1 6.1A17.5 17.5 0 0 0 2 12s3.5 6 10 6a10.2 10.2 0 0 0 4.2-.9" />
+    </Svg>
+  ),
+  chevronLeft: (
+    <Svg>
+      <path d="M15 6l-6 6 6 6" />
+    </Svg>
+  ),
+  chevronRight: (
+    <Svg>
+      <path d="M9 6l6 6-6 6" />
+    </Svg>
+  ),
+  chevronDown: (
+    <Svg>
+      <path d="M6 9l6 6 6-6" />
+    </Svg>
+  ),
+  chevronUp: (
+    <Svg>
+      <path d="M6 15l6-6 6 6" />
     </Svg>
   ),
 };

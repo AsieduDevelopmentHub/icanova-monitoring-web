@@ -12,6 +12,7 @@ import {
 } from "./ingestAuth";
 import type { IngestOpKind } from "./ingestOps";
 import { mapBatchStatus } from "./ingestOps";
+import { isGatewayIdentity, normalizeGatewayIdentity } from "./gatewayIdentity";
 import {
   INGEST_MAX_BODY,
   INGEST_RATE_DEVICE_MAX,
@@ -50,8 +51,8 @@ function ipKeyFromRequest(request: Request): string | null {
 
 function extractIdentity(record: Record<string, unknown>): string | null {
   if (typeof record.identity === "string") {
-    const id = record.identity.trim().toLowerCase();
-    return /^[0-9a-f]{12}$/.test(id) ? id : null;
+    const id = normalizeGatewayIdentity(record.identity);
+    return isGatewayIdentity(id) ? id : null;
   }
   return null;
 }
@@ -189,7 +190,7 @@ http.route({
       const identity = identityHint ?? "";
       const fw = typeof record.fw === "string" ? record.fw.trim().slice(0, 40) : undefined;
       const git = typeof record.git === "string" ? record.git.trim().slice(0, 16) : undefined;
-      if (/^[0-9a-f]{12}$/.test(identity)) {
+      if (isGatewayIdentity(identity)) {
         try {
           const result = await ctx.runMutation(internal.deviceHealth.recordHeartbeat, {
             identity,
@@ -251,7 +252,7 @@ async function authorizeDeviceOrIngest(
     return { ok: true, organizationId: null };
   }
   const presented = extractBearer(authHeader);
-  if (!presented || !identity || !/^[0-9a-f]{12}$/.test(identity)) {
+  if (!presented || !identity || !isGatewayIdentity(identity)) {
     if (gate === "unconfigured" && !presented) {
       return { ok: false, status: 503, body: { error: "Ingest is not configured" } };
     }
@@ -286,7 +287,8 @@ http.route({
     const channelRaw = (url.searchParams.get("channel") ?? "stable").toLowerCase();
     const channel = channelRaw === "beta" ? "beta" : "stable";
     const current = (url.searchParams.get("current") ?? "").trim();
-    const identity = (url.searchParams.get("identity") ?? "").trim().toLowerCase();
+    const identityRaw = url.searchParams.get("identity") ?? "";
+    const identity = normalizeGatewayIdentity(identityRaw);
     const auth = await authorizeDeviceOrIngest(
       ctx,
       request.headers.get("Authorization"),
@@ -411,7 +413,7 @@ http.route({
     if (!auth.ok) {
       return Response.json(auth.body, { status: auth.status });
     }
-    if (!identity || !/^[0-9a-f]{12}$/.test(identity)) {
+    if (!identity || !isGatewayIdentity(identity)) {
       return Response.json({ error: "identity required" }, { status: 400 });
     }
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {

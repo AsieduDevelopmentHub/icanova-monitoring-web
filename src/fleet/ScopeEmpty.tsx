@@ -11,13 +11,13 @@ export type ScopeEmptyLayout = "command" | "list" | "desk";
 const COPY: Record<ScopeEmptyReason, { title: string; body: string; action?: ReactNode }> = {
   organization: {
     title: "No organization linked",
-    body: "This account is signed in but not a member of an organization yet. Create one to register sites, gateways, and generators.",
-    action: <Link to="/generators">Open Generators</Link>,
+    body: "This account is signed in but not a member of an organization yet. A platform administrator must create the organization and grant access.",
+    action: <Link to="/admin/platform">Platform admin</Link>,
   },
   sites: {
     title: "No sites yet",
-    body: "Create a site for this organization, then register a gateway with its 12-character efuse MAC identity.",
-    action: <Link to="/generators">Create a site</Link>,
+    body: "Provision a site with its gateway in one workflow from the Sites page.",
+    action: <Link to="/sites">Open Sites</Link>,
   },
   unsigned: {
     title: "Sign in required",

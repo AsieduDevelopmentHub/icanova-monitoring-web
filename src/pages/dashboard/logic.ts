@@ -17,6 +17,22 @@ export function twinFromRows(rows: BoardRow[]): TwinStatus {
   return "stopped";
 }
 
+/** Twin status for the selected primary generator. */
+export function twinFromRow(row: BoardRow | null, fallback: TwinStatus = "unknown"): TwinStatus {
+  if (!row) {
+    return fallback;
+  }
+  const engine = engineView(row.rpm, row.rpmQuality);
+  if (engine.tone === "alarm" || (row.alarmCount ?? 0) > 0) return "fault";
+  if (engine.label.toLowerCase().includes("run")) return "running";
+  const link = linkView(row.link);
+  if (link.tone === "alarm" || link.tone === "warn") return "warning";
+  const fresh = storedFreshness(row.updatedAt, Date.now());
+  if (fresh.state !== "fresh" && !fresh.stale) return "offline";
+  if (fresh.stale) return "warning";
+  return "stopped";
+}
+
 /** Attention score — higher = needs operator focus first. */
 export function attentionScore(row: BoardRow, now = Date.now()): number {
   let score = 0;

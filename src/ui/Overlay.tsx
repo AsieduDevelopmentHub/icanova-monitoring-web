@@ -59,23 +59,26 @@ export function Drawer({
   side,
   onClose,
   children,
+  className,
 }: {
   open: boolean;
   title: string;
   side: "left" | "right";
   onClose: () => void;
   children: ReactNode;
+  className?: string;
 }) {
   const titleId = useId();
   const { panelRef, closeRef } = useDismiss(open, onClose);
   if (!open) {
     return null;
   }
+  const panelClass = ["drawer", side, className].filter(Boolean).join(" ");
   return (
     <div className="overlay" onMouseDown={onClose}>
       <div
         ref={panelRef}
-        className={`drawer ${side}`}
+        className={panelClass}
         id="app-navigation"
         role="dialog"
         aria-modal="true"

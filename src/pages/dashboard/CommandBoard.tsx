@@ -112,7 +112,9 @@ export function CommandBoard({
         generators: fleetReady ? fleetSummary!.generators : scope.generators,
         running,
         stopped,
-        alarms: null,
+        alarms: permissions.includes("view.alarms")
+          ? loaded.reduce((sum, row) => sum + (row.alarmCount ?? 0), 0)
+          : null,
         offlineGateways: fleetReady ? fleetSummary!.gatewayOffline : null,
         gatewayOnline: fleetReady ? fleetSummary!.gatewayOnline > 0 : null,
         tone:

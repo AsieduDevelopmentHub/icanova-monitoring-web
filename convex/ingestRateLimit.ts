@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
+import { isGatewayIdentity } from "./gatewayIdentity";
 import { recordJobRun } from "./jobStatus";
 import {
   INGEST_RATE_DEVICE_MAX,
@@ -86,7 +87,7 @@ export const check = internalMutation({
     let ipCount = 0;
     let retryAfterSec = 0;
 
-    if (args.identity && /^[0-9a-f]{12}$/.test(args.identity)) {
+    if (args.identity && isGatewayIdentity(args.identity)) {
       const device = await bumpWindow(
         ctx,
         `device:${args.identity}`,

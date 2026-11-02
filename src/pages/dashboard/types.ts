@@ -13,6 +13,8 @@ export type BoardRow = LiveRow & {
   frequencyQuality?: string;
   voltageL1?: number | null;
   voltageQuality?: string;
+  alarmCount?: number | null;
+  extra?: Record<string, number | null> | undefined;
 };
 
 export type ChartRange = "hour" | "six" | "day" | "week";

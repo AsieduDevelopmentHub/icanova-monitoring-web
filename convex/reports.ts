@@ -162,7 +162,9 @@ async function loadRows(
     return {
       headers: ["Name", "Identity", "Site id"],
       capped: batch.length > MAX_EXPORT,
-      rows: batch.slice(0, MAX_EXPORT).map((row) => [row.name, row.identity, row.siteId]),
+      rows: batch
+        .slice(0, MAX_EXPORT)
+        .map((row) => [row.name, row.identity, row.siteId ?? ""]),
     };
   }
   if (reportKind === "health") {

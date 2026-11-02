@@ -110,7 +110,7 @@ function OrgInventory() {
   return (
     <div className="stack">
       <div className="notice" role="note">
-        <strong>Provisioning.</strong> Register the gateway with its 12-character efuse MAC identity,
+        <strong>Provisioning.</strong> Register the gateway with its assigned device ID (serial),
         assign a site, then attach generators. Cloud Online means heartbeat/ingest contact — not Modbus.
         Soft-AP Modbus configuration stays on the local Configure page.
       </div>
@@ -294,12 +294,12 @@ function RegisterGateway({
             />
           </label>
           <label className="filter-field grow">
-            <span>Identity (efuse MAC)</span>
+            <span>Device ID (serial)</span>
             <input
               className="tech"
               value={identity}
               onChange={(event) => setIdentity(event.target.value)}
-              placeholder="a1b2c3d4e5f6"
+              placeholder="icn-edge-00042"
               required
             />
           </label>
@@ -377,7 +377,7 @@ function DeviceTable({
           {
             key: "name",
             header: "Gateway",
-            render: (row) => <Link to={`/gateways/${row._id}`}>{row.name}</Link>,
+            render: (row) => <Link to={`/gateways/${row.identity}`}>{row.name}</Link>,
           },
           {
             key: "product",
@@ -450,7 +450,7 @@ function DeviceTable({
           {
             key: "open",
             header: "",
-            render: (row) => <Link to={`/gateways/${row._id}`}>Open</Link>,
+            render: (row) => <Link to={`/gateways/${row.identity}`}>Open</Link>,
           },
         ]}
       />

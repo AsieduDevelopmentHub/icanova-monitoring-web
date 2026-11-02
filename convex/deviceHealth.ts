@@ -26,6 +26,7 @@ import {
   type TelemetryFreshness,
 } from "./deviceHealthLogic";
 import { resolveDeviceByIdentity } from "./deviceIdentity";
+import { isGatewayIdentity } from "./gatewayIdentity";
 import { recordJobRun } from "./jobStatus";
 import {
   HEALTH_EVENT_PRUNE_BATCH,
@@ -461,7 +462,7 @@ export const recordHeartbeat = internalMutation({
     firmwareGit: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    if (!/^[0-9a-f]{12}$/.test(args.identity)) {
+    if (!isGatewayIdentity(args.identity)) {
       return { status: "ignored" as const };
     }
     const resolved = await resolveDeviceByIdentity(ctx, args.identity, {
@@ -483,6 +484,9 @@ export const recordHeartbeat = internalMutation({
       .take(1);
     const generator = generators[0] ?? null;
     const at = Date.now();
+    if (!device.siteId) {
+      return { status: "unassigned" as const };
+    }
     await applyDeviceHealth(ctx, {
       organizationId: device.organizationId,
       deviceId: device._id,

@@ -3,7 +3,8 @@ import { Link, useParams } from "react-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { FleetBoundary } from "../fleet/boundary";
-import { accessMessage, id } from "../fleet/access";
+import type { Id } from "../../convex/_generated/dataModel";
+import { accessMessage } from "../fleet/access";
 import { demoFrames, demoSamples } from "../telemetry/demoLog";
 import { demoDiagnostics } from "../telemetry/diagnosticsView";
 import { DEMO_GENERATOR_ID, DEMO_SOURCE } from "../telemetry/logModel";
@@ -77,7 +78,7 @@ function DemoGateway() {
 }
 
 function StoredGateway({ deviceId }: { deviceId: string }) {
-  const detail = useQuery(api.devices.detail, { deviceId: id<"devices">(deviceId) });
+  const detail = useQuery(api.devices.detailForKey, { key: deviceId });
   const setLifecycle = useMutation(api.devices.setLifecycle);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +97,7 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
   const fresh = freshnessView(health?.telemetryFreshness);
   const overall = overallView(health?.overallStatus);
   const active = detail.device.lifecycle !== "inactive";
+  const internalDeviceId = detail.device._id;
 
   async function onLifecycle() {
     if (pending) {
@@ -105,7 +107,7 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
     setPending(true);
     try {
       await setLifecycle({
-        deviceId: id<"devices">(deviceId),
+        deviceId: internalDeviceId,
         lifecycle: active ? "inactive" : "active",
       });
     } catch (caught) {
@@ -211,12 +213,16 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
               {
                 key: "name",
                 header: "Generator",
-                render: (row) => <Link to={`/generators/${row._id}`}>{row.name}</Link>,
+                render: (row: { _id: string; name: string; code?: string | null }) => (
+                  <Link to={`/generators/${row.code ?? row._id}`}>{row.name}</Link>
+                ),
               },
               {
                 key: "open",
                 header: "",
-                render: (row) => <Link to={`/generators/${row._id}/trends`}>Trends</Link>,
+                render: (row: { _id: string; code?: string | null }) => (
+                  <Link to={`/generators/${row.code ?? row._id}/trends`}>Trends</Link>
+                ),
               },
             ]}
           />
@@ -224,18 +230,18 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
       </section>
 
       <FleetBoundary>
-        <HealthEvents deviceId={deviceId} />
+        <HealthEvents deviceId={internalDeviceId} />
       </FleetBoundary>
       <FleetBoundary>
-        <StoredFrames deviceId={deviceId} />
+        <StoredFrames deviceId={internalDeviceId} />
       </FleetBoundary>
     </section>
   );
 }
 
-function HealthEvents({ deviceId }: { deviceId: string }) {
+function HealthEvents({ deviceId }: { deviceId: Id<"devices"> }) {
   const page = useQuery(api.deviceHealth.listEvents, {
-    deviceId: id<"devices">(deviceId),
+    deviceId,
     paginationOpts: { numItems: 20, cursor: null },
   });
   if (page === undefined) {
@@ -280,9 +286,9 @@ function HealthEvents({ deviceId }: { deviceId: string }) {
   );
 }
 
-function StoredFrames({ deviceId }: { deviceId: string }) {
+function StoredFrames({ deviceId }: { deviceId: Id<"devices"> }) {
   const data = useQuery(api.diagnostics.list, {
-    deviceId: id<"devices">(deviceId),
+    deviceId,
     kind: "all",
     search: "",
   });

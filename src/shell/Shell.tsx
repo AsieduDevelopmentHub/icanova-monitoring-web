@@ -1,16 +1,16 @@
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useConvexAuth, useQuery } from "convex/react";
-import { NavLink, Outlet, useLocation } from "react-router";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { api } from "../../convex/_generated/api";
 import { Drawer } from "../ui/Overlay";
 import { Icon } from "../ui/icons";
-import { sessionChrome } from "../auth/sessionControls";
 import { applyTheme, persistTheme, resolveTheme, type ThemeMode } from "../theme/theme";
 import {
   NAV,
-  NAV_COLLAPSE_DEFAULT,
+  NAV_GROUP_ICONS,
   NAV_GROUPS,
+  activeGroupFor,
   crumbsFor,
   pageTitleFor,
   type NavGroup,
@@ -35,30 +35,91 @@ function UnreadBadge() {
   );
 }
 
-function NavList({ onNavigate }: { onNavigate?: () => void }) {
+function initialsFrom(name: string | undefined, email: string | undefined): string {
+  const source = (name ?? email ?? "U").trim();
+  const parts = source.split(/[\s@_./-]+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+  }
+  return source.slice(0, 2).toUpperCase() || "U";
+}
+
+function displayNameFrom(user: {
+  name?: string;
+  username?: string;
+  email?: string;
+} | null | undefined): string {
+  return user?.name?.trim() || user?.username?.trim() || user?.email?.trim() || "Signed in";
+}
+
+function useOrgContext() {
+  const { isAuthenticated } = useConvexAuth();
+  const live = Boolean(import.meta.env.VITE_CONVEX_URL) && isAuthenticated;
+  const orgs = useQuery(api.organizations.mine, live ? {} : "skip");
+  const org = Array.isArray(orgs) && orgs.length > 0 ? orgs[0] : null;
+  return { live, org };
+}
+
+function accordionState(openGroup: NavGroup | null): Record<NavGroup, boolean> {
+  const next = {} as Record<NavGroup, boolean>;
+  for (const group of NAV_GROUPS) {
+    next[group] = group !== openGroup;
+  }
+  return next;
+}
+
+function NavList({
+  onNavigate,
+  rail = false,
+  onRailActivate,
+}: {
+  onNavigate?: () => void;
+  rail?: boolean;
+  onRailActivate?: (group: NavGroup) => void;
+}) {
   const { pathname } = useLocation();
-  const [collapsed, setCollapsed] = useState<Record<NavGroup, boolean>>(() => {
-    const initial = {} as Record<NavGroup, boolean>;
-    for (const group of NAV_GROUPS) {
-      initial[group] = NAV_COLLAPSE_DEFAULT[group] === true;
-    }
-    return initial;
-  });
+  const [openGroup, setOpenGroup] = useState<NavGroup | null>(
+    () => activeGroupFor(pathname) ?? "Overview",
+  );
 
   useEffect(() => {
-    const active = NAV.find((item) => {
-      if (item.end) {
-        return pathname === item.to;
-      }
-      return pathname === item.to || pathname.startsWith(`${item.to}/`);
-    });
+    const active = activeGroupFor(pathname);
     if (!active) {
       return;
     }
-    setCollapsed((prev) =>
-      prev[active.group] ? { ...prev, [active.group]: false } : prev,
-    );
+    setOpenGroup(active);
   }, [pathname]);
+
+  const collapsed = accordionState(openGroup);
+
+  if (rail) {
+    return (
+      <nav className="side-nav side-nav-rail" aria-label="Primary">
+        {NAV_GROUPS.map((group) => {
+          const items = NAV.filter((item) => item.group === group);
+          if (items.length === 0) {
+            return null;
+          }
+          const active = activeGroupFor(pathname) === group;
+          return (
+            <button
+              key={group}
+              type="button"
+              className={active ? "nav-rail-btn on" : "nav-rail-btn"}
+              aria-label={group}
+              title={group}
+              onClick={() => onRailActivate?.(group)}
+            >
+              <Icon name={NAV_GROUP_ICONS[group]} />
+              <span className="nav-tooltip" role="tooltip">
+                {group}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+    );
+  }
 
   return (
     <nav className="side-nav" aria-label="Primary">
@@ -74,17 +135,17 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
               type="button"
               className="nav-group-toggle"
               aria-expanded={expanded}
-              onClick={() =>
-                setCollapsed((prev) => ({
-                  ...prev,
-                  [group]: !prev[group],
-                }))
-              }
+              onClick={() => setOpenGroup((prev) => (prev === group ? null : group))}
             >
-              <span>{group}</span>
-              <span aria-hidden="true">{expanded ? "−" : "+"}</span>
+              <span className="nav-group-label">
+                <Icon name={NAV_GROUP_ICONS[group]} />
+                <span>{group}</span>
+              </span>
+              <span className={`nav-chevron${expanded ? " is-open" : ""}`} aria-hidden="true">
+                <Icon name="chevronDown" />
+              </span>
             </button>
-            <div className="nav-group-links">
+            <div className="nav-group-links" hidden={!expanded}>
               {items.map((item) => (
                 <NavLink
                   key={item.to}
@@ -106,40 +167,6 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function SessionActions({ onNavigate }: { onNavigate?: () => void }) {
-  const { isAuthenticated, isLoading } = useConvexAuth();
-  const { signOut } = useAuthActions();
-  const chrome = sessionChrome({
-    isAuthenticated: isAuthenticated && !isLoading,
-    authReady: Boolean(import.meta.env.VITE_CONVEX_URL),
-  });
-
-  return (
-    <div className="session-actions">
-      <span className="session" aria-live="polite">
-        {chrome.label}
-      </span>
-      {chrome.showSignIn ? (
-        <NavLink to="/auth/login" className="text-btn" aria-label="Sign in" onClick={onNavigate}>
-          Sign in
-        </NavLink>
-      ) : null}
-      {chrome.showSignOut ? (
-        <button
-          type="button"
-          className="text-btn"
-          aria-label={chrome.signOutLabel}
-          onClick={() => {
-            void signOut().finally(() => onNavigate?.());
-          }}
-        >
-          {chrome.signOutLabel}
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
 function ThemeToggle({ mode, onToggle }: { mode: ThemeMode; onToggle: () => void }) {
   const next = mode === "light" ? "dark" : "light";
   return (
@@ -155,26 +182,21 @@ function ThemeToggle({ mode, onToggle }: { mode: ThemeMode; onToggle: () => void
   );
 }
 
-function OrgContext() {
-  const { isAuthenticated } = useConvexAuth();
-  const live = Boolean(import.meta.env.VITE_CONVEX_URL) && isAuthenticated;
-  const orgs = useQuery(api.organizations.mine, live ? {} : "skip");
-  const name = orgs?.[0]?.name;
-  if (!name) {
+function OrgContext({ compact = false }: { compact?: boolean }) {
+  const { org } = useOrgContext();
+  if (!org?.name) {
     return null;
   }
   return (
-    <span className="session org-context" title={name}>
-      {name}
+    <span className={compact ? "session org-context org-context-compact" : "session org-context"} title={org.name}>
+      {org.name}
     </span>
   );
 }
 
 function SystemStatusChip() {
-  const { isAuthenticated } = useConvexAuth();
-  const live = Boolean(import.meta.env.VITE_CONVEX_URL) && isAuthenticated;
-  const orgs = useQuery(api.organizations.mine, live ? {} : "skip");
-  const organizationId = orgs?.[0]?.organizationId;
+  const { live, org } = useOrgContext();
+  const organizationId = org?.organizationId;
   const unreadCritical = useQuery(
     api.notifications.unreadCriticalCount,
     live && organizationId ? { organizationId } : "skip",
@@ -197,8 +219,178 @@ function SystemStatusChip() {
   );
 }
 
+function ProfileMenu({
+  placement = "header",
+  collapsed = false,
+  onNavigate,
+}: {
+  placement?: "header" | "sidebar" | "drawer";
+  collapsed?: boolean;
+  onNavigate?: () => void;
+}) {
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { signOut } = useAuthActions();
+  const navigate = useNavigate();
+  const live = Boolean(import.meta.env.VITE_CONVEX_URL) && isAuthenticated;
+  const user = useQuery(api.users.me, live ? {} : "skip");
+  const { org } = useOrgContext();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const onPointer = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+    window.addEventListener("mousedown", onPointer);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onPointer);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  if (isLoading) {
+    return <span className="session">…</span>;
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  const name = displayNameFrom(user);
+  const role = org?.roleName ?? "Member";
+  const initials = initialsFrom(user?.name ?? user?.username, user?.email);
+  const image = user?.image;
+
+  function go(to: string) {
+    setOpen(false);
+    onNavigate?.();
+    void navigate(to);
+  }
+
+  return (
+    <div
+      className={`profile-menu profile-menu-${placement}${collapsed ? " is-collapsed" : ""}`}
+      ref={rootRef}
+    >
+      <button
+        type="button"
+        className={collapsed || placement === "header" ? "profile-trigger compact" : "profile-trigger"}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={menuId}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="profile-avatar" aria-hidden="true">
+          {image ? <img src={image} alt="" /> : initials}
+        </span>
+        {!collapsed && placement !== "header" ? (
+          <span className="profile-meta">
+            <strong>{name}</strong>
+            <span>{role}</span>
+          </span>
+        ) : null}
+        {!collapsed && placement !== "header" ? (
+          <span className="nav-chevron" aria-hidden="true">
+            <Icon name="chevronDown" />
+          </span>
+        ) : null}
+        {(collapsed || placement === "header") && (
+          <span className="sr-only">
+            {name}, {role}
+          </span>
+        )}
+      </button>
+      {open ? (
+        <div className="profile-popover" id={menuId} role="menu">
+          <div className="profile-popover-head">
+            <strong>{name}</strong>
+            <span>{role}</span>
+            {user?.email ? <span className="profile-email">{user.email}</span> : null}
+            {org?.name ? <span className="profile-org">{org.name}</span> : null}
+          </div>
+          <button type="button" role="menuitem" onClick={() => go("/admin/settings")}>
+            Account settings
+          </button>
+          <button type="button" role="menuitem" onClick={() => go("/notifications")}>
+            Notification preferences
+          </button>
+          <div className="profile-popover-sep" role="separator" />
+          <button
+            type="button"
+            role="menuitem"
+            className="profile-signout"
+            onClick={() => {
+              setOpen(false);
+              void signOut().finally(() => onNavigate?.());
+            }}
+          >
+            Sign out
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SidebarBrand({ collapsed }: { collapsed: boolean }) {
+  const { org } = useOrgContext();
+  return (
+    <NavLink to="/app" className={`brand-lockup${collapsed ? " is-collapsed" : ""}`}>
+      <span className="brand-plate">
+        {collapsed ? (
+          <span className="brand-mark-compact" aria-label="iCaNova">
+            i
+          </span>
+        ) : (
+          <img
+            className="brand-logo-lockup"
+            src="/brand/logo-lockup-light.png"
+            alt="iCaNova"
+            decoding="async"
+          />
+        )}
+      </span>
+      {!collapsed && org?.name ? (
+        <span className="brand-org" title={org.name}>
+          {org.name}
+        </span>
+      ) : null}
+    </NavLink>
+  );
+}
+
+function useMobileNav(breakpointPx = 720) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(`(max-width: ${breakpointPx}px)`).matches : false,
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia(`(max-width: ${breakpointPx}px)`);
+    const onChange = () => setIsMobile(media.matches);
+    onChange();
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, [breakpointPx]);
+
+  return isMobile;
+}
+
 export function Shell() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const isMobile = useMobileNav(720);
   const [menuOpen, setMenuOpen] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>(() => resolveTheme());
@@ -218,10 +410,24 @@ export function Shell() {
     setMenuOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    if (!isMobile) {
+      setMenuOpen(false);
+    }
+  }, [isMobile]);
+
   function cycleTheme() {
     const next: ThemeMode = theme === "light" ? "dark" : "light";
     persistTheme(next);
     setTheme(next);
+  }
+
+  function onRailActivate(group: NavGroup) {
+    const first = NAV.find((item) => item.group === group);
+    setNavCollapsed(false);
+    if (first) {
+      void navigate(first.to);
+    }
   }
 
   return (
@@ -230,39 +436,37 @@ export function Shell() {
         Skip to content
       </a>
       <aside className="sidebar" aria-label="Application">
-        <NavLink to="/" className="brand-lockup">
-          <span className="brand-plate">
-            <img
-              className="brand-logo-lockup"
-              src="/brand/logo-lockup-light.png"
-              alt="iCaNova"
-              decoding="async"
-            />
-          </span>
-        </NavLink>
-        <NavList />
-        <p className="sidebar-foot">Est. 2026</p>
+        <div className="sidebar-inner">
+          <SidebarBrand collapsed={navCollapsed} />
+          <NavList rail={navCollapsed} onRailActivate={onRailActivate} />
+          <div className="sidebar-foot">
+            <ProfileMenu placement="sidebar" collapsed={navCollapsed} />
+          </div>
+        </div>
+        <button
+          type="button"
+          className="sidebar-collapse-btn"
+          aria-label={navCollapsed ? "Expand navigation" : "Collapse navigation"}
+          title={navCollapsed ? "Expand navigation" : "Collapse navigation"}
+          onClick={() => setNavCollapsed((value) => !value)}
+        >
+          <Icon name={navCollapsed ? "chevronRight" : "chevronLeft"} />
+        </button>
       </aside>
       <div className="shell-main">
         <header className="topbar">
-          <button
-            type="button"
-            className="icon-btn menu-btn"
-            aria-label="Open navigation"
-            aria-expanded={menuOpen}
-            aria-controls="app-navigation"
-            onClick={() => setMenuOpen(true)}
-          >
-            <Icon name="menu" />
-          </button>
-          <button
-            type="button"
-            className="icon-btn nav-collapse-btn"
-            aria-label={navCollapsed ? "Expand navigation" : "Collapse navigation"}
-            onClick={() => setNavCollapsed((v) => !v)}
-          >
-            <Icon name="menu" />
-          </button>
+          {isMobile ? (
+            <button
+              type="button"
+              className="icon-btn menu-btn"
+              aria-label="Open navigation"
+              aria-expanded={menuOpen}
+              aria-controls="app-navigation"
+              onClick={() => setMenuOpen(true)}
+            >
+              <Icon name="menu" />
+            </button>
+          ) : null}
           <div className="crumbs">
             {deep ? (
               <nav aria-label="Breadcrumb">
@@ -287,7 +491,7 @@ export function Shell() {
           </div>
           <div className="topbar-cluster">
             <SystemStatusChip />
-            <OrgContext />
+            <OrgContext compact />
             <NavLink
               to="/notifications"
               className="icon-btn"
@@ -298,19 +502,25 @@ export function Shell() {
               <UnreadBadge />
             </NavLink>
             <ThemeToggle mode={theme} onToggle={cycleTheme} />
-            <SessionActions />
+            <ProfileMenu placement="header" />
           </div>
         </header>
         <main id="main" className="canvas">
           <Outlet />
         </main>
       </div>
-      <Drawer open={menuOpen} title="Navigation" side="left" onClose={() => setMenuOpen(false)}>
-        <div id="app-navigation">
+      <Drawer
+        open={isMobile && menuOpen}
+        title="iCaNova"
+        side="left"
+        className="nav-drawer"
+        onClose={() => setMenuOpen(false)}
+      >
+        <div className="drawer-nav-body">
           <NavList onNavigate={() => setMenuOpen(false)} />
           <div className="drawer-session">
             <ThemeToggle mode={theme} onToggle={cycleTheme} />
-            <SessionActions onNavigate={() => setMenuOpen(false)} />
+            <ProfileMenu placement="drawer" onNavigate={() => setMenuOpen(false)} />
           </div>
         </div>
       </Drawer>

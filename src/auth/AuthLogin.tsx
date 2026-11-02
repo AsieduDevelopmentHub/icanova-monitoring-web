@@ -1,5 +1,5 @@
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth, useConvex } from "convex/react";
+import { useConvexAuth, useConvex, useMutation } from "convex/react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation } from "react-router";
 import { api } from "../../convex/_generated/api";
@@ -13,19 +13,21 @@ import {
 } from "./convexError";
 import { safeReturnPath } from "./returnPath";
 
-type Mode = "signIn" | "signUp";
+type Mode = "signIn" | "signUp" | "request";
 
 const USERNAME_HINT = "3–32 characters: letters, numbers, dots, underscores, or hyphens.";
 
-/** Full-screen enterprise Convex Auth login / registration. */
+/** Full-screen enterprise Convex Auth login / controlled registration. */
 export function AuthLogin() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { signIn } = useAuthActions();
   const convex = useConvex();
+  const requestAccess = useMutation(api.accessRequests.submit);
   const location = useLocation();
   const [signupEnabled, setSignupEnabled] = useState<boolean | undefined>(undefined);
   const [mode, setMode] = useState<Mode>("signIn");
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const returnTo = safeReturnPath((location.state as { from?: unknown } | null)?.from, "/app");
 
@@ -83,10 +85,22 @@ export function AuthLogin() {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setMessage(null);
     setPending(true);
     const form = new FormData(event.currentTarget);
-    form.set("flow", mode);
     try {
+      if (mode === "request") {
+        await requestAccess({
+          name: String(form.get("name") ?? ""),
+          email: String(form.get("email") ?? ""),
+          organizationHint: String(form.get("organizationHint") ?? "") || undefined,
+          note: String(form.get("note") ?? "") || undefined,
+        });
+        setMessage("Request submitted. An administrator will contact you when access is ready.");
+        event.currentTarget.reset();
+        return;
+      }
+      form.set("flow", mode);
       if (mode === "signUp") {
         if (signupEnabled === false) {
           setError("Public signup is disabled.");
@@ -113,7 +127,9 @@ export function AuthLogin() {
           err,
           mode === "signIn"
             ? "Sign-in failed. Check username/email and password."
-            : "Could not create the account. Username or email may already be registered.",
+            : mode === "request"
+              ? "Could not submit the access request."
+              : "Could not create the account. Username or email may already be registered.",
         ),
       );
     } finally {
@@ -121,32 +137,46 @@ export function AuthLogin() {
     }
   }
 
-  const canSignUp = signupEnabled !== false;
+  const canSignUp = signupEnabled === true;
+  const title =
+    mode === "signIn" ? "Sign in" : mode === "request" ? "Request access" : "Create account";
 
   return (
     <AuthChrome labelledBy="auth-login-title">
       <header className="auth-card-head">
-        <h1 id="auth-login-title">{mode === "signIn" ? "Sign in" : "Create account"}</h1>
+        <h1 id="auth-login-title">{title}</h1>
         <p className="auth-switch">
           {mode === "signIn" ? (
-            canSignUp ? (
-              <>
-                New to iCaNova?{" "}
+            <>
+              Need an account?{" "}
+              {canSignUp ? (
                 <button
                   type="button"
                   className="auth-text-link"
                   disabled={pending}
                   onClick={() => {
                     setError(null);
+                    setMessage(null);
                     setMode("signUp");
                   }}
                 >
                   Sign up
                 </button>
-              </>
-            ) : (
-              <>Self-service signup is disabled. Ask an administrator for access.</>
-            )
+              ) : (
+                <button
+                  type="button"
+                  className="auth-text-link"
+                  disabled={pending}
+                  onClick={() => {
+                    setError(null);
+                    setMessage(null);
+                    setMode("request");
+                  }}
+                >
+                  Request access
+                </button>
+              )}
+            </>
           ) : (
             <>
               Already have an account?{" "}
@@ -156,6 +186,7 @@ export function AuthLogin() {
                 disabled={pending}
                 onClick={() => {
                   setError(null);
+                  setMessage(null);
                   setMode("signIn");
                 }}
               >
@@ -166,6 +197,26 @@ export function AuthLogin() {
         </p>
       </header>
       <form className="stack auth-form" onSubmit={(event) => void onSubmit(event)}>
+        {mode === "request" ? (
+          <>
+            <label className="field">
+              <span>Full name</span>
+              <input name="name" type="text" required disabled={pending} autoComplete="name" />
+            </label>
+            <label className="field">
+              <span>Work email</span>
+              <input name="email" type="email" required disabled={pending} autoComplete="email" />
+            </label>
+            <label className="field">
+              <span>Organization (optional)</span>
+              <input name="organizationHint" type="text" disabled={pending} />
+            </label>
+            <label className="field">
+              <span>Note (optional)</span>
+              <input name="note" type="text" disabled={pending} />
+            </label>
+          </>
+        ) : null}
         {mode === "signUp" ? (
           <label className="field">
             <span>Username</span>
@@ -182,32 +233,47 @@ export function AuthLogin() {
             <small className="field-hint">{USERNAME_HINT}</small>
           </label>
         ) : null}
-        <label className="field">
-          <span>{mode === "signIn" ? "Username or email" : "Email address"}</span>
-          <input
-            name="email"
-            type={mode === "signIn" ? "text" : "email"}
-            autoComplete={mode === "signIn" ? "username" : "email"}
-            required
-            disabled={pending}
-          />
-        </label>
-        <PasswordField
-          label="Password"
-          name="password"
-          autoComplete={mode === "signIn" ? "current-password" : "new-password"}
-          required
-          minLength={8}
-          disabled={pending}
-          hint={mode === "signUp" ? PASSWORD_RULE_HINT : undefined}
-        />
+        {mode !== "request" ? (
+          <>
+            <label className="field">
+              <span>{mode === "signIn" ? "Username or email" : "Email address"}</span>
+              <input
+                name="email"
+                type={mode === "signIn" ? "text" : "email"}
+                autoComplete={mode === "signIn" ? "username" : "email"}
+                required
+                disabled={pending}
+              />
+            </label>
+            <PasswordField
+              label="Password"
+              name="password"
+              autoComplete={mode === "signIn" ? "current-password" : "new-password"}
+              required
+              minLength={8}
+              disabled={pending}
+              hint={mode === "signUp" ? PASSWORD_RULE_HINT : undefined}
+            />
+          </>
+        ) : null}
         {error ? (
           <p className="notice" role="alert">
             {error}
           </p>
         ) : null}
+        {message ? (
+          <p className="notice" role="status">
+            {message}
+          </p>
+        ) : null}
         <button type="submit" className="btn btn-primary auth-submit" disabled={pending}>
-          {pending ? "Working…" : mode === "signIn" ? "Sign in" : "Create account"}
+          {pending
+            ? "Working…"
+            : mode === "signIn"
+              ? "Sign in"
+              : mode === "request"
+                ? "Submit request"
+                : "Create account"}
         </button>
       </form>
       {mode === "signIn" ? (

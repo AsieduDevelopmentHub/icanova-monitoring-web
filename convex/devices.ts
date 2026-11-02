@@ -13,6 +13,7 @@ import {
 } from "./ingestAuth";
 import { MAX_PAGE, boundedPage } from "./limits";
 import { emitDeviceRegistered } from "./notifyEmit";
+import { isGatewayIdentity, normalizeGatewayIdentity } from "./gatewayIdentity";
 import { requireSite } from "./sites";
 
 /** Strip credential hashes from any client-facing device document. */
@@ -51,6 +52,99 @@ export const list = query({
   },
 });
 
+/** Unassigned gateway inventory for the provision wizard. */
+export const listUnassigned = query({
+  args: {
+    organizationId: v.id("organizations"),
+    search: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "manage.devices");
+    const search = (args.search ?? "").trim().toLowerCase();
+    const devices = await ctx.db
+      .query("devices")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .take(MAX_PAGE);
+    const rows = [];
+    for (const device of devices) {
+      if (device.siteId) {
+        continue;
+      }
+      const hay = `${device.name} ${device.identity}`.toLowerCase();
+      if (search && !hay.includes(search)) {
+        continue;
+      }
+      rows.push({
+        deviceId: device._id,
+        name: device.name,
+        identity: device.identity,
+        lifecycle: lifecycleLabel(device),
+        assignment: "unassigned" as const,
+      });
+    }
+    return rows;
+  },
+});
+
+/** Register a gateway into the org inventory without a site. */
+export const registerUnassigned = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    identity: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "manage.devices");
+    const name = requireName(args.name, "Device name");
+    const identity = normalizeGatewayIdentity(args.identity);
+    if (!isGatewayIdentity(identity)) {
+      throw new Error("Invalid identity");
+    }
+    const existing = await ctx.db
+      .query("devices")
+      .withIndex("by_org_identity", (q) =>
+        q.eq("organizationId", args.organizationId).eq("identity", identity),
+      )
+      .unique();
+    if (existing) {
+      throw new Error("Already registered");
+    }
+    const deviceId = await ctx.db.insert("devices", {
+      organizationId: args.organizationId,
+      name,
+      identity,
+      lifecycle: "active",
+      lifecycleChangedAt: Date.now(),
+    });
+    await writeAudit(ctx, args.organizationId, "device.registerUnassigned", deviceId);
+    return deviceId;
+  },
+});
+
+export const byIdentity = query({
+  args: {
+    organizationId: v.id("organizations"),
+    identity: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "view.dashboard");
+    const identity = normalizeGatewayIdentity(args.identity);
+    if (!isGatewayIdentity(identity)) {
+      return null;
+    }
+    const device = await ctx.db
+      .query("devices")
+      .withIndex("by_org_identity", (q) =>
+        q.eq("organizationId", args.organizationId).eq("identity", identity),
+      )
+      .unique();
+    if (!device) {
+      return null;
+    }
+    return publicDevice(device);
+  },
+});
+
 export const create = mutation({
   args: {
     organizationId: v.id("organizations"),
@@ -62,8 +156,8 @@ export const create = mutation({
     await requirePermission(ctx, args.organizationId, "manage.devices");
     await requireSite(ctx, args.organizationId, args.siteId);
     const name = requireName(args.name, "Device name");
-    const identity = args.identity.trim().toLowerCase().replace(/[^0-9a-f]/g, "");
-    if (!/^[0-9a-f]{12}$/.test(identity)) {
+    const identity = normalizeGatewayIdentity(args.identity);
+    if (!isGatewayIdentity(identity)) {
       throw new Error("Invalid identity");
     }
     const existing = await ctx.db
@@ -155,7 +249,7 @@ export const inventory = query({
         if (!haystack.includes(search)) {
           continue;
         }
-        const site = await ctx.db.get(device.siteId);
+        const site = device.siteId ? await ctx.db.get(device.siteId) : null;
         const health = await ctx.db
           .query("deviceHealthCurrent")
           .withIndex("by_device", (q) => q.eq("deviceId", device._id))
@@ -186,7 +280,7 @@ export const inventory = query({
     const page = await indexed.paginate(boundedPage(args.paginationOpts));
     const rows = [];
     for (const device of page.page) {
-      const site = await ctx.db.get(device.siteId);
+      const site = device.siteId ? await ctx.db.get(device.siteId) : null;
       const health = await ctx.db
         .query("deviceHealthCurrent")
         .withIndex("by_device", (q) => q.eq("deviceId", device._id))
@@ -264,6 +358,46 @@ export const siteHealth = query({
   },
 });
 
+async function deviceDetailPayload(
+  ctx: QueryCtx,
+  device: Doc<"devices">,
+) {
+  await requirePermission(ctx, device.organizationId, "view.dashboard");
+  const site = device.siteId ? await ctx.db.get(device.siteId) : null;
+  if (site && site.organizationId !== device.organizationId) {
+    throw new Error("Forbidden");
+  }
+  const generators = await ctx.db
+    .query("generators")
+    .withIndex("by_device", (q) => q.eq("deviceId", device._id))
+    .take(20);
+  if (generators.some((generator) => generator.organizationId !== device.organizationId)) {
+    throw new Error("Forbidden");
+  }
+  const poll = await ctx.db
+    .query("devicePolls")
+    .withIndex("by_device", (q) => q.eq("deviceId", device._id))
+    .unique();
+  if (poll && poll.organizationId !== device.organizationId) {
+    throw new Error("Forbidden");
+  }
+  const health = await ctx.db
+    .query("deviceHealthCurrent")
+    .withIndex("by_device", (q) => q.eq("deviceId", device._id))
+    .unique();
+  if (health && health.organizationId !== device.organizationId) {
+    throw new Error("Forbidden");
+  }
+  return {
+    device: publicDevice(device),
+    siteName: site?.name ?? null,
+    siteCode: site?.code ?? null,
+    generators,
+    poll: poll ?? null,
+    health: health ?? null,
+  };
+}
+
 export const detail = query({
   args: { deviceId: v.id("devices") },
   handler: async (ctx, args) => {
@@ -271,39 +405,40 @@ export const detail = query({
     if (!device) {
       throw new Error("Not found");
     }
-    await requirePermission(ctx, device.organizationId, "view.dashboard");
-    const site = await ctx.db.get(device.siteId);
-    if (site && site.organizationId !== device.organizationId) {
-      throw new Error("Forbidden");
+    return await deviceDetailPayload(ctx, device);
+  },
+});
+
+/** Resolve by gateway identity (preferred) or legacy Convex device id string. */
+export const detailForKey = query({
+  args: { key: v.string() },
+  handler: async (ctx, args) => {
+    const key = args.key.trim();
+    if (!key) {
+      throw new Error("Not found");
     }
-    const generators = await ctx.db
-      .query("generators")
-      .withIndex("by_device", (q) => q.eq("deviceId", device._id))
-      .take(20);
-    if (generators.some((generator) => generator.organizationId !== device.organizationId)) {
-      throw new Error("Forbidden");
+    const identity = normalizeGatewayIdentity(key);
+    if (isGatewayIdentity(identity)) {
+      const matches = await ctx.db
+        .query("devices")
+        .withIndex("by_identity", (q) => q.eq("identity", identity))
+        .take(5);
+      for (const device of matches) {
+        try {
+          return await deviceDetailPayload(ctx, device);
+        } catch {
+          // try next org match
+        }
+      }
     }
-    const poll = await ctx.db
-      .query("devicePolls")
-      .withIndex("by_device", (q) => q.eq("deviceId", device._id))
-      .unique();
-    if (poll && poll.organizationId !== device.organizationId) {
-      throw new Error("Forbidden");
+    const asId = ctx.db.normalizeId("devices", key);
+    if (asId) {
+      const device = await ctx.db.get(asId);
+      if (device) {
+        return await deviceDetailPayload(ctx, device);
+      }
     }
-    const health = await ctx.db
-      .query("deviceHealthCurrent")
-      .withIndex("by_device", (q) => q.eq("deviceId", device._id))
-      .unique();
-    if (health && health.organizationId !== device.organizationId) {
-      throw new Error("Forbidden");
-    }
-    return {
-      device: publicDevice(device),
-      siteName: site?.name ?? null,
-      generators,
-      poll: poll ?? null,
-      health: health ?? null,
-    };
+    throw new Error("Not found");
   },
 });
 
@@ -372,8 +507,8 @@ export const verifyDeviceIngestCredential = internalMutation({
     presented: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = args.identity.trim().toLowerCase();
-    if (!/^[0-9a-f]{12}$/.test(identity)) {
+    const identity = normalizeGatewayIdentity(args.identity);
+    if (!isGatewayIdentity(identity)) {
       return { ok: false as const, reason: "bad_identity" as const };
     }
     const matches = await ctx.db
@@ -424,8 +559,8 @@ export const verifyDeviceIngestCredential = internalMutation({
 export const inspectIdentity = internalQuery({
   args: { identity: v.string() },
   handler: async (ctx, args) => {
-    const identity = args.identity.trim().toLowerCase();
-    if (!/^[0-9a-f]{12}$/.test(identity)) {
+    const identity = normalizeGatewayIdentity(args.identity);
+    if (!isGatewayIdentity(identity)) {
       throw new Error("Invalid identity");
     }
     const matches = await ctx.db
@@ -435,7 +570,7 @@ export const inspectIdentity = internalQuery({
     const rows = [];
     for (const device of matches) {
       const org = await ctx.db.get(device.organizationId);
-      const site = await ctx.db.get(device.siteId);
+      const site = device.siteId ? await ctx.db.get(device.siteId) : null;
       const generators = await ctx.db
         .query("generators")
         .withIndex("by_device", (q) => q.eq("deviceId", device._id))
@@ -522,8 +657,8 @@ export const resolveIdentityDuplicates = internalMutation({
     keepDeviceId: v.optional(v.id("devices")),
   },
   handler: async (ctx, args) => {
-    const identity = args.identity.trim().toLowerCase();
-    if (!/^[0-9a-f]{12}$/.test(identity)) {
+    const identity = normalizeGatewayIdentity(args.identity);
+    if (!isGatewayIdentity(identity)) {
       throw new Error("Invalid identity");
     }
     const matches = await ctx.db

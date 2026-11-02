@@ -19,7 +19,7 @@
 
 1. Create organization (if needed).
 2. Create site.
-3. Register gateway with **12-character efuse MAC** identity.
+3. Register gateway with its assigned **device ID** (serial); legacy 12-hex MAC still accepted.
 4. Attach generator(s) to that gateway.
 5. Device must heartbeat/ingest with the same identity.
 6. Soft-AP Modbus / GenComm settings remain local to the gateway.

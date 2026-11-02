@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
-import { assertSameOrg, requireName, requirePermission } from "./identity";
+import { requireName, requirePermission } from "./identity";
 import { requireDevice } from "./devices";
 import { boundedPage } from "./limits";
 import { noteGenerator } from "./siteSummary";
@@ -48,8 +48,85 @@ export const detail = query({
       siteId: generator.siteId,
       deviceId: generator.deviceId,
       name: generator.name,
+      code: generator.code ?? null,
       current: current ?? null,
     };
+  },
+});
+
+export const byCode = query({
+  args: {
+    organizationId: v.id("organizations"),
+    code: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "view.telemetry");
+    const code = args.code.trim().toLowerCase();
+    if (!code) {
+      return null;
+    }
+    const generator = await ctx.db
+      .query("generators")
+      .withIndex("by_org_code", (q) =>
+        q.eq("organizationId", args.organizationId).eq("code", code),
+      )
+      .unique();
+    if (!generator) {
+      return null;
+    }
+    return {
+      generatorId: generator._id,
+      name: generator.name,
+      code: generator.code ?? code,
+      siteId: generator.siteId,
+      deviceId: generator.deviceId,
+    };
+  },
+});
+
+/** Resolve by public code (preferred) or legacy Convex generator id. */
+export const resolveKey = query({
+  args: { key: v.string() },
+  handler: async (ctx, args) => {
+    const key = args.key.trim();
+    if (!key) {
+      return null;
+    }
+    const code = key.toLowerCase();
+    const { resolveAppUser } = await import("./identity");
+    const resolved = await resolveAppUser(ctx);
+    if (!resolved) {
+      return null;
+    }
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_user", (q) => q.eq("userId", resolved.user._id))
+      .take(50);
+    for (const membership of memberships) {
+      const hit = await ctx.db
+        .query("generators")
+        .withIndex("by_org_code", (q) =>
+          q.eq("organizationId", membership.organizationId).eq("code", code),
+        )
+        .unique();
+      if (hit) {
+        await requirePermission(ctx, hit.organizationId, "view.telemetry");
+        return { generatorId: hit._id, name: hit.name, code: hit.code ?? code };
+      }
+    }
+    const asId = ctx.db.normalizeId("generators", key);
+    if (asId) {
+      const generator = await ctx.db.get(asId);
+      if (generator) {
+        await requirePermission(ctx, generator.organizationId, "view.telemetry");
+        return {
+          generatorId: generator._id,
+          name: generator.name,
+          code: generator.code ?? null,
+        };
+      }
+    }
+    return null;
   },
 });
 
@@ -64,8 +141,17 @@ export const create = mutation({
     await requirePermission(ctx, args.organizationId, "manage.devices");
     await requireSite(ctx, args.organizationId, args.siteId);
     const device = await requireDevice(ctx, args.organizationId, args.deviceId);
-    assertSameOrg(device.siteId, args.siteId);
+    if (!device.siteId || device.siteId !== args.siteId) {
+      throw new Error("Gateway is not assigned to this site");
+    }
     const name = requireName(args.name, "Generator name");
+    const codeBase = name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 32);
+    const code = codeBase.length > 0 ? codeBase : `gen-${Date.now() % 100000}`;
     const existing = await ctx.db
       .query("generators")
       .withIndex("by_device", (q) => q.eq("deviceId", args.deviceId))
@@ -73,11 +159,21 @@ export const create = mutation({
     if (existing.length > 0) {
       throw new Error("Device already has a generator");
     }
+    const codeClash = await ctx.db
+      .query("generators")
+      .withIndex("by_org_code", (q) =>
+        q.eq("organizationId", args.organizationId).eq("code", code),
+      )
+      .unique();
+    if (codeClash) {
+      throw new Error("Generator code already in use");
+    }
     const generatorId = await ctx.db.insert("generators", {
       organizationId: args.organizationId,
       siteId: args.siteId,
       deviceId: args.deviceId,
       name,
+      code,
     });
     const counted = await noteGenerator(ctx, args.organizationId, args.siteId);
     if (counted === "recount") {
