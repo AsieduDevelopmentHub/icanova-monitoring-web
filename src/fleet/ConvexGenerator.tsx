@@ -137,11 +137,11 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
           </p>
           <h1>{detail.name}</h1>
           <p className="meta">
-            <Link to={`/alarms?generator=${generatorId}`}>Alarms</Link>
+            <Link to={`/alarms?site=${detail.siteId}&generator=${generatorId}`}>Alarms</Link>
             {" · "}
-            <Link to={`/trends?generator=${generatorId}`}>Trends</Link>
+            <Link to={`/trends?site=${detail.siteId}&generator=${generatorId}`}>Trends</Link>
             {" · "}
-            <Link to={`/sites/${detail.siteId}`}>Site</Link>
+            <Link to={`/sites/${detail.siteId}`}>Site desk</Link>
           </p>
         </div>
       </header>

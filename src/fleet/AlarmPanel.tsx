@@ -93,8 +93,8 @@ function SiteAlarmBody({
             key: "asset",
             header: "Asset",
             render: (row) =>
-              row.generatorId ? (
-                <Link to={`/generators/${row.generatorId}`}>{row.generatorName}</Link>
+              row.generatorId && siteId ? (
+                <Link to={`/sites/${siteId}/generators/${row.generatorId}`}>{row.generatorName}</Link>
               ) : (
                 row.generatorName || "—"
               ),

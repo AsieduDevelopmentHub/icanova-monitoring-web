@@ -15,16 +15,13 @@ export type NavItem = {
 
 export const NAV: NavItem[] = [
   { to: "/app", label: "Command Center", icon: "dashboard", group: "Overview", end: true },
-  { to: "/local", label: "Live Systems", icon: "local", group: "Monitor", end: true },
-  { to: "/generators", label: "Generators", icon: "generator", group: "Monitor" },
-  { to: "/gateways", label: "Gateways", icon: "gateway", group: "Monitor" },
+  { to: "/sites", label: "Sites", icon: "sites", group: "Monitor" },
   { to: "/trends", label: "Trends", icon: "reports", group: "Analyze" },
   { to: "/reports", label: "Reports", icon: "reports", group: "Analyze" },
   { to: "/alarms", label: "Alarms", icon: "alarm", group: "Operate" },
   { to: "/events", label: "Events", icon: "events", group: "Operate" },
   { to: "/notifications", label: "Notifications", icon: "bell", group: "Operate" },
   { to: "/maintenance", label: "Maintenance", icon: "maintenance", group: "Operate" },
-  { to: "/sites", label: "Sites", icon: "sites", group: "Administration" },
   { to: "/admin/users", label: "Users", icon: "users", group: "Administration" },
   { to: "/admin/roles", label: "Roles", icon: "roles", group: "Administration" },
   { to: "/admin/settings", label: "Settings", icon: "settings", group: "Administration" },
@@ -48,7 +45,7 @@ export const NAV_COLLAPSE_DEFAULT: Partial<Record<NavGroup, boolean>> = {
 /** Section icons for the collapsed sidebar rail. */
 export const NAV_GROUP_ICONS: Record<NavGroup, IconName> = {
   Overview: "dashboard",
-  Monitor: "local",
+  Monitor: "sites",
   Analyze: "reports",
   Operate: "alarm",
   Administration: "settings",
@@ -66,23 +63,30 @@ export function itemForPath(pathname: string): NavItem | undefined {
   if (pathname.startsWith("/alarms")) {
     return NAV.find((item) => item.to === "/alarms");
   }
-  if (pathname.startsWith("/sites/")) {
+  if (pathname.startsWith("/sites")) {
     return NAV.find((item) => item.to === "/sites");
   }
-  if (pathname.startsWith("/gateways")) {
-    return NAV.find((item) => item.to === "/gateways");
+  if (pathname.startsWith("/trends")) {
+    return NAV.find((item) => item.to === "/trends");
   }
-  if (pathname.startsWith("/generators")) {
-    return NAV.find((item) => item.to === "/generators");
+  if (pathname.startsWith("/events")) {
+    return NAV.find((item) => item.to === "/events");
+  }
+  if (pathname.startsWith("/maintenance")) {
+    return NAV.find((item) => item.to === "/maintenance");
   }
   if (pathname.startsWith("/local/configure")) {
     return NAV.find((item) => item.to === "/local/configure");
   }
   if (pathname.startsWith("/local")) {
-    return NAV.find((item) => item.to === "/local");
+    return NAV.find((item) => item.to === "/local/configure");
   }
   if (pathname.startsWith("/admin")) {
     return NAV.find((item) => item.to === pathname) ?? NAV.find((item) => item.to === "/admin/settings");
+  }
+  // Legacy fleet asset URLs still map to Sites while redirects settle.
+  if (pathname.startsWith("/generators") || pathname.startsWith("/gateways")) {
+    return NAV.find((item) => item.to === "/sites");
   }
   return undefined;
 }
@@ -93,24 +97,68 @@ export function pageTitleFor(pathname: string): string {
 }
 
 export function crumbsFor(pathname: string): { to: string; label: string }[] {
-  const alarm = pathname.match(/^\/alarms\/([^/]+)$/);
-  const site = pathname.match(/^\/sites\/([^/]+)$/);
+  const root = [
+    { to: "/app", label: "Command Center" },
+    { to: "/sites", label: "Sites" },
+  ];
+
+  const nestedGen = pathname.match(/^\/sites\/([^/]+)\/generators\/([^/]+)(?:\/([^/]+))?$/);
+  if (nestedGen) {
+    const [, siteId, generatorId, section] = nestedGen;
+    const crumbs = [
+      ...root,
+      { to: `/sites/${siteId}`, label: "Site" },
+      {
+        to: `/sites/${siteId}/generators/${generatorId}`,
+        label: generatorId === DEMO_GENERATOR_ID ? "Demo log" : "Generator",
+      },
+    ];
+    if (section) {
+      crumbs.push({
+        to: pathname,
+        label: sectionById(section)?.label ?? section,
+      });
+    }
+    return crumbs;
+  }
+
+  const nestedGw = pathname.match(/^\/sites\/([^/]+)\/gateways\/([^/]+)$/);
+  if (nestedGw) {
+    const [, siteId, gatewayId] = nestedGw;
+    return [
+      ...root,
+      { to: `/sites/${siteId}`, label: "Site" },
+      { to: pathname, label: gatewayId },
+    ];
+  }
+
+  const siteOnly = pathname.match(/^\/sites\/([^/]+)$/);
+  if (pathname === "/sites") {
+    return root;
+  }
+  if (siteOnly) {
+    return [...root, { to: pathname, label: "Site" }];
+  }
+
   if (pathname === "/app") {
     return [{ to: "/app", label: "Command Center" }];
   }
-  if (pathname === "/sites") {
-    return [
+
+  const alarm = pathname.match(/^\/alarms\/([^/]+)$/);
+  if (pathname === "/alarms" || alarm) {
+    const crumbs = [
       { to: "/app", label: "Command Center" },
-      { to: "/sites", label: "Sites" },
+      { to: "/alarms", label: "Alarms" },
     ];
+    if (alarm) {
+      crumbs.push({
+        to: pathname,
+        label: alarm[1].startsWith("demo-") ? "Demo alarm" : "Alarm",
+      });
+    }
+    return crumbs;
   }
-  if (site) {
-    return [
-      { to: "/app", label: "Command Center" },
-      { to: "/sites", label: "Sites" },
-      { to: pathname, label: "Site" },
-    ];
-  }
+
   if (pathname === "/trends") {
     return [
       { to: "/app", label: "Command Center" },
@@ -129,51 +177,17 @@ export function crumbsFor(pathname: string): { to: string; label: string }[] {
       { to: "/reports", label: "Reports" },
     ];
   }
-  if (pathname === "/alarms" || alarm) {
-    const crumbs = [
-      { to: "/app", label: "Command Center" },
-      { to: "/alarms", label: "Alarms" },
-    ];
-    if (alarm) {
-      crumbs.push({
-        to: pathname,
-        label: alarm[1].startsWith("demo-") ? "Demo alarm" : alarm[1],
-      });
-    }
-    return crumbs;
+
+  // Legacy paths: crumbs still site-oriented until redirect lands.
+  const legacyGen = pathname.match(/^\/generators\/([^/]+)(?:\/([^/]+))?$/);
+  if (pathname === "/generators" || legacyGen) {
+    return root;
   }
-  const gateway = pathname.match(/^\/gateways\/([^/]+)$/);
-  if (pathname === "/gateways" || gateway) {
-    const crumbs = [
-      { to: "/app", label: "Command Center" },
-      { to: "/gateways", label: "Gateways" },
-    ];
-    if (gateway) {
-      crumbs.push({ to: pathname, label: gateway[1] });
-    }
-    return crumbs;
+  const legacyGw = pathname.match(/^\/gateways\/([^/]+)$/);
+  if (pathname === "/gateways" || legacyGw) {
+    return root;
   }
-  const generator = pathname.match(/^\/generators\/([^/]+)(?:\/([^/]+))?$/);
-  if (pathname === "/generators" || generator) {
-    const crumbs = [
-      { to: "/app", label: "Command Center" },
-      { to: "/generators", label: "Generators" },
-    ];
-    if (generator) {
-      crumbs.push({
-        to: `/generators/${generator[1]}`,
-        label: generator[1] === DEMO_GENERATOR_ID ? "Demo log" : "Generator",
-      });
-      if (generator[2]) {
-        const section = sectionById(generator[2]);
-        crumbs.push({
-          to: pathname,
-          label: section?.label ?? generator[2],
-        });
-      }
-    }
-    return crumbs;
-  }
+
   const item = itemForPath(pathname);
   if (!item) {
     return [{ to: "/app", label: "Command Center" }];

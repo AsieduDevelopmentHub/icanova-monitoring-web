@@ -60,7 +60,7 @@ function DemoGateway() {
       <header className="page-head">
         <h1>{name}</h1>
         <p>
-          <Link to="/gateways">Gateways</Link>
+          <Link to="/sites">Sites</Link>
         </p>
       </header>
       <p className="meta" role="note">
@@ -121,7 +121,13 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
           <p className="crumb-row meta">
             <Link to="/app">Command Center</Link>
             <span aria-hidden="true"> / </span>
-            <Link to="/gateways">Gateways</Link>
+            <Link to="/sites">Sites</Link>
+            <span aria-hidden="true"> / </span>
+            {detail.device.siteId ? (
+              <Link to={`/sites/${detail.device.siteId}`}>{detail.siteName ?? "Site"}</Link>
+            ) : (
+              <span>Site</span>
+            )}
             <span aria-hidden="true"> / </span>
             <span>{detail.device.name}</span>
           </p>
@@ -129,13 +135,19 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
           <p className="meta">
             {detail.device.siteId ? (
               <>
-                <Link to={`/sites/${detail.device.siteId}`}>{detail.siteName ?? "Site"}</Link>
+                <Link to={`/sites/${detail.device.siteId}`}>Site desk</Link>
                 {" · "}
+                <Link to={`/alarms?site=${detail.device.siteId}`}>Alarms</Link>
+                {" · "}
+                <Link to={`/events?site=${detail.device.siteId}`}>Events</Link>
               </>
-            ) : null}
-            <Link to={`/alarms?device=${detail.device._id}`}>Alarms</Link>
-            {" · "}
-            <Link to="/events">Events</Link>
+            ) : (
+              <>
+                <Link to="/alarms">Alarms</Link>
+                {" · "}
+                <Link to="/events">Events</Link>
+              </>
+            )}
           </p>
         </div>
       </header>
@@ -210,16 +222,24 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
               {
                 key: "name",
                 header: "Generator",
-                render: (row: { _id: string; name: string; code?: string | null }) => (
-                  <Link to={`/generators/${row.code ?? row._id}`}>{row.name}</Link>
-                ),
+                render: (row: { _id: string; name: string; code?: string | null }) =>
+                  detail.device.siteId ? (
+                    <Link to={`/sites/${detail.device.siteId}/generators/${row.code ?? row._id}`}>
+                      {row.name}
+                    </Link>
+                  ) : (
+                    row.name
+                  ),
               },
               {
                 key: "open",
                 header: "",
-                render: (row: { _id: string }) => (
-                  <Link to={`/trends?generator=${row._id}`}>Trends</Link>
-                ),
+                render: (row: { _id: string }) =>
+                  detail.device.siteId ? (
+                    <Link to={`/trends?site=${detail.device.siteId}&generator=${row._id}`}>Trends</Link>
+                  ) : (
+                    <Link to={`/trends?generator=${row._id}`}>Trends</Link>
+                  ),
               },
             ]}
           />

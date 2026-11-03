@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { useQuery } from "convex/react";
 import type { Id } from "../../convex/_generated/dataModel";
 import { api } from "../../convex/_generated/api";
 import { id } from "../fleet/access";
 import { LiveGate, SiteSelect } from "../fleet/scope";
 import { FleetBoundary } from "../fleet/boundary";
+import { siteGatewayPath, sitePath } from "../fleet/paths";
 import { auditActor, auditTime } from "../telemetry/fleetView";
 import { DataTable } from "../ui/DataTable";
 import { Tabs } from "../ui/Tabs";
@@ -55,21 +56,44 @@ export function Events() {
       <LiveGate emptyLayout="list" emptyCaption="Events" emptyColumns={["When", "Source", "Change"]}>
         {(org) =>
           mode === "health" ? (
-            <SiteSelect organizationId={org.organizationId}>
-              {(siteId, siteName) =>
-                siteId ? (
-                  <FleetBoundary key={siteId}>
-                    <HealthTimeline organizationId={org.organizationId} siteId={siteId} siteName={siteName} />
-                  </FleetBoundary>
-                ) : null
-              }
-            </SiteSelect>
+            <HealthWithSiteUrl organizationId={org.organizationId} />
           ) : (
             <AuditList organizationId={org.organizationId} />
           )
         }
       </LiveGate>
     </section>
+  );
+}
+
+function HealthWithSiteUrl({ organizationId }: { organizationId: string }) {
+  const [params, setParams] = useSearchParams();
+  const siteFromUrl = params.get("site") ?? "";
+
+  function onSiteChange(siteId: string | null) {
+    const next = new URLSearchParams(params);
+    if (siteId) {
+      next.set("site", siteId);
+    } else {
+      next.delete("site");
+    }
+    setParams(next, { replace: true });
+  }
+
+  return (
+    <SiteSelect
+      organizationId={organizationId}
+      initialSiteId={siteFromUrl || undefined}
+      onSiteChange={onSiteChange}
+    >
+      {(siteId, siteName) =>
+        siteId ? (
+          <FleetBoundary key={siteId}>
+            <HealthTimeline organizationId={organizationId} siteId={siteId} siteName={siteName} />
+          </FleetBoundary>
+        ) : null
+      }
+    </SiteSelect>
   );
 }
 
@@ -93,7 +117,7 @@ function HealthTimeline({
   return (
     <div className="stack">
       <p className="meta">
-        <Link to={`/sites/${siteId}`}>{siteName}</Link>
+        <Link to={sitePath(siteId)}>{siteName}</Link>
         {" · "}
         <Link to={`/alarms?site=${siteId}`}>Alarms</Link>
         {data.capped ? " · newest page" : ""}
@@ -123,7 +147,7 @@ function HealthTimeline({
             key: "device",
             header: "Gateway",
             render: (row) => (
-              <Link to={`/gateways/${row.deviceIdentity ?? row.deviceId}`}>{row.deviceName}</Link>
+              <Link to={siteGatewayPath(siteId, row.deviceIdentity ?? row.deviceId)}>{row.deviceName}</Link>
             ),
           },
           {
@@ -159,13 +183,16 @@ function HealthTimeline({
               <dd className="tech">{new Date(peek.at).toLocaleString()}</dd>
               <dt>Gateway</dt>
               <dd>
-                <Link to={`/gateways/${peek.deviceIdentity ?? peek.deviceId}`} onClick={() => setPeek(null)}>
+                <Link
+                  to={siteGatewayPath(siteId, peek.deviceIdentity ?? peek.deviceId)}
+                  onClick={() => setPeek(null)}
+                >
                   {peek.deviceName}
                 </Link>
               </dd>
               <dt>Site</dt>
               <dd>
-                <Link to={`/sites/${siteId}`} onClick={() => setPeek(null)}>
+                <Link to={sitePath(siteId)} onClick={() => setPeek(null)}>
                   {siteName}
                 </Link>
               </dd>

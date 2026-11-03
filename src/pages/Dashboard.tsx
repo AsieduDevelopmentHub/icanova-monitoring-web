@@ -11,24 +11,6 @@ import { StatusStrip } from "../ui/StatusStrip";
 import { Skeleton } from "../ui/Skeleton";
 import { RegionStats } from "./dashboard/RegionStats";
 
-function ageLabel(at: number | null): string {
-  if (at == null) {
-    return "—";
-  }
-  const minutes = Math.max(0, Math.round((Date.now() - at) / 60000));
-  if (minutes < 1) {
-    return "now";
-  }
-  if (minutes < 60) {
-    return `${minutes}m`;
-  }
-  const hours = Math.round(minutes / 60);
-  if (hours < 48) {
-    return `${hours}h`;
-  }
-  return `${Math.round(hours / 24)}d`;
-}
-
 /** Fleet Command Center — overview that drills into sites. */
 export function Dashboard() {
   return (
@@ -173,16 +155,15 @@ function CommandCenter({
             empty="No sites"
             columns={[
               {
-                key: "code",
-                header: "Code",
-                render: (row) => <span className="tech">{row.code ?? "—"}</span>,
-              },
-              {
                 key: "name",
                 header: "Site",
-                render: (row) => <Link to={`/sites/${row.siteId}`}>{row.name}</Link>,
+                render: (row) => (
+                  <span className="cc-site-cell">
+                    <Link to={`/sites/${row.siteId}`}>{row.name}</Link>
+                    {row.code ? <span className="meta tech">{row.code}</span> : null}
+                  </span>
+                ),
               },
-              { key: "region", header: "Region", render: (row) => row.region ?? "—" },
               {
                 key: "gw",
                 header: "Gateway",
@@ -197,27 +178,9 @@ function CommandCenter({
               },
               {
                 key: "gens",
-                header: "Generators",
+                header: "Gens",
                 align: "right",
                 render: (row) => String(row.generators ?? "—"),
-              },
-              {
-                key: "alarms",
-                header: "Comm",
-                align: "right",
-                render: (row) =>
-                  row.activeCommProblems > 0 ? (
-                    <StatusMark tone="warn">{String(row.activeCommProblems)}</StatusMark>
-                  ) : (
-                    "0"
-                  ),
-              },
-              {
-                key: "seen",
-                header: "Last contact",
-                render: (row) => (
-                  <span className="tech">{ageLabel(row.lastGatewayContactAt ?? row.lastTelemetryAt)}</span>
-                ),
               },
               {
                 key: "status",

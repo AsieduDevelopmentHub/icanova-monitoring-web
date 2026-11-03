@@ -81,7 +81,11 @@ function PeekBody({
         </dd>
         <dt>Generator</dt>
         <dd>
-          {alarm.generatorId ? (
+          {alarm.generatorId && alarm.siteId ? (
+            <Link to={`/sites/${alarm.siteId}/generators/${alarm.generatorId}`}>
+              {alarm.generatorName ?? "Generator"}
+            </Link>
+          ) : alarm.generatorId ? (
             <Link to={`/generators/${alarm.generatorId}`}>{alarm.generatorName ?? "Generator"}</Link>
           ) : (
             "—"

@@ -335,7 +335,7 @@ function CurrentTable({
                   </td>
                   <td>{formatReading(power)}</td>
                   <td>
-                    <Link to={`/generators/${row.generatorId}`}>Open</Link>
+                    <Link to={`/sites/${siteId}/generators/${row.generatorId}`}>Open</Link>
                   </td>
                 </tr>
               );

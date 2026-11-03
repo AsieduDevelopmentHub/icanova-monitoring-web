@@ -424,8 +424,8 @@ function AlarmTable({
             key: "generator",
             header: "Generator",
             render: (row) =>
-              row.generatorId ? (
-                <Link to={`/generators/${row.generatorId}`}>{row.generatorName}</Link>
+              row.generatorId && row.siteId ? (
+                <Link to={`/sites/${row.siteId}/generators/${row.generatorId}`}>{row.generatorName}</Link>
               ) : (
                 row.generatorName
               ),

@@ -90,7 +90,7 @@ function SiteReadings({
         </p>
         <div className="ops-links">
           <Link to="/app">Dashboard</Link>
-          <Link to="/gateways">Gateways</Link>
+          <Link to="/sites">Sites</Link>
         </div>
       </div>
       {loaded.length === 0 ? (

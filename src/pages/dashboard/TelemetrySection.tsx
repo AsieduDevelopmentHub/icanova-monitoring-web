@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { id, storedReading } from "../../fleet/access";
+import { siteTrendsPath } from "../../fleet/paths";
 import { formatReading } from "../../telemetry/readings";
 import { SectionHeader } from "../../ui/SectionHeader";
 import { SeriesChart } from "../../ui/SeriesChart";
@@ -15,10 +16,12 @@ export function TelemetrySection({
   primary,
   range,
   onRange,
+  siteId = null,
 }: {
   primary: BoardRow | null;
   range: ChartRange;
   onRange: (range: ChartRange) => void;
+  siteId?: string | null;
 }) {
   if (!primary) {
     return (
@@ -54,7 +57,15 @@ export function TelemetrySection({
                 </button>
               ))}
             </div>
-            <Link to={`/generators/${primary.generatorId}/trends`}>Trends</Link>
+            <Link
+              to={
+                (siteId ?? primary.siteId)
+                  ? siteTrendsPath(siteId ?? primary.siteId!, primary.generatorId)
+                  : `/trends?generator=${primary.generatorId}`
+              }
+            >
+              Trends
+            </Link>
           </div>
         }
       />

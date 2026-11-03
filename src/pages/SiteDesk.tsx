@@ -4,13 +4,20 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { id } from "../fleet/access";
 import { FleetBoundary } from "../fleet/boundary";
+import {
+  siteAlarmsPath,
+  siteEventsPath,
+  siteGatewayPath,
+  siteMaintenancePath,
+  siteTrendsPath,
+} from "../fleet/paths";
 import { LiveGate } from "../fleet/scope";
 import { EmptyState } from "../ui/EmptyState";
 import { QueryErrorBoundary } from "../ui/QueryErrorBoundary";
 import { PageSkeleton } from "../ui/Skeleton";
 import { CommandBoard } from "./dashboard/CommandBoard";
 
-/** Type B site detail — generators, gateway, telemetry, contextual alarms. */
+/** Type B site desk — control room for one physical installation. */
 export function SiteDesk() {
   const { siteId } = useParams();
   return (
@@ -45,12 +52,19 @@ function DeskBody({
     organizationId: id<"organizations">(organizationId),
     siteId,
   });
+  const devices = useQuery(api.devices.list, {
+    organizationId: id<"organizations">(organizationId),
+    siteId,
+    paginationOpts: { numItems: 20, cursor: null },
+  });
   if (site === undefined) {
     return <PageSkeleton rows={6} label="Loading site" />;
   }
   if (site === null) {
     return <EmptyState title="Site not found" action={<Link to="/sites">Sites</Link>} />;
   }
+  const gateways = Array.isArray(devices?.page) ? devices.page : [];
+
   return (
     <div className="stack">
       <header className="page-head">
@@ -65,14 +79,44 @@ function DeskBody({
           <h1>{site.name}</h1>
           <p className="meta">
             {site.code ? <span className="tech">{site.code}</span> : null}
-            {site.region ? <span>{site.code ? " · " : ""}{site.region}</span> : null}
+            {site.region ? (
+              <span>
+                {site.code ? " · " : ""}
+                {site.region}
+              </span>
+            ) : null}
             {" · "}
-            <Link to={`/alarms?site=${site.siteId}`}>Alarms</Link>
+            <Link to={siteAlarmsPath(site.siteId)}>Alarms</Link>
             {" · "}
-            <Link to={`/events`}>Events</Link>
+            <Link to={siteEventsPath(site.siteId)}>Events</Link>
+            {" · "}
+            <Link to={siteTrendsPath(site.siteId)}>Trends</Link>
+            {" · "}
+            <Link to={siteMaintenancePath(site.siteId)}>Maintenance</Link>
           </p>
         </div>
       </header>
+
+      <section className="ops-section" aria-labelledby="site-gateway-title">
+        <h2 id="site-gateway-title">Gateway</h2>
+        {devices === undefined ? (
+          <PageSkeleton rows={2} label="Loading gateways" />
+        ) : gateways.length === 0 ? (
+          <p className="empty">No gateway linked to this site.</p>
+        ) : (
+          <ul className="stack">
+            {gateways.map((device: { _id: string; name: string; identity: string }) => (
+              <li key={device._id}>
+                <Link to={siteGatewayPath(site.siteId, device.identity || device._id)}>
+                  {device.name}
+                </Link>
+                <span className="meta tech"> · {device.identity}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <FleetBoundary>
         <QueryErrorBoundary title="Site board unavailable">
           <CommandBoard

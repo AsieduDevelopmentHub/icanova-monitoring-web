@@ -29,7 +29,11 @@ export const generators = query({
       .take(50);
     return rows
       .filter((row) => row.organizationId === args.organizationId)
-      .map((row) => ({ generatorId: row._id, name: row.name }));
+      .map((row) => ({
+        generatorId: row._id,
+        siteId: row.siteId,
+        name: row.name,
+      }));
   },
 });
 

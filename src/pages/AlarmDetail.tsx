@@ -143,7 +143,15 @@ function StoredAlarm({ alarmId }: { alarmId: string }) {
         <dt>Generator</dt>
         <dd>
           {alarm.generatorId ? (
-            <Link to={`/generators/${alarm.generatorId}`}>{alarm.generatorName ?? "Generator"}</Link>
+            <Link
+              to={
+                alarm.siteId
+                  ? `/sites/${alarm.siteId}/generators/${alarm.generatorId}`
+                  : `/generators/${alarm.generatorId}`
+              }
+            >
+              {alarm.generatorName ?? "Generator"}
+            </Link>
           ) : (
             "—"
           )}

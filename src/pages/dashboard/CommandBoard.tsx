@@ -147,6 +147,7 @@ export function CommandBoard({
         alarms={strip.alarms}
         offlineGateways={strip.offlineGateways}
         tone={strip.tone}
+        siteId={siteId}
       />
 
       {loaded.length === 0 ? (
@@ -167,6 +168,7 @@ export function CommandBoard({
         siteName={siteName}
         gatewayOnline={strip.gatewayOnline}
         onSelect={setSelectedId}
+        siteId={siteId}
       />
 
       <AttentionTable
@@ -175,10 +177,11 @@ export function CommandBoard({
         listAll={Boolean(siteId)}
         selectedId={primary?.generatorId ?? null}
         onSelect={setSelectedId}
+        siteId={siteId}
       />
 
       {permissions.includes("view.telemetry") ? (
-        <TelemetrySection primary={primary} range={range} onRange={setRange} />
+        <TelemetrySection primary={primary} range={range} onRange={setRange} siteId={siteId} />
       ) : null}
 
       <EventsSection

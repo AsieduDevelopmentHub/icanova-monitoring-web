@@ -173,7 +173,7 @@ export function GeneratorDetail() {
     setParams(query);
   }
 
-  const base = `/generators/${DEMO_GENERATOR_ID}`;
+  const base = `/sites/demo/generators/${DEMO_GENERATOR_ID}`;
 
   return (
     <section className="page ops-page">
@@ -343,7 +343,7 @@ export function GeneratorDetail() {
       {section?.id === "communications" ? (
         <div className="stack">
           <p className="meta">
-            Demo frames · <Link to="/gateways/log-7320">Diagnostics</Link>
+            Demo frames · <Link to="/sites/demo/gateways/log-7320">Diagnostics</Link>
           </p>
           <DataTable
             dense

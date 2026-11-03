@@ -111,7 +111,12 @@ export const resolveKey = query({
         .unique();
       if (hit) {
         await requirePermission(ctx, hit.organizationId, "view.telemetry");
-        return { generatorId: hit._id, name: hit.name, code: hit.code ?? code };
+        return {
+          generatorId: hit._id,
+          siteId: hit.siteId,
+          name: hit.name,
+          code: hit.code ?? code,
+        };
       }
     }
     const asId = ctx.db.normalizeId("generators", key);
@@ -121,6 +126,7 @@ export const resolveKey = query({
         await requirePermission(ctx, generator.organizationId, "view.telemetry");
         return {
           generatorId: generator._id,
+          siteId: generator.siteId,
           name: generator.name,
           code: generator.code ?? null,
         };

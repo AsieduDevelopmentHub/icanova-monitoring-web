@@ -136,10 +136,14 @@ const ALL_SITES = "__all__";
 export function SiteSelect({
   organizationId,
   allowAll = false,
+  initialSiteId,
+  onSiteChange,
   children,
 }: {
   organizationId: string;
   allowAll?: boolean;
+  initialSiteId?: string;
+  onSiteChange?: (siteId: string | null) => void;
   children: (
     siteId: Id<"sites"> | null,
     siteName: string,
@@ -147,7 +151,14 @@ export function SiteSelect({
   ) => ReactNode;
 }) {
   const [cursor, setCursor] = useState<string | null>(null);
-  const [picked, setPicked] = useState(allowAll ? ALL_SITES : "");
+  const [picked, setPicked] = useState(
+    initialSiteId ? initialSiteId : allowAll ? ALL_SITES : "",
+  );
+  useEffect(() => {
+    if (initialSiteId && initialSiteId !== picked && picked === "") {
+      setPicked(initialSiteId);
+    }
+  }, [initialSiteId, picked]);
   const sites = useQuery(api.sites.list, {
     organizationId: id<"organizations">(organizationId),
     paginationOpts: { numItems: 50, cursor },
@@ -183,18 +194,28 @@ export function SiteSelect({
     );
   }
   const allSelected = allowAll && (picked === ALL_SITES || picked === "");
-  const selected = allSelected ? null : page.find((site) => site._id === picked) ?? page[0];
+  const selected = allSelected
+    ? null
+    : page.find((site) => site._id === picked) ??
+      (initialSiteId ? page.find((site) => site._id === initialSiteId) : undefined) ??
+      page[0];
   const options = [
     ...(allowAll ? [{ value: ALL_SITES, label: "All Sites" }] : []),
     ...page.map((site) => ({ value: site._id, label: site.name })),
   ];
+
+  function changeSite(value: string) {
+    setPicked(value);
+    onSiteChange?.(value === ALL_SITES ? null : value || null);
+  }
+
   return (
     <div className="stack">
       <FilterBar label="Site">
         <FilterSelect
           label="Site"
           value={allSelected ? ALL_SITES : (selected?._id ?? "")}
-          onChange={setPicked}
+          onChange={changeSite}
           options={options}
         />
       </FilterBar>

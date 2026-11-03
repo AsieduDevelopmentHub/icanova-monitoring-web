@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { storedReading } from "../../fleet/access";
+import { siteGeneratorPath } from "../../fleet/paths";
 import { formatReading } from "../../telemetry/readings";
 import { StatusMark } from "../../ui/StatusMark";
 import { TechValue } from "../../ui/TechValue";
@@ -21,12 +22,14 @@ export function OperationalArea({
   siteName,
   gatewayOnline,
   onSelect,
+  siteId = null,
 }: {
   rows: BoardRow[];
   primary: BoardRow | null;
   siteName: string;
   gatewayOnline: boolean | null;
   onSelect: (generatorId: string) => void;
+  siteId?: string | null;
 }) {
   const fleetTwin = twinFromRows(rows);
   const twinStatus = twinFromRow(primary, fleetTwin);
@@ -148,7 +151,14 @@ export function OperationalArea({
                   >
                     {engine.label}
                   </StatusMark>
-                  <Link to={`/generators/${row.generatorId}`} className="cc-equip-open">
+                  <Link
+                    to={
+                      (siteId ?? row.siteId)
+                        ? siteGeneratorPath(siteId ?? row.siteId!, row.generatorId)
+                        : "/sites"
+                    }
+                    className="cc-equip-open"
+                  >
                     Open
                   </Link>
                 </li>

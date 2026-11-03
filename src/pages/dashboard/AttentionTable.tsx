@@ -3,6 +3,7 @@ import { DataTable, type Column } from "../../ui/DataTable";
 import { StatusMark } from "../../ui/StatusMark";
 import { formatReading } from "../../telemetry/readings";
 import { storedReading } from "../../fleet/access";
+import { siteGeneratorPath, sitePath } from "../../fleet/paths";
 import type { BoardRow } from "./types";
 import { attentionScore, engineView, linkView, storedFreshness } from "./logic";
 
@@ -12,12 +13,14 @@ export function AttentionTable({
   onSelect,
   selectedId,
   listAll = false,
+  siteId = null,
 }: {
   rows: BoardRow[];
   showSite: boolean;
   onSelect: (generatorId: string) => void;
   selectedId: string | null;
   listAll?: boolean;
+  siteId?: string | null;
 }) {
   const now = Date.now();
   const attention = listAll
@@ -94,7 +97,16 @@ export function AttentionTable({
     {
       key: "action",
       header: "",
-      render: (row) => <Link to={`/generators/${row.generatorId}`}>Open</Link>,
+      render: (row) => {
+        const sid = siteId ?? row.siteId;
+        return sid ? (
+          <Link to={siteGeneratorPath(sid, row.generatorId)}>Open</Link>
+        ) : row.siteId ? (
+          <Link to={sitePath(row.siteId)}>Site</Link>
+        ) : (
+          <Link to="/sites">Sites</Link>
+        );
+      },
     },
   ];
 

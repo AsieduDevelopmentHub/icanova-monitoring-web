@@ -90,7 +90,15 @@ function RecentActivitySection({
             key: "device",
             header: "Gateway",
             render: (row) => (
-              <Link to={`/gateways/${row.deviceIdentity ?? row.deviceId}`}>{row.deviceName}</Link>
+              <Link
+                to={
+                  siteId
+                    ? `/sites/${siteId}/gateways/${row.deviceIdentity ?? row.deviceId}`
+                    : `/sites`
+                }
+              >
+                {row.deviceName}
+              </Link>
             ),
           },
           { key: "reason", header: "Reason", render: (row) => row.reason },

@@ -16,9 +16,7 @@ import { AlarmDetail } from "./pages/AlarmDetail";
 import { Alarms } from "./pages/Alarms";
 import { Dashboard } from "./pages/Dashboard";
 import { GatewayDetail } from "./pages/GatewayDetail";
-import { Gateways } from "./pages/Gateways";
 import { GeneratorDetail } from "./pages/GeneratorDetail";
-import { Generators } from "./pages/Generators";
 import { Maintenance } from "./pages/Maintenance";
 import { Notifications } from "./pages/Notifications";
 import { AuthLogin } from "./auth/AuthLogin";
@@ -36,6 +34,12 @@ import { Events } from "./pages/Events";
 import { Unavailable } from "./pages/Unavailable";
 import { UsersAdmin } from "./pages/UsersAdmin";
 import { PlatformAdmin } from "./admin/PlatformAdmin";
+import {
+  RedirectGatewaysIndex,
+  RedirectGeneratorsIndex,
+  RedirectLegacyGateway,
+  RedirectLegacyGenerator,
+} from "./fleet/SiteAssetRedirect";
 import { Platform } from "./platform/Platform";
 import { Shell } from "./shell/Shell";
 import { AppErrorBoundary } from "./ui/AppErrorBoundary";
@@ -74,17 +78,20 @@ createRoot(document.getElementById("root")!).render(
             <Route element={<RequireAuth />}>
               <Route element={<Shell />}>
                 <Route path="app" element={<Dashboard />} />
+                <Route path="sites" element={<Sites />} />
                 <Route path="sites/:siteId" element={<SiteDesk />} />
+                <Route path="sites/:siteId/generators/:id" element={<GeneratorDetail />} />
+                <Route path="sites/:siteId/generators/:id/:section" element={<GeneratorDetail />} />
+                <Route path="sites/:siteId/gateways/:id" element={<GatewayDetail />} />
                 <Route path="local" element={<Monitor />} />
                 <Route path="local/configure" element={<ConfigurePage />} />
                 <Route path="alarms" element={<Alarms />} />
                 <Route path="alarms/:id" element={<AlarmDetail />} />
-                <Route path="sites" element={<Sites />} />
-                <Route path="generators" element={<Generators />} />
-                <Route path="generators/:id" element={<GeneratorDetail />} />
-                <Route path="generators/:id/:section" element={<GeneratorDetail />} />
-                <Route path="gateways" element={<Gateways />} />
-                <Route path="gateways/:id" element={<GatewayDetail />} />
+                <Route path="generators" element={<RedirectGeneratorsIndex />} />
+                <Route path="generators/:id" element={<RedirectLegacyGenerator />} />
+                <Route path="generators/:id/:section" element={<RedirectLegacyGenerator />} />
+                <Route path="gateways" element={<RedirectGatewaysIndex />} />
+                <Route path="gateways/:id" element={<RedirectLegacyGateway />} />
                 <Route path="events" element={<Events />} />
                 <Route path="trends" element={<Trends />} />
                 <Route path="reports" element={<Reports />} />

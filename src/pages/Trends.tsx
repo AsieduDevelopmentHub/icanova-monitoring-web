@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { id } from "../fleet/access";
+import { siteGeneratorPath, sitePath } from "../fleet/paths";
 import { LiveGate } from "../fleet/scope";
 import { formatStat, seriesStats } from "../telemetry/seriesStats";
 import { DataTable } from "../ui/DataTable";
@@ -15,7 +16,7 @@ import type { BoardRow } from "./dashboard/types";
 const RANGES = ["hour", "six", "day", "week"] as const;
 type RangeName = (typeof RANGES)[number];
 
-/** Type C — fleet analytics: pick a generator, chart primary series, export path. */
+/** Type C — analytics with optional site context. */
 export function Trends() {
   return (
     <section className="page ops-page analytics-page">
@@ -39,6 +40,7 @@ function TrendsBody({
   const [params, setParams] = useSearchParams();
   const rangeParam = params.get("range");
   const range: RangeName = RANGES.find((item) => item === rangeParam) ?? "day";
+  const siteFilter = params.get("site") ?? "";
   const selected = params.get("generator") ?? "";
 
   const data = useQuery(
@@ -48,6 +50,15 @@ function TrendsBody({
       : "skip",
   );
   const rows = useMemo(() => (Array.isArray(data?.rows) ? (data.rows as BoardRow[]) : []), [data]);
+  const sites = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const row of rows) {
+      if (row.siteId) {
+        map.set(row.siteId, row.siteName ?? "Site");
+      }
+    }
+    return [...map.entries()].map(([value, label]) => ({ value, label }));
+  }, [rows]);
 
   if (!permissions.includes("view.telemetry")) {
     return <EmptyState title="Telemetry required" body="view.telemetry is needed for trends." />;
@@ -59,13 +70,30 @@ function TrendsBody({
     return <EmptyState title="No generators" body="Provision a site with generators to chart trends." />;
   }
 
+  const scoped = siteFilter ? rows.filter((row) => row.siteId === siteFilter) : rows;
+  const pool = scoped.length > 0 ? scoped : rows;
   const generatorId =
-    rows.find((row) => row.generatorId === selected)?.generatorId ?? rows[0]?.generatorId ?? "";
-  const generator = rows.find((row) => row.generatorId === generatorId);
+    pool.find((row) => row.generatorId === selected)?.generatorId ?? pool[0]?.generatorId ?? "";
+  const generator = pool.find((row) => row.generatorId === generatorId);
+
+  function setSite(value: string) {
+    const next = new URLSearchParams(params);
+    if (!value || value === "all") {
+      next.delete("site");
+    } else {
+      next.set("site", value);
+    }
+    next.delete("generator");
+    setParams(next);
+  }
 
   function setGenerator(value: string) {
     const next = new URLSearchParams(params);
     next.set("generator", value);
+    const row = rows.find((item) => item.generatorId === value);
+    if (row?.siteId) {
+      next.set("site", row.siteId);
+    }
     setParams(next);
   }
 
@@ -83,10 +111,16 @@ function TrendsBody({
     <div className="stack">
       <FilterBar label="Trend filters">
         <FilterSelect
+          label="Site"
+          value={siteFilter || "all"}
+          onChange={setSite}
+          options={[{ value: "all", label: "All sites" }, ...sites]}
+        />
+        <FilterSelect
           label="Generator"
           value={generatorId}
           onChange={setGenerator}
-          options={rows.map((row) => ({
+          options={pool.map((row) => ({
             value: row.generatorId,
             label: `${row.name}${row.siteName ? ` · ${row.siteName}` : ""}`,
           }))}
@@ -105,15 +139,19 @@ function TrendsBody({
       </FilterBar>
       {generator ? (
         <p className="meta">
-          <Link to={`/generators/${generator.generatorId}`}>{generator.name}</Link>
+          {generator.siteId ? (
+            <Link to={siteGeneratorPath(generator.siteId, generator.generatorId)}>{generator.name}</Link>
+          ) : (
+            generator.name
+          )}
           {generator.siteId ? (
             <>
               {" · "}
-              <Link to={`/sites/${generator.siteId}`}>{generator.siteName ?? "Site"}</Link>
+              <Link to={sitePath(generator.siteId)}>{generator.siteName ?? "Site"}</Link>
             </>
           ) : null}
           {" · "}
-          <Link to={`/reports`}>Export</Link>
+          <Link to="/reports">Export</Link>
         </p>
       ) : null}
       <TrendCharts generatorId={generatorId} range={range} />

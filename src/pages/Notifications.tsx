@@ -192,8 +192,12 @@ function Inbox({ organizationId }: { organizationId: Id<"organizations"> }) {
             render: (row) => (
               <span className="btn-row">
                 {row.alarmId ? <Link to={`/alarms/${row.alarmId}`}>Alarm</Link> : null}
-                {row.generatorId ? <Link to={`/generators/${row.generatorId}`}>Generator</Link> : null}
-                {row.deviceId ? <Link to={`/gateways/${row.deviceId}`}>Gateway</Link> : null}
+                {row.siteId && row.generatorId ? (
+                  <Link to={`/sites/${row.siteId}/generators/${row.generatorId}`}>Generator</Link>
+                ) : null}
+                {row.siteId && row.deviceId ? (
+                  <Link to={`/sites/${row.siteId}/gateways/${row.deviceId}`}>Gateway</Link>
+                ) : null}
                 {row.siteId ? <Link to={`/sites/${row.siteId}`}>Site</Link> : null}
                 {!row.alarmId && !row.generatorId && !row.deviceId && !row.siteId
                   ? categoryFor(row.event)

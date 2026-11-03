@@ -1,4 +1,10 @@
 import { Link } from "react-router";
+import {
+  siteAlarmsPath,
+  siteEventsPath,
+  siteMaintenancePath,
+  siteTrendsPath,
+} from "../../fleet/paths";
 import { StatusStrip, type StripItem } from "../../ui/StatusStrip";
 
 type FleetStripProps = {
@@ -11,6 +17,7 @@ type FleetStripProps = {
   alarms: number | null;
   offlineGateways: number | null;
   tone: "ok" | "warn" | "alarm" | "offline";
+  siteId?: string | null;
 };
 
 export function FleetStatusStrip({
@@ -23,6 +30,7 @@ export function FleetStatusStrip({
   alarms,
   offlineGateways,
   tone,
+  siteId = null,
 }: FleetStripProps) {
   const items: StripItem[] = [
     { label: "Sites", value: sites == null ? "—" : String(sites) },
@@ -55,9 +63,22 @@ export function FleetStatusStrip({
       items={items}
       trailing={
         <div className="ops-links">
-          <span className={`status-strip-pill tone-${tone}`}>{subtitle}</span>
-          <Link to="/alarms">Alarms</Link>
-          <Link to="/gateways">Gateways</Link>
+          <span className={`status-strip-pill tone-${tone}`} data-tone={tone}>
+            {subtitle}
+          </span>
+          {siteId ? (
+            <>
+              <Link to={siteAlarmsPath(siteId)}>Alarms</Link>
+              <Link to={siteEventsPath(siteId)}>Events</Link>
+              <Link to={siteTrendsPath(siteId)}>Trends</Link>
+              <Link to={siteMaintenancePath(siteId)}>Maintenance</Link>
+            </>
+          ) : (
+            <>
+              <Link to="/alarms">Alarms</Link>
+              <Link to="/sites">Sites</Link>
+            </>
+          )}
         </div>
       }
     />
