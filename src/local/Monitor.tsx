@@ -35,7 +35,7 @@ type LiveRow = {
 
 export function Monitor() {
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>Live Systems</h1>
       </header>
@@ -97,7 +97,7 @@ function SiteReadings({
         <EmptyState
           title="No generators"
           body="Register equipment for this site."
-          action={<Link to="/generators">Generators</Link>}
+          action={<Link to="/sites">Sites</Link>}
         />
       ) : (
         <Panel

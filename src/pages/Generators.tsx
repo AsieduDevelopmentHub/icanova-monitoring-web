@@ -5,16 +5,22 @@ import { demoSamples } from "../telemetry/demoLog";
 import { formatReading, readingOf } from "../telemetry/readings";
 
 export function Generators() {
-  const latest = demoSamples[demoSamples.length - 1];
-  const model = latest ? readingOf(latest.readings, "Model Number") : null;
-  const serial = latest ? readingOf(latest.readings, "Serial Number") : null;
-
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>Generators</h1>
       </header>
-      {import.meta.env.VITE_CONVEX_URL ? <OrgFleet /> : null}
+      {import.meta.env.VITE_CONVEX_URL ? <OrgFleet /> : <DemoLog />}
+    </section>
+  );
+}
+
+function DemoLog() {
+  const latest = demoSamples[demoSamples.length - 1];
+  const model = latest ? readingOf(latest.readings, "Model Number") : null;
+  const serial = latest ? readingOf(latest.readings, "Serial Number") : null;
+  return (
+    <>
       <div className="notice fixture" role="note">
         <strong>Demo log.</strong> Rows come from {DEMO_SOURCE}.{" "}
         {import.meta.env.VITE_CONVEX_URL
@@ -48,6 +54,6 @@ export function Generators() {
       ) : (
         <p className="empty">The log excerpt did not parse.</p>
       )}
-    </section>
+    </>
   );
 }

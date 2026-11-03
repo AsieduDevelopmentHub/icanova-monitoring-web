@@ -95,9 +95,13 @@ export function ProvisionSiteDialog({
   return (
     <Dialog open={open} title="Provision site" onClose={close}>
       <div className="stack provision-wizard">
-        <p className="meta">
-          {step === "site" ? "1" : step === "gateway" ? "2" : "3"} / 3
-        </p>
+        <ol className="provision-steps" aria-label="Provisioning steps">
+          <li className={step === "site" ? "is-current" : "is-done"}>Site</li>
+          <li className={step === "gateway" ? "is-current" : step === "review" ? "is-done" : undefined}>
+            Gateway
+          </li>
+          <li className={step === "review" ? "is-current" : undefined}>Review</li>
+        </ol>
 
         {step === "site" ? (
           <form

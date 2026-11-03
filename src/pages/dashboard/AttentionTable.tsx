@@ -11,17 +11,21 @@ export function AttentionTable({
   showSite,
   onSelect,
   selectedId,
+  listAll = false,
 }: {
   rows: BoardRow[];
   showSite: boolean;
   onSelect: (generatorId: string) => void;
   selectedId: string | null;
+  listAll?: boolean;
 }) {
   const now = Date.now();
-  const attention = [...rows]
-    .filter((row) => attentionScore(row, now) >= 20)
-    .sort((a, b) => attentionScore(b, now) - attentionScore(a, now))
-    .slice(0, 12);
+  const attention = listAll
+    ? rows
+    : [...rows]
+        .filter((row) => attentionScore(row, now) >= 20)
+        .sort((a, b) => attentionScore(b, now) - attentionScore(a, now))
+        .slice(0, 12);
 
   const columns: Column<BoardRow>[] = [
     ...(showSite
@@ -95,9 +99,9 @@ export function AttentionTable({
   ];
 
   return (
-    <section className="cc-attention" aria-label="Generators requiring attention">
+    <section className="cc-attention" aria-label={listAll ? "Generators" : "Generators requiring attention"}>
       <header className="cc-section-head">
-        <h2 className="cc-section-title">Attention</h2>
+        <h2 className="cc-section-title">{listAll ? "Generators" : "Attention"}</h2>
       </header>
       <DataTable
         dense

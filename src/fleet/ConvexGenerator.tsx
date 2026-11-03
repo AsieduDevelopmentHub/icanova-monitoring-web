@@ -29,7 +29,7 @@ export function ConvexGenerator() {
   const { id: key } = useParams();
   if (!key) {
     return (
-      <section className="page">
+      <section className="page ops-page">
         <header className="page-head">
           <h1>Generator</h1>
           <p>Missing id.</p>
@@ -48,14 +48,14 @@ function ConvexResolver({ publicKey }: { publicKey: string }) {
   const resolved = useQuery(api.generators.resolveKey, { key: publicKey });
   if (resolved === undefined) {
     return (
-      <section className="page">
+      <section className="page ops-page">
         <PageSkeleton rows={8} label="Loading generator" />
       </section>
     );
   }
   if (resolved === null) {
     return (
-      <section className="page">
+      <section className="page ops-page">
         <header className="page-head">
           <h1>Generator</h1>
           <p>Not found.</p>
@@ -75,7 +75,7 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
   );
   if (detail === undefined) {
     return (
-      <section className="page">
+      <section className="page ops-page">
         <PageSkeleton rows={8} label="Loading generator" />
       </section>
     );
@@ -123,12 +123,27 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
   });
 
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
-        <h1>{detail.name}</h1>
-        <p>
-          <Link to="/generators">Generators</Link>
-        </p>
+        <div>
+          <p className="crumb-row meta">
+            <Link to="/app">Command Center</Link>
+            <span aria-hidden="true"> / </span>
+            <Link to="/sites">Sites</Link>
+            <span aria-hidden="true"> / </span>
+            <Link to={`/sites/${detail.siteId}`}>Site</Link>
+            <span aria-hidden="true"> / </span>
+            <span>{detail.name}</span>
+          </p>
+          <h1>{detail.name}</h1>
+          <p className="meta">
+            <Link to={`/alarms?generator=${generatorId}`}>Alarms</Link>
+            {" · "}
+            <Link to={`/generators/${generatorId}/trends`}>Trends</Link>
+            {" · "}
+            <Link to={`/sites/${detail.siteId}`}>Site</Link>
+          </p>
+        </div>
       </header>
       <div className="status-row">
         {freshness.stale ? <StatusMark tone="warn">stale</StatusMark> : null}

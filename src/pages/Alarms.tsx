@@ -39,20 +39,23 @@ function oneOf<T extends string>(value: string | null, allowed: readonly T[], fa
 
 export function Alarms() {
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>Alarms</h1>
       </header>
-      <LiveGate
-        emptyLayout="list"
-        emptyCaption="Alarm center"
-        emptyColumns={["Alarm", "Severity", "State", "Site", "Updated"]}
-      >
-        {(org) => (
-          <OrgAlarms organizationId={org.organizationId} permissions={org.permissions} />
-        )}
-      </LiveGate>
-      <DemoAlarmList />
+      {import.meta.env.VITE_CONVEX_URL ? (
+        <LiveGate
+          emptyLayout="list"
+          emptyCaption="Alarm center"
+          emptyColumns={["Alarm", "Severity", "State", "Site", "Updated"]}
+        >
+          {(org) => (
+            <OrgAlarms organizationId={org.organizationId} permissions={org.permissions} />
+          )}
+        </LiveGate>
+      ) : (
+        <DemoAlarmList />
+      )}
     </section>
   );
 }

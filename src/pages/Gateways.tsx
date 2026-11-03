@@ -15,6 +15,8 @@ import {
   overallView,
 } from "../telemetry/deviceHealthView";
 import { DataTable } from "../ui/DataTable";
+import { Dialog } from "../ui/Overlay";
+import { Metric } from "../ui/Metric";
 import { FilterBar, FilterSearch, FilterSelect } from "../ui/FilterBar";
 import { ScopeEmpty } from "../fleet/ScopeEmpty";
 import { PageSkeleton, Skeleton } from "../ui/Skeleton";
@@ -23,12 +25,11 @@ import { StatusMark } from "../ui/StatusMark";
 
 export function Gateways() {
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>Gateways</h1>
       </header>
-      {import.meta.env.VITE_CONVEX_URL ? <SignedInventory /> : null}
-      <DemoInventory />
+      {import.meta.env.VITE_CONVEX_URL ? <SignedInventory /> : <DemoInventory />}
     </section>
   );
 }
@@ -85,6 +86,7 @@ function SignedInventory() {
 function OrgInventory() {
   const orgs = useQuery(api.organizations.mine, {});
   const [picked, setPicked] = useState("");
+  const [registerOpen, setRegisterOpen] = useState(false);
   const [params, setParams] = useSearchParams();
   if (orgs === undefined) {
     return <PageSkeleton rows={4} label="Loading organizations" />;
@@ -109,11 +111,16 @@ function OrgInventory() {
 
   return (
     <div className="stack">
-      <div className="notice" role="note">
-        <strong>Provisioning.</strong> Register the gateway with its assigned device ID (serial),
-        assign a site, then attach generators. Cloud Online means heartbeat/ingest contact — not Modbus.
-        Soft-AP Modbus configuration stays on the local Configure page.
-      </div>
+      {canManage ? (
+        <div className="ops-toolbar">
+          <button type="button" className="btn btn-primary" onClick={() => setRegisterOpen(true)}>
+            Register gateway
+          </button>
+        </div>
+      ) : null}
+      <Dialog open={registerOpen} title="Register gateway" onClose={() => setRegisterOpen(false)}>
+        <RegisterGateway organizationId={orgId} siteFilter={siteFilter} onSiteFilter={setSiteParam} />
+      </Dialog>
       <FilterBar label="Gateway filters">
         <FilterSelect
           label="Organization"
@@ -158,13 +165,6 @@ function OrgInventory() {
       <FleetBoundary key={`health:${orgId}`}>
         <OrgHealth organizationId={orgId} />
       </FleetBoundary>
-      {canManage ? (
-        <FleetBoundary key={`register:${orgId}`}>
-          <RegisterGateway organizationId={orgId} siteFilter={siteFilter} onSiteFilter={setSiteParam} />
-        </FleetBoundary>
-      ) : (
-        null
-      )}
       <FleetBoundary key={`${orgId}:${search}:${statusFilter}:${siteFilter}`}>
         <DeviceTable
           organizationId={orgId}
@@ -196,19 +196,20 @@ function OrgHealth({ organizationId }: { organizationId: string }) {
     return <Skeleton lines={5} />;
   }
   if (!summary.ready) {
-    return (
-      <p className="empty">No heartbeats yet.</p>
-    );
+    return <p className="empty">No heartbeats yet.</p>;
   }
   return (
-    <p className="meta">
-      Fleet: {summary.devicesTracked} tracked · gateways {summary.gatewayOnline} online /{" "}
-      {summary.gatewayOffline} offline / {summary.gatewayUnknown} unknown · Modbus {summary.modbusOk}{" "}
-      ok / {summary.modbusFail} fail · telemetry {summary.telemetryFresh} fresh /{" "}
-      {summary.telemetryStale} stale / {summary.telemetryMissing} missing · overall{" "}
-      {summary.overallUnhealthy} unhealthy · {summary.activeCommProblems} active communication
-      problems. Incremental tallies, not a live scan.
-    </p>
+    <div className="metric-grid">
+      <Metric label="Tracked" value={String(summary.devicesTracked)} />
+      <Metric label="Online" value={String(summary.gatewayOnline)} tone="ok" />
+      <Metric label="Offline" value={String(summary.gatewayOffline)} tone={summary.gatewayOffline > 0 ? "alarm" : "ok"} />
+      <Metric label="Unknown" value={String(summary.gatewayUnknown)} />
+      <Metric label="Modbus ok" value={String(summary.modbusOk)} tone="ok" />
+      <Metric label="Modbus fail" value={String(summary.modbusFail)} tone={summary.modbusFail > 0 ? "alarm" : "ok"} />
+      <Metric label="Fresh" value={String(summary.telemetryFresh)} />
+      <Metric label="Stale" value={String(summary.telemetryStale)} tone={summary.telemetryStale > 0 ? "warn" : "ok"} />
+      <Metric label="Unhealthy" value={String(summary.overallUnhealthy)} tone={summary.overallUnhealthy > 0 ? "alarm" : "ok"} emphasis={summary.overallUnhealthy > 0} />
+    </div>
   );
 }
 
@@ -270,8 +271,7 @@ function RegisterGateway({
   }
 
   return (
-    <section className="ops-section" aria-labelledby="gw-register-title">
-      <h2 id="gw-register-title">Register gateway</h2>
+    <section className="ops-section" aria-label="Register gateway">
       {page.length === 0 ? (
         <p className="empty">
           No sites yet. Create one on <Link to="/sites">Sites</Link> or Generators first.

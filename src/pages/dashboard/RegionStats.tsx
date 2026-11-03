@@ -24,7 +24,7 @@ export function RegionStats({ organizationId }: { organizationId: Id<"organizati
 
   return (
     <div className="cc-stats-grid">
-      <Panel title="Region Wise Update Statistics">
+      <Panel title="Regions">
         <div className="region-chart" role="img" aria-label="Region updating statistics">
           <div className="region-chart-plot">
             {stats.regions.map((row) => {
@@ -61,7 +61,7 @@ export function RegionStats({ organizationId }: { organizationId: Id<"organizati
         </div>
       </Panel>
 
-      <Panel title="Site Count Statistics">
+      <Panel title="Sites">
         <div className="site-count-stats">
           <svg viewBox="0 0 120 120" className="site-count-ring" aria-hidden="true">
             <circle cx="60" cy="60" r="48" fill="none" stroke="var(--line)" strokeWidth="8" />

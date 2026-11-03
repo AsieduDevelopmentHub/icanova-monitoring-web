@@ -20,7 +20,7 @@ export function Settings() {
   const canManageSites = Boolean(org?.permissions?.includes("manage.sites"));
 
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>Settings</h1>
       </header>

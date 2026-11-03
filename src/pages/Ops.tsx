@@ -29,7 +29,7 @@ function asRecord(section: unknown): Record<string, any> {
 
 export function Ops() {
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>Ops desk</h1>
       </header>

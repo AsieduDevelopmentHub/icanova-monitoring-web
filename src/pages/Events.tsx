@@ -24,7 +24,7 @@ type TimelineMode = "health" | "audit";
 export function Events() {
   const [mode, setMode] = useState<TimelineMode>("health");
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>Events</h1>
       </header>

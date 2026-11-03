@@ -18,12 +18,6 @@ export const NAV: NavItem[] = [
   { to: "/local", label: "Live Systems", icon: "local", group: "Monitor", end: true },
   { to: "/generators", label: "Generators", icon: "generator", group: "Monitor" },
   { to: "/gateways", label: "Gateways", icon: "gateway", group: "Monitor" },
-  {
-    to: `/generators/${DEMO_GENERATOR_ID}/trends`,
-    label: "Trends",
-    icon: "reports",
-    group: "Analyze",
-  },
   { to: "/reports", label: "Reports", icon: "reports", group: "Analyze" },
   { to: "/alarms", label: "Alarms", icon: "alarm", group: "Operate" },
   { to: "/events", label: "Events", icon: "events", group: "Operate" },
@@ -71,11 +65,11 @@ export function itemForPath(pathname: string): NavItem | undefined {
   if (pathname.startsWith("/alarms")) {
     return NAV.find((item) => item.to === "/alarms");
   }
+  if (pathname.startsWith("/sites/")) {
+    return NAV.find((item) => item.to === "/sites");
+  }
   if (pathname.startsWith("/gateways")) {
     return NAV.find((item) => item.to === "/gateways");
-  }
-  if (pathname.match(/^\/generators\/[^/]+\/trends/)) {
-    return NAV.find((item) => item.label === "Trends");
   }
   if (pathname.startsWith("/generators")) {
     return NAV.find((item) => item.to === "/generators");
@@ -99,6 +93,23 @@ export function pageTitleFor(pathname: string): string {
 
 export function crumbsFor(pathname: string): { to: string; label: string }[] {
   const alarm = pathname.match(/^\/alarms\/([^/]+)$/);
+  const site = pathname.match(/^\/sites\/([^/]+)$/);
+  if (pathname === "/app") {
+    return [{ to: "/app", label: "Command Center" }];
+  }
+  if (pathname === "/sites") {
+    return [
+      { to: "/app", label: "Command Center" },
+      { to: "/sites", label: "Sites" },
+    ];
+  }
+  if (site) {
+    return [
+      { to: "/app", label: "Command Center" },
+      { to: "/sites", label: "Sites" },
+      { to: pathname, label: "Site" },
+    ];
+  }
   if (pathname === "/alarms" || alarm) {
     const crumbs = [
       { to: "/app", label: "Command Center" },
@@ -132,7 +143,7 @@ export function crumbsFor(pathname: string): { to: string; label: string }[] {
     if (generator) {
       crumbs.push({
         to: `/generators/${generator[1]}`,
-        label: generator[1] === DEMO_GENERATOR_ID ? "Demo log" : generator[1],
+        label: generator[1] === DEMO_GENERATOR_ID ? "Demo log" : "Generator",
       });
       if (generator[2]) {
         const section = sectionById(generator[2]);
@@ -143,9 +154,6 @@ export function crumbsFor(pathname: string): { to: string; label: string }[] {
       }
     }
     return crumbs;
-  }
-  if (pathname === "/app") {
-    return [{ to: "/app", label: "Command Center" }];
   }
   const item = itemForPath(pathname);
   if (!item) {

@@ -14,14 +14,14 @@ export function PlatformAdmin() {
   const [secret, setSecret] = useState("");
   if (capable === undefined) {
     return (
-      <section className="page">
+      <section className="page ops-page">
         <PageSkeleton rows={4} label="Loading platform admin" />
       </section>
     );
   }
   if (!capable.capable && !secret) {
     return (
-      <section className="page">
+      <section className="page ops-page">
         <header className="page-head">
           <h1>Platform admin</h1>
         </header>
@@ -47,7 +47,7 @@ export function PlatformAdmin() {
     );
   }
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>Platform admin</h1>
       </header>

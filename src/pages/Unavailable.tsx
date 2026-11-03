@@ -10,7 +10,7 @@ export function Unavailable() {
     item?.unavailable ?? "This path is not a screen in iCaNova Monitoring.";
 
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>{title}</h1>
         <p>No operational screen is connected for this route.</p>

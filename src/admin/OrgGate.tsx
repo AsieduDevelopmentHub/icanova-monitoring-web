@@ -21,7 +21,7 @@ export function OrgGate({
   emptyLayout?: "list" | "desk";
 }) {
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>{title}</h1>
         {lede ? <p>{lede}</p> : null}

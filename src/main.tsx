@@ -29,6 +29,7 @@ import { Ops } from "./pages/Ops";
 import { Reports } from "./pages/Reports";
 import { RolesAdmin } from "./pages/RolesAdmin";
 import { Settings } from "./pages/Settings";
+import { SiteDesk } from "./pages/SiteDesk";
 import { Sites } from "./pages/Sites";
 import { Events } from "./pages/Events";
 import { Unavailable } from "./pages/Unavailable";
@@ -41,7 +42,7 @@ import "./styles.css";
 
 function ConfigurePage() {
   return (
-    <div className="page">
+    <div className="page ops-page">
       <header className="page-head">
         <h1>Configure</h1>
       </header>
@@ -72,6 +73,7 @@ createRoot(document.getElementById("root")!).render(
             <Route element={<RequireAuth />}>
               <Route element={<Shell />}>
                 <Route path="app" element={<Dashboard />} />
+                <Route path="sites/:siteId" element={<SiteDesk />} />
                 <Route path="local" element={<Monitor />} />
                 <Route path="local/configure" element={<ConfigurePage />} />
                 <Route path="alarms" element={<Alarms />} />

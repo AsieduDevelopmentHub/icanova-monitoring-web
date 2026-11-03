@@ -130,7 +130,7 @@ export function GeneratorDetail() {
       return <ConvexGenerator />;
     }
     return (
-      <section className="page">
+      <section className="page ops-page">
         <header className="page-head">
           <h1>Generator</h1>
           <p>That id is not in the demo log.</p>
@@ -140,7 +140,7 @@ export function GeneratorDetail() {
   }
   if (sectionParam && !section) {
     return (
-      <section className="page">
+      <section className="page ops-page">
         <header className="page-head">
           <h1>Unknown section</h1>
           <p>This detail page does not have that section.</p>
@@ -176,7 +176,7 @@ export function GeneratorDetail() {
   const base = `/generators/${DEMO_GENERATOR_ID}`;
 
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>Model {focus ? formatReading(readingOf(focus.readings, "Model Number")) : "—"}</h1>
         <p>

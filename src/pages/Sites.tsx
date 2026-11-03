@@ -1,46 +1,42 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
-import { useMutation, useQuery } from "convex/react";
-import type { Id } from "../../convex/_generated/dataModel";
+import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { accessMessage, id } from "../fleet/access";
-import { LiveGate } from "../fleet/scope";
-import { FleetBoundary } from "../fleet/boundary";
-import { SiteAlarmPanel } from "../fleet/AlarmPanel";
-import { engineView, linkView, registrationLabel, snapshotScope } from "../telemetry/fleetView";
-import { storedFreshness } from "../telemetry/freshness";
-import {
-  contactAgeLabel,
-  gatewayView,
-  modbusView,
-  overallView,
-} from "../telemetry/deviceHealthView";
 import { ProvisionSiteDialog } from "../admin/ProvisionSiteDialog";
-import { SiteLocationPicker } from "../sites/SiteLocationPicker";
+import { id } from "../fleet/access";
+import { LiveGate } from "../fleet/scope";
 import { DataTable } from "../ui/DataTable";
 import { EmptyState } from "../ui/EmptyState";
+import { FilterBar, FilterSearch, FilterSelect } from "../ui/FilterBar";
 import { StatusMark } from "../ui/StatusMark";
-import { PageSkeleton, Skeleton } from "../ui/Skeleton";
+import { Skeleton } from "../ui/Skeleton";
 
-type SiteRow = {
-  _id: string;
-  name: string;
-  code?: string;
-  latitude?: number;
-  longitude?: number;
-};
+function ageLabel(at: number | null): string {
+  if (at == null) {
+    return "—";
+  }
+  const minutes = Math.max(0, Math.round((Date.now() - at) / 60000));
+  if (minutes < 1) {
+    return "now";
+  }
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  const hours = Math.round(minutes / 60);
+  if (hours < 48) {
+    return `${hours}h`;
+  }
+  return `${Math.round(hours / 24)}d`;
+}
 
+/** Type A fleet list — sites with provision workflow. */
 export function Sites() {
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>Sites</h1>
       </header>
-      <LiveGate
-        emptyLayout="list"
-        emptyCaption="Sites in this organization"
-        emptyColumns={["Name", "Code", "Action"]}
-      >
+      <LiveGate emptyLayout="list" emptyCaption="Sites" emptyColumns={["Code", "Site", "Region", "Status"]}>
         {(org) => (
           <SiteList
             organizationId={org.organizationId}
@@ -66,309 +62,158 @@ function SiteList({
   permissions: readonly string[];
   siteCodeFormat: "numeric" | "text";
 }) {
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [picked, setPicked] = useState("");
-  const [provisionOpen, setProvisionOpen] = useState(false);
-  const sites = useQuery(api.sites.list, {
+  const roster = useQuery(api.telemetry.siteRoster, {
     organizationId: id<"organizations">(organizationId),
-    paginationOpts: { numItems: 50, cursor },
   });
-  const canManage =
-    permissions.includes("manage.sites") && permissions.includes("manage.devices");
-  if (sites === undefined) {
-    return <PageSkeleton rows={5} label="Loading sites" />;
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [region, setRegion] = useState("all");
+  const [state, setState] = useState("all");
+  const canManage = permissions.includes("manage.sites") && permissions.includes("manage.devices");
+
+  if (roster === undefined) {
+    return <Skeleton lines={8} />;
   }
-  const page = (Array.isArray(sites.page) ? sites.page : []) as SiteRow[];
-  const selected = page.find((site) => site._id === picked) ?? page[0];
+
+  const regions = [...new Set(roster.map((row) => row.region).filter(Boolean))] as string[];
+  const filtered = roster.filter((row) => {
+    const q = query.trim().toLowerCase();
+    if (q) {
+      const hay = `${row.name} ${row.code ?? ""} ${row.region ?? ""}`.toLowerCase();
+      if (!hay.includes(q)) {
+        return false;
+      }
+    }
+    if (region !== "all" && row.region !== region) {
+      return false;
+    }
+    if (state === "attention") {
+      return row.overallUnhealthy > 0 || row.gatewayOffline > 0 || row.linkFail > 0 || row.activeCommProblems > 0;
+    }
+    if (state === "operational") {
+      return row.reporting > 0 || row.gatewayOnline > 0;
+    }
+    return true;
+  });
+
   return (
     <div className="stack">
       {canManage ? (
-        <>
-          <button type="button" className="btn btn-primary" onClick={() => setProvisionOpen(true)}>
+        <div className="ops-toolbar">
+          <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
             Provision site
           </button>
           <ProvisionSiteDialog
-            open={provisionOpen}
+            open={open}
             organizationId={id<"organizations">(organizationId)}
             siteCodeFormat={siteCodeFormat}
-            onClose={() => setProvisionOpen(false)}
-            onProvisioned={(result) => setPicked(result.siteId)}
+            onClose={() => setOpen(false)}
           />
-        </>
-      ) : (
-        null
-      )}
-      {page.length === 0 ? (
-        <EmptyState
-          title="No sites yet"
-          body="Provision a site with its gateway in one workflow."
-        />
+        </div>
       ) : null}
-      <DataTable
-        caption="Sites in this organization"
-        rows={page}
-        getRowKey={(row) => row._id}
-        empty="No sites are registered in this organization yet."
-        columns={[
-          { key: "name", header: "Name", render: (row) => row.name },
-          {
-            key: "code",
-            header: "Code",
-            render: (row) => <span className="tech">{row.code ?? "—"}</span>,
-          },
-          {
-            key: "open",
-            header: "",
-            render: (row) => (
-              <button type="button" className="btn btn-secondary" onClick={() => setPicked(row._id)}>
-                {selected?._id === row._id ? "Selected" : "Select"}
-              </button>
-            ),
-          },
-        ]}
-      />
-      {sites.isDone === false && sites.continueCursor ? (
-        <p className="meta">
-          <button type="button" className="btn btn-secondary" onClick={() => setCursor(sites.continueCursor)}>
-            Next sites
-          </button>
-        </p>
-      ) : null}
-      {selected ? (
-        <FleetBoundary key={selected._id}>
-          <SiteDetail
-            organizationId={organizationId}
-            siteId={id<"sites">(selected._id)}
-            siteName={selected.name}
-            latitude={typeof selected.latitude === "number" ? selected.latitude : null}
-            longitude={typeof selected.longitude === "number" ? selected.longitude : null}
-            permissions={permissions}
-          />
-        </FleetBoundary>
-      ) : null}
-    </div>
-  );
-}
-
-function SiteDetail({
-  organizationId,
-  siteId,
-  siteName,
-  latitude,
-  longitude,
-  permissions,
-}: {
-  organizationId: string;
-  siteId: Id<"sites">;
-  siteName: string;
-  latitude: number | null;
-  longitude: number | null;
-  permissions: readonly string[];
-}) {
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState(siteName);
-  const [renameError, setRenameError] = useState<string | null>(null);
-  const [renamePending, setRenamePending] = useState(false);
-  const [locationPending, setLocationPending] = useState(false);
-  const renameSite = useMutation(api.sites.rename);
-  const setLocation = useMutation(api.sites.setLocation);
-  const generators = useQuery(api.generators.list, {
-    organizationId: id<"organizations">(organizationId),
-    siteId,
-    paginationOpts: { numItems: 50, cursor },
-  });
-  const current = useQuery(api.telemetry.currentForSite, {
-    organizationId: id<"organizations">(organizationId),
-    siteId,
-  });
-  const summary = useQuery(api.telemetry.siteSummary, {
-    organizationId: id<"organizations">(organizationId),
-    siteId,
-  });
-  const gateways = useQuery(api.devices.siteHealth, {
-    organizationId: id<"organizations">(organizationId),
-    siteId,
-  });
-  const canManage = permissions.includes("manage.sites");
-
-  if (generators === undefined || current === undefined || summary === undefined || gateways === undefined) {
-    return <Skeleton lines={5} />;
-  }
-  const registered = Array.isArray(generators.page) ? generators.page : [];
-  const readings = Array.isArray(current.rows) ? current.rows : [];
-  const scope = snapshotScope(readings, Boolean(current.capped));
-  const now = Date.now();
-
-  async function onRename(event: FormEvent) {
-    event.preventDefault();
-    setRenameError(null);
-    setRenamePending(true);
-    try {
-      await renameSite({
-        organizationId: id<"organizations">(organizationId),
-        siteId,
-        name: renameValue,
-      });
-    } catch (caught) {
-      setRenameError(accessMessage(caught));
-    } finally {
-      setRenamePending(false);
-    }
-  }
-
-  return (
-    <div className="stack">
-      <h2>{siteName}</h2>
-      {canManage ? (
-        <form className="filter-bar" onSubmit={(event) => void onRename(event)}>
-          <label className="filter-field grow">
-            <span>Rename site</span>
-            <input value={renameValue} onChange={(event) => setRenameValue(event.target.value)} />
-          </label>
-          <button type="submit" className="btn btn-secondary" disabled={renamePending}>
-            {renamePending ? "Saving…" : "Save name"}
-          </button>
-        </form>
-      ) : null}
-      {renameError ? <p className="err">{renameError}</p> : null}
-      <SiteLocationPicker
-        latitude={latitude}
-        longitude={longitude}
-        disabled={!canManage}
-        pending={locationPending}
-        onSave={async (nextLat, nextLon) => {
-          setLocationPending(true);
-          try {
-            await setLocation({
-              organizationId: id<"organizations">(organizationId),
-              siteId,
-              latitude: nextLat,
-              longitude: nextLon,
-            });
-          } catch (caught) {
-            throw new Error(accessMessage(caught));
-          } finally {
-            setLocationPending(false);
-          }
-        }}
-      />
       <p className="meta">
-        {registrationLabel(registered.length, generators.isDone !== false)}
-        {summary.ready
-          ? ` · ${summary.generators ?? "—"} gen · ${summary.reporting} reporting · GW ${summary.gatewayOnline ?? 0}/${summary.gatewayOffline ?? 0} · Modbus ${scope.modbusOk}/${scope.modbusFail}/${scope.modbusDegraded}`
+        {roster.length} sites
+        {filtered.length !== roster.length ? ` · ${filtered.length} shown` : ""}
+        {roster.filter((row) => row.overallUnhealthy > 0 || row.gatewayOffline > 0).length > 0
+          ? ` · ${roster.filter((row) => row.overallUnhealthy > 0 || row.gatewayOffline > 0).length} attention`
           : ""}
-        {scope.note ? ` · ${scope.note}` : ""}
       </p>
-
-      <section className="ops-section" aria-labelledby="site-gateways-title">
-        <h2 id="site-gateways-title">Assigned gateways</h2>
+      <FilterBar label="Site filters">
+        <FilterSearch label="Search" value={query} onChange={setQuery} placeholder="Site, code, region" />
+        <FilterSelect
+          label="Region"
+          value={region}
+          onChange={setRegion}
+          options={[
+            { value: "all", label: "All regions" },
+            ...regions.map((name) => ({ value: name, label: name })),
+          ]}
+        />
+        <FilterSelect
+          label="State"
+          value={state}
+          onChange={setState}
+          options={[
+            { value: "all", label: "All states" },
+            { value: "attention", label: "Attention" },
+            { value: "operational", label: "Operational" },
+          ]}
+        />
+      </FilterBar>
+      {filtered.length === 0 ? (
+        <EmptyState title="No sites" body={roster.length === 0 ? "Provision a site and its gateway together." : "No rows match these filters."} />
+      ) : (
         <DataTable
-          caption={`Gateways at ${siteName}`}
-          rows={gateways.rows}
-          getRowKey={(row) => row._id}
-          empty="No gateways are assigned to this site."
+          dense
+          caption="Sites"
+          rows={filtered}
+          getRowKey={(row) => row.siteId}
+          empty="No sites"
           columns={[
             {
+              key: "code",
+              header: "Code",
+              render: (row) => <span className="tech">{row.code ?? "—"}</span>,
+            },
+            {
               key: "name",
+              header: "Site",
+              render: (row) => <Link to={`/sites/${row.siteId}`}>{row.name}</Link>,
+            },
+            { key: "region", header: "Region", render: (row) => row.region ?? "—" },
+            {
+              key: "gw",
               header: "Gateway",
-              render: (row) => <Link to={`/gateways/${row.identity}`}>{row.name}</Link>,
-            },
-            {
-              key: "identity",
-              header: "Identity",
-              render: (row) => <span className="tech">{row.identity}</span>,
-            },
-            {
-              key: "cloud",
-              header: "Cloud",
-              render: (row) => {
-                const view = gatewayView(row.gatewayStatus);
-                return <StatusMark tone={view.tone}>{view.label}</StatusMark>;
-              },
-            },
-            {
-              key: "modbus",
-              header: "Modbus",
-              render: (row) => {
-                const view = modbusView(row.modbusStatus);
-                return <StatusMark tone={view.tone}>{view.label}</StatusMark>;
-              },
-            },
-            {
-              key: "overall",
-              header: "Overall",
-              render: (row) => {
-                const view = overallView(row.overallStatus);
-                return <StatusMark tone={view.tone}>{view.label}</StatusMark>;
-              },
-            },
-            {
-              key: "seen",
-              header: "Last contact",
-              render: (row) => contactAgeLabel(row.lastGatewayContactAt, now),
+              render: (row) =>
+                row.gatewayOffline > 0 ? (
+                  <StatusMark tone="warn">Offline</StatusMark>
+                ) : row.gatewayOnline > 0 ? (
+                  <StatusMark tone="ok">Online</StatusMark>
+                ) : (
+                  <StatusMark tone="offline">—</StatusMark>
+                ),
             },
             {
               key: "gens",
               header: "Generators",
               align: "right",
-              render: (row) => String(row.generatorCount),
+              render: (row) => String(row.generators ?? "—"),
+            },
+            {
+              key: "alarms",
+              header: "Alarms",
+              align: "right",
+              render: (row) =>
+                row.activeCommProblems > 0 ? (
+                  <StatusMark tone="warn">{String(row.activeCommProblems)}</StatusMark>
+                ) : (
+                  "0"
+                ),
+            },
+            {
+              key: "seen",
+              header: "Last contact",
+              render: (row) => (
+                <span className="tech">{ageLabel(row.lastGatewayContactAt ?? row.lastTelemetryAt)}</span>
+              ),
+            },
+            {
+              key: "status",
+              header: "Status",
+              render: (row) =>
+                row.overallUnhealthy > 0 || row.linkFail > 0 ? (
+                  <StatusMark tone="alarm">Attention</StatusMark>
+                ) : row.gatewayOffline > 0 ? (
+                  <StatusMark tone="warn">Degraded</StatusMark>
+                ) : row.reporting > 0 || row.gatewayOnline > 0 ? (
+                  <StatusMark tone="ok">Operational</StatusMark>
+                ) : (
+                  <StatusMark tone="offline">Idle</StatusMark>
+                ),
             },
           ]}
         />
-      </section>
-
-      <DataTable
-        caption={`Registered generators at ${siteName}`}
-        rows={registered}
-        getRowKey={(row) => row._id}
-        empty="No generators are registered on this site."
-        columns={[
-          {
-            key: "name",
-            header: "Generator",
-            render: (row) => <Link to={`/generators/${row._id}`}>{row.name}</Link>,
-          },
-        ]}
-      />
-      {generators.isDone === false && generators.continueCursor ? (
-        <button type="button" className="btn btn-secondary" onClick={() => setCursor(generators.continueCursor)}>
-          Next generators
-        </button>
-      ) : null}
-      <DataTable
-        caption={`Current links at ${siteName}`}
-        rows={readings}
-        getRowKey={(row) => row.generatorId}
-        empty="No generators are in the current snapshot."
-        columns={[
-          { key: "name", header: "Generator", render: (row) => row.name },
-          {
-            key: "link",
-            header: "Modbus",
-            render: (row) => {
-              const link = linkView(row.link);
-              return <StatusMark tone={link.tone}>{link.label}</StatusMark>;
-            },
-          },
-          {
-            key: "engine",
-            header: "Engine",
-            render: (row) => {
-              const engine = engineView(row.rpm, row.rpmQuality);
-              return <StatusMark tone={engine.tone}>{engine.label}</StatusMark>;
-            },
-          },
-          {
-            key: "stored",
-            header: "Stored",
-            render: (row) => {
-              const freshness = storedFreshness(row.updatedAt, Date.now());
-              return freshness.stale ? `${freshness.label} · stale` : freshness.label;
-            },
-          },
-        ]}
-      />
-      <SiteAlarmPanel organizationId={organizationId} siteId={siteId} permissions={permissions} />
+      )}
     </div>
   );
 }

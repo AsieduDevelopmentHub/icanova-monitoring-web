@@ -54,6 +54,26 @@ export const list = query({
   },
 });
 
+export const get = query({
+  args: {
+    organizationId: v.id("organizations"),
+    siteId: v.id("sites"),
+  },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "view.dashboard");
+    const site = await ctx.db.get(args.siteId);
+    if (!site || site.organizationId !== args.organizationId) {
+      return null;
+    }
+    return {
+      siteId: site._id,
+      name: site.name,
+      code: site.code ?? null,
+      region: site.region ?? null,
+    };
+  },
+});
+
 export const byCode = query({
   args: {
     organizationId: v.id("organizations"),

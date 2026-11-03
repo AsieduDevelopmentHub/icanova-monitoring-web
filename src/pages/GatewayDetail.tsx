@@ -28,7 +28,7 @@ export function GatewayDetail() {
   const { id: deviceId } = useParams();
   if (!deviceId) {
     return (
-      <section className="page">
+      <section className="page ops-page">
         <h1>Gateway</h1>
         <p>Missing id.</p>
       </section>
@@ -37,7 +37,7 @@ export function GatewayDetail() {
   if (deviceId === DEMO_GENERATOR_ID || !import.meta.env.VITE_CONVEX_URL) {
     if (deviceId !== DEMO_GENERATOR_ID) {
       return (
-        <section className="page">
+        <section className="page ops-page">
           <header className="page-head">
             <h1>Gateway</h1>
             <p>That id is not in the demo log.</p>
@@ -57,7 +57,7 @@ export function GatewayDetail() {
 function DemoGateway() {
   const name = demoFrames[0]?.device ?? "DSE 7320 / 7320 MKII";
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>{name}</h1>
         <p>
@@ -84,7 +84,7 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
   const [error, setError] = useState<string | null>(null);
   if (detail === undefined) {
     return (
-      <section className="page">
+      <section className="page ops-page">
         <PageSkeleton rows={8} label="Loading gateway" />
       </section>
     );
@@ -118,7 +118,7 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
   }
 
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>{detail.device.name}</h1>
         <p>

@@ -25,7 +25,7 @@ export function AlarmDetail() {
   const { id: alarmId } = useParams();
   if (!alarmId) {
     return (
-      <section className="page">
+      <section className="page ops-page">
         <h1>Alarm</h1>
         <p>Missing id.</p>
       </section>
@@ -35,7 +35,7 @@ export function AlarmDetail() {
   if (demo || !import.meta.env.VITE_CONVEX_URL) {
     if (!demo) {
       return (
-        <section className="page">
+        <section className="page ops-page">
           <header className="page-head">
             <h1>Alarm</h1>
             <p>That id is not in the demo log.</p>
@@ -54,7 +54,7 @@ export function AlarmDetail() {
 
 function DemoAlarm({ row }: { row: (typeof demoRows)[number] }) {
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>{row.summary}</h1>
         <p>
@@ -87,7 +87,7 @@ function StoredAlarm({ alarmId }: { alarmId: string }) {
 
   if (data === undefined) {
     return (
-      <section className="page">
+      <section className="page ops-page">
         <PageSkeleton rows={6} label="Loading alarm" />
       </section>
     );
@@ -108,7 +108,7 @@ function StoredAlarm({ alarmId }: { alarmId: string }) {
   }
 
   return (
-    <section className="page">
+    <section className="page ops-page">
       <header className="page-head">
         <h1>{alarm.summary}</h1>
         <p>

@@ -289,6 +289,42 @@ export const fleetSummary = query({
   },
 });
 
+/** One row per site for the post-login listing. Tallies come from stored site summaries. */
+export const siteRoster = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "view.dashboard");
+    const sites = await ctx.db
+      .query("sites")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .take(200);
+    const summaries = await ctx.db
+      .query("siteSummaries")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .take(200);
+    const bySite = new Map(summaries.map((row) => [row.siteId, row]));
+    return sites.map((site) => {
+      const summary = bySite.get(site._id);
+      return {
+        siteId: site._id,
+        name: site.name,
+        code: site.code ?? null,
+        region: site.region ?? null,
+        generators: summary?.generators ?? null,
+        reporting: summary?.reporting ?? 0,
+        gatewayOnline: summary?.gatewayOnline ?? 0,
+        gatewayOffline: summary?.gatewayOffline ?? 0,
+        linkOk: summary?.linkOk ?? 0,
+        linkFail: summary?.linkFail ?? 0,
+        activeCommProblems: summary?.activeCommProblems ?? 0,
+        overallUnhealthy: summary?.overallUnhealthy ?? 0,
+        lastTelemetryAt: summary?.lastTelemetryAt ?? null,
+        lastGatewayContactAt: summary?.lastGatewayContactAt ?? null,
+      };
+    });
+  },
+});
+
 /** Latest rows across the organization (bounded). Includes site labels for All Sites. */
 export const currentForOrg = query({
   args: { organizationId: v.id("organizations") },

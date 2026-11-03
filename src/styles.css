@@ -742,14 +742,14 @@ a.brand-lockup:hover .brand-mark {
 }
 
 .canvas {
-  padding: var(--space-5) var(--space-4) var(--space-6);
+  padding: var(--space-4) var(--space-5) var(--space-6);
 }
 
 .page {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  max-width: var(--content-max);
+  max-width: none;
 }
 
 .stack {
@@ -2341,8 +2341,115 @@ table.cfg td.num {
   background: var(--table-row-hover);
 }
 
-.page-head h1 {
-  font-size: var(--text-2xl);
+.canvas .page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 36px;
+}
+
+.canvas .page-head h1 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+.ops-page {
+  position: relative;
+}
+
+.ops-toolbar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ops-split {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .ops-split {
+    grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+  }
+}
+
+.ops-rail {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg-elev);
+  overflow: hidden;
+}
+
+.ops-site {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ops-site:last-child {
+  border-bottom: 0;
+}
+
+.ops-site.is-selected {
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-elev));
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.ops-site .tech {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.ops-detail {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.provision-steps {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.provision-steps li {
+  flex: 1;
+  padding: 6px 0;
+  border-bottom: 2px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.provision-steps li.is-current {
+  border-bottom-color: var(--accent);
+  color: var(--ink);
+}
+
+.provision-steps li.is-done {
+  border-bottom-color: var(--ok);
+  color: var(--ok);
 }
 
 .topbar-title {
@@ -2654,7 +2761,23 @@ html[data-theme="dark"] {
 }
 
 .cc-page .page-head {
-  display: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.crumb-row {
+  margin: 0 0 var(--space-1);
+}
+
+.crumb-row a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.crumb-row a:hover {
+  color: var(--ink);
 }
 
 .cc-stats-grid {

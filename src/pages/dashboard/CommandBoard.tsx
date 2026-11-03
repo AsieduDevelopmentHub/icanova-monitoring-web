@@ -153,7 +153,7 @@ export function CommandBoard({
         <EmptyState
           title="No generators"
           body="Register a gateway and generator for this organization."
-          action={<Link to="/generators">Generators</Link>}
+          action={<Link to="/sites">Sites</Link>}
         />
       ) : scope.reporting === 0 ? (
         <div className="notice" role="note">
@@ -172,6 +172,7 @@ export function CommandBoard({
       <AttentionTable
         rows={loaded}
         showSite={!siteId}
+        listAll={Boolean(siteId)}
         selectedId={primary?.generatorId ?? null}
         onSelect={setSelectedId}
       />

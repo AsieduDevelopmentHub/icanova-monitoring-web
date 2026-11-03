@@ -60,11 +60,6 @@ function SignedFleet() {
 
   return (
     <div className="stack">
-      <div className="notice" role="note">
-        <strong>One site.</strong> The table subscribes to current readings for the selected site, at
-        most 50 generators. It does not subscribe to history or to other organizations. Permission
-        names are a display hint. The server checks membership on every request.
-      </div>
       <FilterBar label="Organization">
         <FilterSelect
           label="Organization"
