@@ -15,6 +15,10 @@ export const WIRE_METRICS = {
   oilc: { key: "oilTempC", divisor: 1 },
   cool: { key: "coolantC", divisor: 1 },
   fuel: { key: "fuelPct", divisor: 1 },
+  /** Engine run hours ×100 (firmware int32). */
+  eh100: { key: "engineHours", divisor: 100 },
+  /** Lifetime start count. */
+  starts: { key: "engineStarts", divisor: 1 },
   mhz10: { key: "mainsHz", divisor: 10 },
   mvan10: { key: "mainsL1", divisor: 10 },
   mvbn10: { key: "mainsL2", divisor: 10 },

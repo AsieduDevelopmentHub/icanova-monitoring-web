@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { storedReading } from "../../fleet/access";
 import { siteGeneratorPath } from "../../fleet/paths";
+import { fuelHint, fuelTone } from "../../telemetry/fuelLevel";
 import { formatReading } from "../../telemetry/readings";
 import { StatusMark } from "../../ui/StatusMark";
 import { TechValue } from "../../ui/TechValue";
@@ -14,6 +15,12 @@ import { FleetHealth } from "./FleetHealth";
 function extraNumber(row: BoardRow, key: string): number | null {
   const value = row.extra?.[key];
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function extraReading(row: BoardRow, key: string, unit: string) {
+  const quality =
+    row.extraQuality?.[key] ?? (extraNumber(row, key) != null ? "measured" : "unavailable");
+  return storedReading(extraNumber(row, key), quality, unit);
 }
 
 export function OperationalArea({
@@ -39,8 +46,8 @@ export function OperationalArea({
   const powerReading = primary
     ? storedReading(primary.powerKw, primary.powerQuality, "kW")
     : null;
-  const fuel = primary ? extraNumber(primary, "fuelLevelPct") ?? extraNumber(primary, "fuel") : null;
-  const loadPct = primary ? extraNumber(primary, "loadPct") ?? extraNumber(primary, "load") : null;
+  const fuel = primary ? extraNumber(primary, "fuelPct") : null;
+  const loadPct = primary ? extraNumber(primary, "loadPct") : null;
   const flow = derivePowerFlow({
     label: primary?.name ?? siteName,
     twinStatus,
@@ -113,6 +120,8 @@ export function OperationalArea({
                 ),
               )}
             />
+            <TechValue label="L2 V" value={formatReading(extraReading(primary, "voltageL2", "V"))} />
+            <TechValue label="L3 V" value={formatReading(extraReading(primary, "voltageL3", "V"))} />
             <TechValue
               label="Battery"
               value={formatReading(
@@ -123,8 +132,21 @@ export function OperationalArea({
                 ),
               )}
             />
-            <TechValue label="Fuel" value={fuel == null ? "—" : `${fuel} %`} />
+            <TechValue
+              label="Fuel"
+              value={fuel == null ? "—" : `${fuel} %`}
+              tone={fuelTone(fuel)}
+              hint={fuelHint(fuel)}
+            />
             <TechValue label="Load" value={loadPct == null ? "—" : `${loadPct} %`} />
+            <TechValue
+              label="Engine h"
+              value={formatReading(extraReading(primary, "engineHours", "h"))}
+            />
+            <TechValue
+              label="Starts"
+              value={formatReading(extraReading(primary, "engineStarts", ""))}
+            />
           </div>
         ) : null}
         {rows.length > 0 ? (

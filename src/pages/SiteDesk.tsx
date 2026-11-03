@@ -12,9 +12,11 @@ import {
   siteTrendsPath,
 } from "../fleet/paths";
 import { LiveGate } from "../fleet/scope";
+import { storedFreshness } from "../telemetry/freshness";
 import { EmptyState } from "../ui/EmptyState";
 import { QueryErrorBoundary } from "../ui/QueryErrorBoundary";
 import { PageSkeleton } from "../ui/Skeleton";
+import { StatusMark } from "../ui/StatusMark";
 import { CommandBoard } from "./dashboard/CommandBoard";
 
 /** Type B site desk — control room for one physical installation. */
@@ -57,6 +59,10 @@ function DeskBody({
     siteId,
     paginationOpts: { numItems: 20, cursor: null },
   });
+  const telemetry = useQuery(api.telemetry.currentForSite, {
+    organizationId: id<"organizations">(organizationId),
+    siteId,
+  });
   if (site === undefined) {
     return <PageSkeleton rows={6} label="Loading site" />;
   }
@@ -64,6 +70,23 @@ function DeskBody({
     return <EmptyState title="Site not found" action={<Link to="/sites">Sites</Link>} />;
   }
   const gateways = Array.isArray(devices?.page) ? devices.page : [];
+  const latestUpdatedAt = Array.isArray(telemetry?.rows)
+    ? telemetry.rows.reduce<number | null>((max, row) => {
+        const at = row.updatedAt;
+        if (at == null || !Number.isFinite(at)) {
+          return max;
+        }
+        return max == null || at > max ? at : max;
+      }, null)
+    : null;
+  const freshness = storedFreshness(latestUpdatedAt, Date.now());
+  const updatedAtLabel =
+    latestUpdatedAt == null
+      ? "No telemetry yet"
+      : new Date(latestUpdatedAt).toLocaleString(undefined, {
+          dateStyle: "medium",
+          timeStyle: "medium",
+        });
 
   return (
     <div className="stack">
@@ -93,6 +116,13 @@ function DeskBody({
             <Link to={siteTrendsPath(site.siteId)}>Trends</Link>
             {" · "}
             <Link to={siteMaintenancePath(site.siteId)}>Maintenance</Link>
+          </p>
+          <p className="meta status-row">
+            {freshness.stale ? <StatusMark tone="warn">stale</StatusMark> : null}
+            <span>
+              Last updated {updatedAtLabel}
+              {latestUpdatedAt != null ? ` · ${freshness.label}` : ""}
+            </span>
           </p>
         </div>
       </header>

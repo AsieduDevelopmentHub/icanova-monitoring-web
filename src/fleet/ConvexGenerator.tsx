@@ -21,6 +21,7 @@ import { DataTable } from "../ui/DataTable";
 import { formatStat, seriesStats } from "../telemetry/seriesStats";
 import { FilterBar, FilterSelect } from "../ui/FilterBar";
 import { TechValue } from "../ui/TechValue";
+import { fuelHint, fuelTone } from "../telemetry/fuelLevel";
 import { storedReading, id } from "./access";
 import { FleetBoundary } from "./boundary";
 import { GeneratorAlarms } from "./AlarmPanel";
@@ -98,6 +99,11 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
     current?.voltageQuality ?? "unavailable",
     "V",
   );
+  const voltageL2 = extraReading(current, "voltageL2", "V");
+  const voltageL3 = extraReading(current, "voltageL3", "V");
+  const fuel = extraReading(current, "fuelPct", "%");
+  const engineHours = extraReading(current, "engineHours", "h");
+  const engineStarts = extraReading(current, "engineStarts", "");
   const pose = machinePose(rpm);
   const flag = machineFlag(typeof current?.link === "string" ? current.link : null);
   const freshness = storedFreshness(current?.updatedAt ?? null, Date.now());
@@ -121,6 +127,13 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
     frequencyHz:
       frequency.quality === "measured" && frequency.value != null ? frequency.value : null,
   });
+  const updatedAtLabel =
+    current?.updatedAt == null
+      ? null
+      : new Date(current.updatedAt).toLocaleString(undefined, {
+          dateStyle: "medium",
+          timeStyle: "medium",
+        });
 
   return (
     <section className="page ops-page">
@@ -152,6 +165,7 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
         </StatusMark>
         <span className="meta">
           {freshness.label}
+          {updatedAtLabel ? ` · ${updatedAtLabel}` : ""}
           {current?.alarmCount == null ? "" : ` · alarms ${current.alarmCount}`}
           {current?.mode ? ` · ${current.mode}` : ""}
         </span>
@@ -165,12 +179,21 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
             <TechValue label="Hz" value={formatReading(frequency)} />
             <TechValue label="kW" value={formatReading(power)} />
             <TechValue label="L1 V" value={formatReading(voltage)} />
+            <TechValue label="L2 V" value={formatReading(voltageL2)} />
+            <TechValue label="L3 V" value={formatReading(voltageL3)} />
             <TechValue label="Load" value={formatReading(extraReading(current, "loadPct", "%"))} />
-            <TechValue label="Fuel" value={formatReading(extraReading(current, "fuelPct", "%"))} />
+            <TechValue
+              label="Fuel"
+              value={formatReading(fuel)}
+              tone={fuelTone(fuel.value)}
+              hint={fuelHint(fuel.value)}
+            />
             <TechValue
               label="Coolant"
               value={formatReading(extraReading(current, "coolantC", "°C"))}
             />
+            <TechValue label="Engine h" value={formatReading(engineHours)} />
+            <TechValue label="Starts" value={formatReading(engineStarts)} />
           </div>
           <section className="ops-section" aria-labelledby="gen-alarms-title">
             <h2 id="gen-alarms-title">Active alarms</h2>
@@ -181,11 +204,12 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
       <details className="cc-more-metrics">
         <summary>More measurements</summary>
         <div className="metric-grid">
-          <Metric label="L2 V" value={formatReading(extraReading(current, "voltageL2", "V"))} />
-          <Metric label="L3 V" value={formatReading(extraReading(current, "voltageL3", "V"))} />
           <Metric label="L1 A" value={formatReading(extraReading(current, "currentL1", "A"))} />
           <Metric label="L2 A" value={formatReading(extraReading(current, "currentL2", "A"))} />
           <Metric label="L3 A" value={formatReading(extraReading(current, "currentL3", "A"))} />
+          <Metric label="L1-L2 V" value={formatReading(extraReading(current, "voltageL12", "V"))} />
+          <Metric label="L2-L3 V" value={formatReading(extraReading(current, "voltageL23", "V"))} />
+          <Metric label="L3-L1 V" value={formatReading(extraReading(current, "voltageL31", "V"))} />
           <Metric label="Oil kPa" value={formatReading(extraReading(current, "oilPressureKpa", "kPa"))} />
           <Metric label="Engine code" value={formatReading(extraReading(current, "engineStatus", ""))} />
           <Metric label="Control" value={formatReading(extraReading(current, "controlStatus", ""))} />
@@ -305,7 +329,7 @@ function HistoryCharts({ generatorId }: { generatorId: string }) {
           title="Power"
           unit="kW"
           points={series?.power ?? []}
-          reduced={Boolean(series?.reduced.power)}
+          reduced={Boolean(series?.reduced?.power)}
           caption={caption}
           height={240}
         />
@@ -313,7 +337,7 @@ function HistoryCharts({ generatorId }: { generatorId: string }) {
           title="Frequency"
           unit="Hz"
           points={series?.frequency ?? []}
-          reduced={Boolean(series?.reduced.frequency)}
+          reduced={Boolean(series?.reduced?.frequency)}
           caption={caption}
           height={240}
         />
@@ -321,7 +345,7 @@ function HistoryCharts({ generatorId }: { generatorId: string }) {
           title="RPM"
           unit="rpm"
           points={series?.rpm ?? []}
-          reduced={Boolean(series?.reduced.rpm)}
+          reduced={Boolean(series?.reduced?.rpm)}
           caption={caption}
           height={220}
         />
@@ -329,7 +353,7 @@ function HistoryCharts({ generatorId }: { generatorId: string }) {
           title="Battery"
           unit="V"
           points={series?.battery ?? []}
-          reduced={Boolean(series?.reduced.battery)}
+          reduced={Boolean(series?.reduced?.battery)}
           caption={caption}
           height={220}
         />
@@ -337,7 +361,7 @@ function HistoryCharts({ generatorId }: { generatorId: string }) {
           title="L1 voltage"
           unit="V"
           points={series?.voltage ?? []}
-          reduced={Boolean(series?.reduced.voltage)}
+          reduced={Boolean(series?.reduced?.voltage)}
           caption={caption}
           height={220}
         />

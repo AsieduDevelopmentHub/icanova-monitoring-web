@@ -41,17 +41,22 @@ class ErrorCatch extends Component<
   }
 }
 
-/** Lazy 3D genset with flat fallback for reduced motion / errors. */
+/** Lazy 3D genset with flat fallback for narrow / reduced-motion / errors. */
 export function GeneratorFleetViz({ status, label }: { status: TwinStatus; label: string }) {
   const [flat, setFlat] = useState(false);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const apply = () => setFlat(media.matches);
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const narrow = window.matchMedia("(max-width: 799px)");
+    const apply = () => setFlat(motion.matches || narrow.matches);
     apply();
-    media.addEventListener("change", apply);
-    return () => media.removeEventListener("change", apply);
+    motion.addEventListener("change", apply);
+    narrow.addEventListener("change", apply);
+    return () => {
+      motion.removeEventListener("change", apply);
+      narrow.removeEventListener("change", apply);
+    };
   }, []);
 
   if (flat || failed) {

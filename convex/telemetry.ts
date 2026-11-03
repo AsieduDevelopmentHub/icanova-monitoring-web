@@ -160,7 +160,13 @@ function emptyReading(qualityName: Quality) {
 
 function rowFromCurrent(
   generator: { _id: Id<"generators">; name: string },
-  current: (SampleInput & { updatedAt: number; boot?: number; seq?: number }) | null,
+  current: (SampleInput & {
+    updatedAt: number;
+    boot?: number;
+    seq?: number;
+    extra?: Record<string, number | null>;
+    extraQuality?: Record<string, Quality>;
+  }) | null,
 ) {
   return {
     generatorId: generator._id,
@@ -182,6 +188,8 @@ function rowFromCurrent(
     powerQuality: current?.powerQuality ?? "unavailable",
     voltageL1: current?.voltageL1 ?? null,
     voltageQuality: current?.voltageQuality ?? "unavailable",
+    extra: current?.extra ?? undefined,
+    extraQuality: current?.extraQuality ?? undefined,
   };
 }
 
