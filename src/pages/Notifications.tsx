@@ -14,7 +14,6 @@ import {
 } from "../notify/webPush";
 import { DataTable } from "../ui/DataTable";
 import { FilterSelect } from "../ui/FilterBar";
-import { Panel } from "../ui/Panel";
 import { StatusMark } from "../ui/StatusMark";
 import { Tabs } from "../ui/Tabs";
 import { PageSkeleton, Skeleton } from "../ui/Skeleton";
@@ -107,14 +106,13 @@ function Inbox({ organizationId }: { organizationId: Id<"organizations"> }) {
   }
 
   return (
-    <Panel
-      title="Inbox"
-      actions={
+    <section className="ops-section" aria-labelledby="notify-inbox-title">
+      <div className="ops-section-head">
+        <h2 id="notify-inbox-title">Inbox</h2>
         <button type="button" className="btn btn-secondary" onClick={() => run(() => markAllRead({ organizationId }))}>
           Mark all read
         </button>
-      }
-    >
+      </div>
       <p className="meta">
         Unread <StatusMark tone={unread > 0 ? "warn" : "ok"}>{unread}</StatusMark>
       </p>
@@ -160,23 +158,12 @@ function Inbox({ organizationId }: { organizationId: Id<"organizations"> }) {
         />
       </div>
       <DataTable
-        caption="In-app notifications"
+        dense
+        caption="Inbox"
         rows={rows}
         getRowKey={(row) => row._id}
         empty="No notifications match these filters."
         columns={[
-          {
-            key: "state",
-            header: "State",
-            render: (row) =>
-              row.readAt == null ? <StatusMark tone="warn">unread</StatusMark> : "read",
-          },
-          {
-            key: "category",
-            header: "Category",
-            render: (row) => categoryFor(row.event),
-          },
-          { key: "event", header: "Event", render: (row) => row.event },
           {
             key: "severity",
             header: "Severity",
@@ -192,55 +179,68 @@ function Inbox({ organizationId }: { organizationId: Id<"organizations"> }) {
           },
           {
             key: "title",
-            header: "Title",
+            header: "Notification",
             render: (row) => (
               <span>
-                <strong>{row.title}</strong>
-                <br />
-                <span className="meta">{row.body}</span>
+                {row.readAt == null ? <StatusMark tone="warn">unread</StatusMark> : null} {row.title}
+              </span>
+            ),
+          },
+          {
+            key: "context",
+            header: "Context",
+            render: (row) => (
+              <span className="btn-row">
+                {row.alarmId ? <Link to={`/alarms/${row.alarmId}`}>Alarm</Link> : null}
+                {row.generatorId ? <Link to={`/generators/${row.generatorId}`}>Generator</Link> : null}
+                {row.deviceId ? <Link to={`/gateways/${row.deviceId}`}>Gateway</Link> : null}
+                {row.siteId ? <Link to={`/sites/${row.siteId}`}>Site</Link> : null}
+                {!row.alarmId && !row.generatorId && !row.deviceId && !row.siteId
+                  ? categoryFor(row.event)
+                  : null}
               </span>
             ),
           },
           {
             key: "at",
             header: "When",
-            render: (row) => new Date(row.createdAt).toISOString(),
+            render: (row) => (
+              <span className="tech">
+                {new Date(row.createdAt).toLocaleString(undefined, {
+                  month: "short",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            ),
           },
           {
             key: "open",
             header: "",
-            render: (row) => (
-              <span className="filter-bar">
-                {row.alarmId ? <Link to={`/alarms/${row.alarmId}`}>Alarm</Link> : null}
-                {row.generatorId ? <Link to={`/generators/${row.generatorId}`}>Generator</Link> : null}
-                {row.deviceId ? <Link to={`/gateways/${row.deviceId}`}>Gateway</Link> : null}
-                {row.siteId ? <Link to={`/sites/${row.siteId}`}>Site</Link> : null}
-                {row.readAt == null ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      run(() => markRead({ organizationId, notificationId: row._id }))
-                    }
-                  >
-                    Mark read
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      run(() => markUnread({ organizationId, notificationId: row._id }))
-                    }
-                  >
-                    Mark unread
-                  </button>
-                )}
-              </span>
-            ),
+            render: (row) =>
+              row.readAt == null ? (
+                <button
+                  type="button"
+                  className="text-btn"
+                  onClick={() => run(() => markRead({ organizationId, notificationId: row._id }))}
+                >
+                  Mark read
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="text-btn"
+                  onClick={() => run(() => markUnread({ organizationId, notificationId: row._id }))}
+                >
+                  Unread
+                </button>
+              ),
           },
         ]}
       />
       {error ? <p className="err">{error}</p> : null}
-    </Panel>
+    </section>
   );
 }
 
@@ -309,24 +309,21 @@ function Settings({ organizationId }: { organizationId: Id<"organizations"> }) {
       ) : (
         null
       )}
-      <Panel title="Event catalog">
+      <section className="ops-section" aria-labelledby="notify-catalog-title">
+        <h2 id="notify-catalog-title">Event catalog</h2>
         <DataTable
+          dense
           caption="Notification events"
           rows={[...NOTIFY_EVENT_CATALOG]}
           getRowKey={(row) => row.event}
           empty="No events defined."
           columns={[
             { key: "label", header: "Event", render: (row) => row.label },
-            { key: "id", header: "Id", render: (row) => row.event },
-            { key: "when", header: "Emitted when", render: (row) => row.when },
-            {
-              key: "subject",
-              header: "Sample subject",
-              render: (row) => row.sampleSubject,
-            },
+            { key: "id", header: "Id", render: (row) => <span className="tech">{row.event}</span> },
+            { key: "when", header: "When", render: (row) => row.when },
           ]}
         />
-      </Panel>
+      </section>
       <h2>Policies</h2>
       {EVENTS.map((eventName) => (
         <div key={eventName} className="filter-bar">
@@ -436,20 +433,20 @@ function BrowserPushPanel({ organizationId }: { organizationId: Id<"organization
   }
 
   return (
-    <Panel title="Browser push">
+    <section className="ops-section" aria-labelledby="notify-push-title">
+      <h2 id="notify-push-title">Browser push</h2>
       <p className="meta">
-        Support: {support.supported ? "available" : support.reason}. Permission: {permission}. Server
-        VAPID: {vapid.configured ? "configured" : "not configured"}. Active subscriptions:{" "}
-        {status.activeCount}.
+        {support.supported ? "Supported" : support.reason} · {permission} · VAPID{" "}
+        {vapid.configured ? "ok" : "off"} · {status.activeCount} active
       </p>
-      <div className="filter-bar">
+      <div className="btn-row">
         <button
           type="button"
           className="btn btn-primary"
           disabled={busy || !support.supported}
           onClick={() => void enablePush()}
         >
-          Enable browser notifications
+          Enable
         </button>
         <button
           type="button"
@@ -473,7 +470,7 @@ function BrowserPushPanel({ organizationId }: { organizationId: Id<"organization
         </ul>
       ) : null}
       {error ? <p className="err">{error}</p> : null}
-    </Panel>
+    </section>
   );
 }
 

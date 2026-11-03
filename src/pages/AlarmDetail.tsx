@@ -61,15 +61,13 @@ function DemoAlarm({ row }: { row: (typeof demoRows)[number] }) {
           <Link to="/alarms">Alarms</Link>
         </p>
       </header>
-      <div className="notice fixture" role="note">
-        <strong>Demo log.</strong> From {DEMO_SOURCE}. Acknowledgement, comments, assignment, and
-        resolution are not stored for this row.
-      </div>
-      <p>
-        <StatusMark tone={row.kind === "transport" ? "warn" : "alarm"}>{row.kind}</StatusMark>
+      <p className="meta" role="note">
+        Demo · {DEMO_SOURCE}
       </p>
-      <p>{row.detail}</p>
-      <p className="meta">Remote controller writes are not enabled.</p>
+      <div className="status-row">
+        <StatusMark tone={row.kind === "transport" ? "warn" : "alarm"}>{row.kind}</StatusMark>
+      </div>
+      {row.detail ? <p className="meta">{row.detail}</p> : null}
     </section>
   );
 }
@@ -110,48 +108,73 @@ function StoredAlarm({ alarmId }: { alarmId: string }) {
   return (
     <section className="page ops-page">
       <header className="page-head">
-        <h1>{alarm.summary}</h1>
-        <p>
-          <Link to="/alarms">Alarms</Link>
-        </p>
+        <div>
+          <p className="crumb-row meta">
+            <Link to="/app">Command Center</Link>
+            <span aria-hidden="true"> / </span>
+            <Link to="/alarms">Alarms</Link>
+            <span aria-hidden="true"> / </span>
+            <span>Detail</span>
+          </p>
+          <h1>{alarm.summary}</h1>
+        </div>
       </header>
-      <p>
-        <StatusMark tone={severityTone(alarm.severity)}>{alarm.severity}</StatusMark>{" "}
-        <StatusMark tone={alarm.state === "resolved" || alarm.state === "cleared" ? "ok" : alarm.state === "active" ? "alarm" : "warn"}>
+      <div className="status-row">
+        <StatusMark tone={severityTone(alarm.severity)}>{alarm.severity}</StatusMark>
+        <StatusMark
+          tone={
+            alarm.state === "resolved" || alarm.state === "cleared"
+              ? "ok"
+              : alarm.state === "active"
+                ? "alarm"
+                : "warn"
+          }
+        >
           {alarm.state}
-        </StatusMark>{" "}
+        </StatusMark>
         <span className="meta">{categoryLabel(alarm)}</span>
-      </p>
-      <p>{alarm.detail}</p>
-      <p className="meta">
-        Raised {alarmTime(alarm.raisedAt ?? alarm.firstOccurredAt)}. First{" "}
-        {alarmTime(alarm.firstOccurredAt)}. Last {alarmTime(alarm.lastOccurredAt)}. Occurrences{" "}
-        {alarm.occurrenceCount}.{" "}
-        {acknowledgementLabel({
-          acknowledged: alarm.acknowledgedAt !== null,
-          acknowledgedBy: alarm.acknowledgedByName,
-        })}
-        {alarm.acknowledgedAt ? ` at ${alarmTime(alarm.acknowledgedAt)}` : ""}.
-        {alarm.clearedAt ? ` Cleared ${alarmTime(alarm.clearedAt)}.` : ""} Site{" "}
-        {alarm.siteName ?? "—"}
-        {alarm.generatorName && alarm.generatorName !== "—"
-          ? ` · ${alarm.generatorName}`
-          : ""}
-        . Source {alarm.source}. These actions do not write to the controller. Acknowledgement does
-        not clear the condition.
-      </p>
-      <div className="filter-bar">
+      </div>
+      {alarm.detail ? <p className="meta">{alarm.detail}</p> : null}
+      <dl className="facts">
+        <dt>Site</dt>
+        <dd>
+          {alarm.siteId ? <Link to={`/sites/${alarm.siteId}`}>{alarm.siteName ?? "Site"}</Link> : "—"}
+        </dd>
+        <dt>Generator</dt>
+        <dd>
+          {alarm.generatorId ? (
+            <Link to={`/generators/${alarm.generatorId}`}>{alarm.generatorName ?? "Generator"}</Link>
+          ) : (
+            "—"
+          )}
+        </dd>
+        <dt>Raised</dt>
+        <dd className="tech">{alarmTime(alarm.raisedAt ?? alarm.firstOccurredAt)}</dd>
+        <dt>Last</dt>
+        <dd className="tech">{alarmTime(alarm.lastOccurredAt)}</dd>
+        <dt>Occurrences</dt>
+        <dd className="tech">{alarm.occurrenceCount}</dd>
+        <dt>Ack</dt>
+        <dd>
+          {acknowledgementLabel({
+            acknowledged: alarm.acknowledgedAt !== null,
+            acknowledgedBy: alarm.acknowledgedByName,
+          })}
+          {alarm.acknowledgedAt ? ` · ${alarmTime(alarm.acknowledgedAt)}` : ""}
+        </dd>
+      </dl>
+      <div className="btn-row">
         {allowAck ? (
-          <button type="button" onClick={() => run(() => acknowledge({ alarmId: alarm._id }))}>
+          <button type="button" className="btn btn-primary" onClick={() => run(() => acknowledge({ alarmId: alarm._id }))}>
             Acknowledge
           </button>
         ) : null}
         {allowManage ? (
           <>
-            <button type="button" onClick={() => run(() => clear({ alarmId: alarm._id }))}>
+            <button type="button" className="btn btn-secondary" onClick={() => run(() => clear({ alarmId: alarm._id }))}>
               Clear
             </button>
-            <button type="button" onClick={() => run(() => resolve({ alarmId: alarm._id }))}>
+            <button type="button" className="btn btn-secondary" onClick={() => run(() => resolve({ alarmId: alarm._id }))}>
               Resolve
             </button>
           </>
@@ -179,32 +202,38 @@ function StoredAlarm({ alarmId }: { alarmId: string }) {
               <span>Comment</span>
               <input value={body} onChange={(event) => setBody(event.target.value)} />
             </label>
-            <button type="submit">Add comment</button>
+            <button type="submit" className="btn btn-secondary">
+              Add
+            </button>
           </form>
         </>
       ) : null}
       {error ? <p className="err">{error}</p> : null}
-      <h2>Comments</h2>
-      {data.comments.length === 0 ? (
-        <p className="empty">No comments.</p>
-      ) : (
+      <section className="ops-section" aria-labelledby="alarm-comments-title">
+        <h2 id="alarm-comments-title">Comments</h2>
+        {data.comments.length === 0 ? (
+          <p className="empty">No comments.</p>
+        ) : (
+          <ul>
+            {data.comments.map((item) => (
+              <li key={item._id}>{item.body}</li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <section className="ops-section" aria-labelledby="alarm-history-title">
+        <h2 id="alarm-history-title">History</h2>
         <ul>
-          {data.comments.map((item) => (
-            <li key={item._id}>{item.body}</li>
+          {data.events.map((event) => (
+            <li key={event._id}>
+              <span className="tech">{event.action}</span>
+              {event.fromState ? ` ${event.fromState}` : ""}
+              {event.toState ? ` → ${event.toState}` : ""}
+              {event.note ? ` · ${event.note}` : ""}
+            </li>
           ))}
         </ul>
-      )}
-      <h2>History</h2>
-      <ul>
-        {data.events.map((event) => (
-          <li key={event._id}>
-            {event.action}
-            {event.fromState ? ` from ${event.fromState}` : ""}
-            {event.toState ? ` to ${event.toState}` : ""}
-            {event.note ? `: ${event.note}` : ""}
-          </li>
-        ))}
-      </ul>
+      </section>
     </section>
   );
 }

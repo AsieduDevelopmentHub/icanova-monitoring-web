@@ -38,10 +38,9 @@ function DemoInventory() {
   const device = demoFrames[0]?.device ?? "DSE 7320 / 7320 MKII";
   return (
     <div className="stack">
-      <div className="notice fixture" role="note">
-        <strong>Demo log.</strong> One device name appears in {DEMO_SOURCE}. It is not an inventory
-        database and it is not a live gateway.
-      </div>
+      <p className="meta" role="note">
+        Demo · {DEMO_SOURCE}
+      </p>
       <DataTable
         caption="Demo device from the log excerpt"
         rows={[{ id: DEMO_GENERATOR_ID, name: device }]}

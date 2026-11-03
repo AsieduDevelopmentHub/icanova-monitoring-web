@@ -9,11 +9,9 @@ import { demoAlarms, filterAlarms, type AlarmKind } from "../telemetry/alarms";
 import { DEMO_SOURCE } from "../telemetry/logModel";
 import { demoSamples } from "../telemetry/demoLog";
 import {
-  alarmCardFields,
   alarmListCopy,
   alarmTime,
   canManageAlarms,
-  categoryLabel,
   filterAlarmCenter,
   pageBanner,
   severityTone,
@@ -21,11 +19,13 @@ import {
   type AlarmFilter,
   type StoredAlarmRow,
 } from "../telemetry/alarmCenter";
+import { AlarmPeek } from "../fleet/AlarmPeek";
 import { DataTable } from "../ui/DataTable";
 import { FilterBar, FilterSearch, FilterSelect } from "../ui/FilterBar";
 import { Metric } from "../ui/Metric";
 import { StatusMark } from "../ui/StatusMark";
 import { PageSkeleton } from "../ui/Skeleton";
+import { Dialog } from "../ui/Overlay";
 
 const demoRows = demoAlarms(demoSamples);
 
@@ -89,11 +89,9 @@ function DemoAlarmList() {
 
   return (
     <div className="stack">
-      <div className="notice fixture" role="note">
-        <strong>Demo log.</strong> Rows come from {DEMO_SOURCE}. Acknowledgement is not stored for these
-        rows. Alarm-page FAIL is a failed read, listed as transport. These rows are not this
-        organization.
-      </div>
+      <p className="meta" role="note">
+        Demo · {DEMO_SOURCE}
+      </p>
       <FilterBar label="Demo alarm filters">
         <FilterSearch label="Search" value={search} onChange={setSearch} placeholder="Link, batch, page" />
         <FilterSelect
@@ -238,7 +236,7 @@ function OrgAlarms({
         <p className="meta">First 50.</p>
       ) : null}
       <FleetBoundary key={`${organizationId}:${status}:${severity}:${category}:${siteValue}:${generatorValue}:${search}`}>
-        <AlarmTable organizationId={organizationId} filter={filter} />
+        <AlarmTable organizationId={organizationId} filter={filter} permissions={permissions} />
       </FleetBoundary>
       {canManageAlarms(permissions) ? <RecordAlarm organizationId={organizationId} /> : null}
     </div>
@@ -252,6 +250,7 @@ function RecordAlarm({ organizationId }: { organizationId: string }) {
     paginationOpts: { numItems: 50, cursor: null },
   });
   const raise = useMutation(api.alarms.raise);
+  const [open, setOpen] = useState(false);
   const [deviceId, setDeviceId] = useState("");
   const [recordKind, setRecordKind] = useState<"transport" | "controller">("transport");
   const [summary, setSummary] = useState("");
@@ -285,14 +284,19 @@ function RecordAlarm({ organizationId }: { organizationId: string }) {
       });
       setSummary("");
       setDetail("");
+      setOpen(false);
     } catch (caught) {
       setError(accessMessage(caught));
     }
   }
 
   return (
+    <>
+      <button type="button" className="btn btn-secondary" onClick={() => setOpen(true)}>
+        Record note
+      </button>
+      <Dialog open={open} title="Record note" onClose={() => setOpen(false)}>
     <form className="stack" onSubmit={onSubmit}>
-      <h2>Operator note</h2>
       <FilterBar label="Record note">
         <FilterSelect
           label="Device"
@@ -325,16 +329,21 @@ function RecordAlarm({ organizationId }: { organizationId: string }) {
       </FilterBar>
       {error ? <p className="err">{error}</p> : null}
     </form>
+      </Dialog>
+    </>
   );
 }
 
 function AlarmTable({
   organizationId,
   filter,
+  permissions,
 }: {
   organizationId: string;
   filter: AlarmFilter;
+  permissions: readonly string[];
 }) {
+  const [peekId, setPeekId] = useState<string | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
   const narrowed =
     filter.status !== "all" ||
@@ -391,70 +400,60 @@ function AlarmTable({
         getRowKey={(row) => row.id}
         empty={copy.empty}
         columns={[
-            { key: "title", header: "Alarm", render: (row) => row.title },
-            {
-              key: "severity",
-              header: "Severity",
-              render: (row) => <StatusMark tone={severityTone(row.severity)}>{row.severity}</StatusMark>,
-            },
-            { key: "category", header: "Category", render: (row) => categoryLabel(row) },
-            { key: "generator", header: "Generator", render: (row) => row.generatorName },
-            { key: "site", header: "Site", render: (row) => row.siteName },
-            { key: "status", header: "Status", render: (row) => row.status },
-            {
-              key: "first",
-              header: "First",
-              render: (row) => alarmTime(row.firstOccurredAt),
-            },
-            {
-              key: "last",
-              header: "Last",
-              render: (row) => alarmTime(row.lastOccurredAt),
-            },
-            {
-              key: "ack",
-              header: "Acknowledgement",
-              render: (row) => (row.acknowledged ? "Acknowledged" : "Not acknowledged"),
-            },
-            {
-              key: "by",
-              header: "Acknowledged by",
-              render: (row) => row.acknowledgedBy ?? "—",
-            },
-            {
-              key: "open",
-              header: "",
-              render: (row) => <Link to={`/alarms/${row.id}`}>Open</Link>,
-            },
-          ]}
-        />
-      <div className="alarm-cards">
-        {records.length === 0 ? (
-          <p className="empty">{copy.empty}</p>
-        ) : (
-          records.map((row) => (
-            <article className="alarm-card" key={row.id}>
-              <h3>{row.title}</h3>
-              <StatusMark tone={severityTone(row.severity)}>{row.severity}</StatusMark>
-              <dl>
-                {alarmCardFields(row).map((field) => (
-                  <div key={field.label}>
-                    <dt>{field.label}</dt>
-                    <dd>{field.value}</dd>
-                  </div>
-                ))}
-              </dl>
-              <Link to={`/alarms/${row.id}`}>Open</Link>
-            </article>
-          ))
-        )}
-      </div>
+          {
+            key: "severity",
+            header: "Severity",
+            render: (row) => <StatusMark tone={severityTone(row.severity)}>{row.severity}</StatusMark>,
+          },
+          {
+            key: "title",
+            header: "Alarm",
+            render: (row) => (
+              <button type="button" className="text-btn" onClick={() => setPeekId(row.id)}>
+                {row.title}
+              </button>
+            ),
+          },
+          {
+            key: "site",
+            header: "Site",
+            render: (row) =>
+              row.siteId ? <Link to={`/sites/${row.siteId}`}>{row.siteName}</Link> : row.siteName,
+          },
+          {
+            key: "generator",
+            header: "Generator",
+            render: (row) =>
+              row.generatorId ? (
+                <Link to={`/generators/${row.generatorId}`}>{row.generatorName}</Link>
+              ) : (
+                row.generatorName
+              ),
+          },
+          {
+            key: "first",
+            header: "Started",
+            render: (row) => <span className="tech">{alarmTime(row.firstOccurredAt)}</span>,
+          },
+          { key: "status", header: "Status", render: (row) => row.status },
+          {
+            key: "open",
+            header: "",
+            render: (row) => (
+              <button type="button" className="text-btn" onClick={() => setPeekId(row.id)}>
+                Inspect
+              </button>
+            ),
+          },
+        ]}
+      />
       {copy.note ? <p className="meta">{copy.note}</p> : null}
       {!narrowed && data.continueCursor && !data.isDone ? (
         <button type="button" onClick={() => setCursor(data.continueCursor)}>
           Next page
         </button>
       ) : null}
+      <AlarmPeek alarmId={peekId} permissions={permissions} onClose={() => setPeekId(null)} />
     </div>
   );
 }

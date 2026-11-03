@@ -18,6 +18,7 @@ export const NAV: NavItem[] = [
   { to: "/local", label: "Live Systems", icon: "local", group: "Monitor", end: true },
   { to: "/generators", label: "Generators", icon: "generator", group: "Monitor" },
   { to: "/gateways", label: "Gateways", icon: "gateway", group: "Monitor" },
+  { to: "/trends", label: "Trends", icon: "reports", group: "Analyze" },
   { to: "/reports", label: "Reports", icon: "reports", group: "Analyze" },
   { to: "/alarms", label: "Alarms", icon: "alarm", group: "Operate" },
   { to: "/events", label: "Events", icon: "events", group: "Operate" },
@@ -108,6 +109,24 @@ export function crumbsFor(pathname: string): { to: string; label: string }[] {
       { to: "/app", label: "Command Center" },
       { to: "/sites", label: "Sites" },
       { to: pathname, label: "Site" },
+    ];
+  }
+  if (pathname === "/trends") {
+    return [
+      { to: "/app", label: "Command Center" },
+      { to: "/trends", label: "Trends" },
+    ];
+  }
+  if (pathname === "/events") {
+    return [
+      { to: "/app", label: "Command Center" },
+      { to: "/events", label: "Events" },
+    ];
+  }
+  if (pathname === "/reports") {
+    return [
+      { to: "/app", label: "Command Center" },
+      { to: "/reports", label: "Reports" },
     ];
   }
   if (pathname === "/alarms" || alarm) {

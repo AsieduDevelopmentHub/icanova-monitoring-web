@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { OrgGate } from "../admin/OrgGate";
 import { accessMessage } from "../fleet/access";
 import { DataTable } from "../ui/DataTable";
+import { Dialog } from "../ui/Overlay";
 import { PageSkeleton } from "../ui/Skeleton";
 
 export function Maintenance() {
@@ -22,6 +24,7 @@ function Records({ organizationId }: { organizationId: Id<"organizations"> }) {
   });
   const generators = useQuery(api.maintenance.generators, { organizationId });
   const create = useMutation(api.maintenance.create);
+  const [open, setOpen] = useState(false);
   const [generatorId, setGeneratorId] = useState("");
   const [summary, setSummary] = useState("");
   const [notes, setNotes] = useState("");
@@ -46,6 +49,7 @@ function Records({ organizationId }: { organizationId: Id<"organizations"> }) {
       });
       setSummary("");
       setNotes("");
+      setOpen(false);
     } catch (caught) {
       setError(accessMessage(caught));
     }
@@ -53,43 +57,65 @@ function Records({ organizationId }: { organizationId: Id<"organizations"> }) {
 
   return (
     <div className="stack">
+      <div className="ops-toolbar">
+        <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
+          Record maintenance
+        </button>
+      </div>
       <DataTable
-        caption="Maintenance records"
+        dense
+        caption="Maintenance"
         rows={page.page}
         getRowKey={(row) => row._id}
         empty="No maintenance records."
         columns={[
           { key: "summary", header: "Summary", render: (row) => row.summary },
+          {
+            key: "generator",
+            header: "Generator",
+            render: (row) => (
+              <Link to={`/generators/${row.generatorId}`}>
+                {generators.find((g) => g.generatorId === row.generatorId)?.name ?? "Open"}
+              </Link>
+            ),
+          },
           { key: "notes", header: "Notes", render: (row) => row.notes || "—" },
           {
             key: "performed",
             header: "Performed",
-            render: (row) => (row.performedAt === null ? "—" : String(row.performedAt)),
+            render: (row) =>
+              row.performedAt == null ? "—" : (
+                <span className="tech">{new Date(row.performedAt).toLocaleString()}</span>
+              ),
           },
         ]}
       />
-      <form className="stack" onSubmit={onSubmit}>
-        <label className="filter-field">
-          <span>Generator</span>
-          <select value={selected} onChange={(event) => setGeneratorId(event.target.value)}>
-            {generators.map((row) => (
-              <option key={row.generatorId} value={row.generatorId}>
-                {row.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="filter-field">
-          <span>Summary</span>
-          <input value={summary} onChange={(event) => setSummary(event.target.value)} />
-        </label>
-        <label className="filter-field">
-          <span>Notes</span>
-          <input value={notes} onChange={(event) => setNotes(event.target.value)} />
-        </label>
-        <button type="submit">Record maintenance</button>
-      </form>
-      {error ? <p className="err">{error}</p> : null}
+      <Dialog open={open} title="Record maintenance" onClose={() => setOpen(false)}>
+        <form className="stack" onSubmit={onSubmit}>
+          <label className="field">
+            <span>Generator</span>
+            <select value={selected} onChange={(event) => setGeneratorId(event.target.value)}>
+              {generators.map((row) => (
+                <option key={row.generatorId} value={row.generatorId}>
+                  {row.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span>Summary</span>
+            <input value={summary} onChange={(event) => setSummary(event.target.value)} required />
+          </label>
+          <label className="field">
+            <span>Notes</span>
+            <input value={notes} onChange={(event) => setNotes(event.target.value)} />
+          </label>
+          {error ? <p className="err">{error}</p> : null}
+          <button type="submit" className="btn btn-primary">
+            Save
+          </button>
+        </form>
+      </Dialog>
     </div>
   );
 }

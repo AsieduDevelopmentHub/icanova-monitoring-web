@@ -139,7 +139,7 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
           <p className="meta">
             <Link to={`/alarms?generator=${generatorId}`}>Alarms</Link>
             {" · "}
-            <Link to={`/generators/${generatorId}/trends`}>Trends</Link>
+            <Link to={`/trends?generator=${generatorId}`}>Trends</Link>
             {" · "}
             <Link to={`/sites/${detail.siteId}`}>Site</Link>
           </p>
@@ -172,7 +172,10 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
               value={formatReading(extraReading(current, "coolantC", "°C"))}
             />
           </div>
-          <GeneratorAlarms generatorId={generatorId} organizationId={detail.organizationId} />
+          <section className="ops-section" aria-labelledby="gen-alarms-title">
+            <h2 id="gen-alarms-title">Active alarms</h2>
+            <GeneratorAlarms generatorId={generatorId} organizationId={detail.organizationId} />
+          </section>
         </div>
       </div>
       <details className="cc-more-metrics">

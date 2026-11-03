@@ -390,6 +390,7 @@ async function deviceDetailPayload(
   }
   return {
     device: publicDevice(device),
+    siteId: device.siteId ?? null,
     siteName: site?.name ?? null,
     siteCode: site?.code ?? null,
     generators,

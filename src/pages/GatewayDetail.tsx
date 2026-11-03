@@ -17,7 +17,6 @@ import {
 } from "../telemetry/deviceHealthView";
 import { Button } from "../ui/Button";
 import { DataTable } from "../ui/DataTable";
-import { Panel } from "../ui/Panel";
 import { PageSkeleton, Skeleton } from "../ui/Skeleton";
 import { StatusMark } from "../ui/StatusMark";
 import { DiagnosticPanel } from "./DiagnosticPanel";
@@ -64,11 +63,9 @@ function DemoGateway() {
           <Link to="/gateways">Gateways</Link>
         </p>
       </header>
-      <div className="notice fixture" role="note">
-        <strong>Demo log.</strong> Frames and batch errors are from {DEMO_SOURCE}. Retries are not
-        recorded in the excerpt. This is not a live Modbus session, and it cannot write to the
-        controller.
-      </div>
+      <p className="meta" role="note">
+        Demo · {DEMO_SOURCE}
+      </p>
       <DiagnosticPanel
         rows={demoRows}
         sourceNote="TXN 43 prints CRC PASS and INVALID MODBUS FRAME together. Both lines stay. Time to first RX byte is the latency figure in the log."
@@ -120,94 +117,95 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
   return (
     <section className="page ops-page">
       <header className="page-head">
-        <h1>{detail.device.name}</h1>
-        <p>
-          <Link to="/gateways">Gateways</Link>
-          {" · "}
-          <Link to="/app">Dashboard</Link>
-        </p>
+        <div>
+          <p className="crumb-row meta">
+            <Link to="/app">Command Center</Link>
+            <span aria-hidden="true"> / </span>
+            <Link to="/gateways">Gateways</Link>
+            <span aria-hidden="true"> / </span>
+            <span>{detail.device.name}</span>
+          </p>
+          <h1>{detail.device.name}</h1>
+          <p className="meta">
+            {detail.device.siteId ? (
+              <>
+                <Link to={`/sites/${detail.device.siteId}`}>{detail.siteName ?? "Site"}</Link>
+                {" · "}
+              </>
+            ) : null}
+            <Link to={`/alarms?device=${detail.device._id}`}>Alarms</Link>
+            {" · "}
+            <Link to="/events">Events</Link>
+          </p>
+        </div>
       </header>
 
-      <Panel title="Identity">
+      <div className="status-row">
+        <StatusMark tone={active ? "ok" : "alarm"}>{active ? "Active" : "Inactive"}</StatusMark>
+        <StatusMark tone={overall.tone}>{overall.label}</StatusMark>
+        <StatusMark tone={gateway.tone}>Cloud {gateway.label}</StatusMark>
+        <StatusMark tone={modbus.tone}>{modbus.label}</StatusMark>
+        <StatusMark tone={fresh.tone}>{fresh.label}</StatusMark>
+      </div>
+
+      <section className="ops-section" aria-labelledby="gw-identity-title">
+        <h2 id="gw-identity-title">Identity</h2>
         <dl className="facts">
-          <dt>Product</dt>
-          <dd>iCaNova Edge Gateway</dd>
           <dt>Identity</dt>
           <dd className="tech">{detail.device.identity}</dd>
           <dt>Site</dt>
-          <dd>{detail.siteName ?? "—"}</dd>
-          <dt>Lifecycle</dt>
-          <dd>{active ? "active" : "inactive"}</dd>
-          <dt>Firmware version</dt>
+          <dd>
+            {detail.device.siteId ? (
+              <Link to={`/sites/${detail.device.siteId}`}>{detail.siteName ?? "Site"}</Link>
+            ) : (
+              (detail.siteName ?? "—")
+            )}
+          </dd>
+          <dt>Firmware</dt>
           <dd className="tech">
             {health?.firmwareVersion
               ? `${health.firmwareVersion}${health.firmwareGit ? ` · ${health.firmwareGit}` : ""}`
-              : "Not reported yet"}
+              : "—"}
           </dd>
         </dl>
-        <div className="status-row">
-          <StatusMark tone={active ? "ok" : "alarm"}>{active ? "Active" : "Inactive"}</StatusMark>
-          <StatusMark tone={overall.tone}>{overall.label}</StatusMark>
-          <StatusMark tone={gateway.tone}>Cloud {gateway.label}</StatusMark>
-          <StatusMark tone={modbus.tone}>{modbus.label}</StatusMark>
-          <StatusMark tone={fresh.tone}>{fresh.label}</StatusMark>
-        </div>
-      </Panel>
+      </section>
 
-      <Panel title="Connectivity">
+      <section className="ops-section" aria-labelledby="gw-contact-title">
+        <h2 id="gw-contact-title">Contact</h2>
         <dl className="facts">
-          <dt>Last heartbeat</dt>
+          <dt>Heartbeat</dt>
           <dd>{contactAgeLabel(health?.lastHeartbeatAt, now)}</dd>
-          <dt>Last accepted batch</dt>
+          <dt>Accepted batch</dt>
           <dd>{contactAgeLabel(health?.lastAcceptedBatchAt, now)}</dd>
-          <dt>Last gateway contact</dt>
+          <dt>Gateway contact</dt>
           <dd>{contactAgeLabel(health?.lastGatewayContactAt, now)}</dd>
-          <dt>Last telemetry</dt>
+          <dt>Telemetry</dt>
           <dd>{contactAgeLabel(health?.lastTelemetryAt, now)}</dd>
-          <dt>Last successful poll</dt>
-          <dd>
-            {poll
-              ? `${poll.label} · source time ${poll.at == null ? "—" : String(poll.at)}`
-              : "No successful poll is stored for this device."}
-          </dd>
+          <dt>Last poll</dt>
+          <dd>{poll ? `${poll.label}${poll.at == null ? "" : ` · ${poll.at}`}` : "—"}</dd>
         </dl>
-        <p>
-          <Button
-            variant="secondary"
-            disabled={pending}
-            onClick={() => void onLifecycle()}
-          >
-            {pending ? "Updating…" : active ? "Deactivate device" : "Reactivate device"}
+        <div className="btn-row">
+          <Button variant="secondary" disabled={pending} onClick={() => void onLifecycle()}>
+            {pending ? "Updating…" : active ? "Deactivate" : "Reactivate"}
           </Button>
-        </p>
+          <Link className="btn btn-secondary" to="/local/configure">
+            Configure
+          </Link>
+        </div>
         {error ? <p className="err">{error}</p> : null}
-      </Panel>
-
-      <Panel title="Configuration">
-        <dl className="facts">
-          <dt>Desired configuration</dt>
-          <dd>Not stored as a cloud desired-state document</dd>
-          <dt>Configuration transmitted</dt>
-          <dd>Not implemented</dd>
-          <dt>Gateway acknowledgement</dt>
-          <dd>Not implemented</dd>
-          <dt>Local configuration UI</dt>
-          <dd>
-            <Link to="/local/configure">Live Configure (Soft-AP / LAN proxy)</Link>
-          </dd>
-        </dl>
-      </Panel>
+      </section>
 
       <section className="ops-section" aria-labelledby="gw-equipment-title">
-        <h2 id="gw-equipment-title">Connected equipment</h2>
+        <h2 id="gw-equipment-title">Equipment</h2>
         {detail.generators.length === 0 ? (
-          <p className="empty">No generator is linked to this device.</p>
+          <p className="empty">No generators linked.</p>
         ) : (
           <DataTable
-            caption="Generators linked to this gateway"
+            dense
+            caption="Linked generators"
             rows={detail.generators}
             getRowKey={(row) => row._id}
-            empty="No generator is linked to this device."
+            empty="No generators linked."
             columns={[
               {
                 key: "name",
@@ -219,8 +217,8 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
               {
                 key: "open",
                 header: "",
-                render: (row: { _id: string; code?: string | null }) => (
-                  <Link to={`/generators/${row.code ?? row._id}/trends`}>Trends</Link>
+                render: (row: { _id: string }) => (
+                  <Link to={`/trends?generator=${row._id}`}>Trends</Link>
                 ),
               },
             ]}

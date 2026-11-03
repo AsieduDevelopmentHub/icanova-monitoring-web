@@ -3,7 +3,6 @@ import { useQuery } from "convex/react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { DataTable } from "../../ui/DataTable";
-import { Panel } from "../../ui/Panel";
 import { Skeleton } from "../../ui/Skeleton";
 import { SiteAlarmPanel } from "../../fleet/AlarmPanel";
 
@@ -25,16 +24,22 @@ export function EventsSection({
           permissions={permissions}
         />
       ) : (
-        <Panel title="Alarms" actions={<Link to="/alarms">Alarm desk</Link>}>
-          <p className="empty">Select a site.</p>
-        </Panel>
+        <section className="ops-section" aria-labelledby="cc-alarms-empty">
+          <h2 id="cc-alarms-empty">Alarms</h2>
+          <p className="empty">
+            Select a site. <Link to="/alarms">Alarm desk</Link>
+          </p>
+        </section>
       )}
       {siteId ? (
         <RecentActivitySection organizationId={organizationId} siteId={siteId} />
       ) : (
-        <Panel title="Events" actions={<Link to="/events">All events</Link>}>
-          <p className="empty">Select a site.</p>
-        </Panel>
+        <section className="ops-section" aria-labelledby="cc-events-empty">
+          <h2 id="cc-events-empty">Events</h2>
+          <p className="empty">
+            Select a site. <Link to="/events">All events</Link>
+          </p>
+        </section>
       )}
     </div>
   );
@@ -55,19 +60,30 @@ function RecentActivitySection({
     return <Skeleton lines={4} />;
   }
   return (
-    <Panel title="Recent events" actions={<Link to="/events">All events</Link>}>
+    <section className="ops-section" aria-labelledby="cc-recent-events">
+      <div className="ops-section-head">
+        <h2 id="cc-recent-events">Recent events</h2>
+        <Link to="/events">All events</Link>
+      </div>
       <DataTable
         dense
-        caption="Recent health transitions"
+        caption="Health transitions"
         rows={data.rows}
         getRowKey={(row) => row._id}
-        empty="No health transitions stored for this site yet."
+        empty="No health transitions for this site."
         columns={[
           {
             key: "at",
             header: "When",
             render: (row) => (
-              <span className="tech">{new Date(row.at).toLocaleString()}</span>
+              <span className="tech">
+                {new Date(row.at).toLocaleString(undefined, {
+                  month: "short",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
             ),
           },
           {
@@ -83,7 +99,7 @@ function RecentActivitySection({
             header: "Change",
             render: (row) => {
               const parts = [
-                row.gatewayTo ? `gateway → ${row.gatewayTo}` : null,
+                row.gatewayTo ? `cloud → ${row.gatewayTo}` : null,
                 row.modbusTo ? `modbus → ${row.modbusTo}` : null,
                 row.freshnessTo ? `freshness → ${row.freshnessTo}` : null,
                 row.overallTo ? `overall → ${row.overallTo}` : null,
@@ -93,6 +109,6 @@ function RecentActivitySection({
           },
         ]}
       />
-    </Panel>
+    </section>
   );
 }

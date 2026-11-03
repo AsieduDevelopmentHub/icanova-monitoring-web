@@ -7,7 +7,7 @@ import { ChangePasswordForm } from "../auth/ChangePasswordForm";
 import { accessMessage, id } from "../fleet/access";
 import { unsignedNotice } from "../fleet/sessionGates";
 import { EmptyState } from "../ui/EmptyState";
-import { Panel } from "../ui/Panel";
+import { Dialog } from "../ui/Overlay";
 import { Skeleton } from "../ui/Skeleton";
 
 export function Settings() {
@@ -18,6 +18,7 @@ export function Settings() {
   const org = Array.isArray(orgs) && orgs.length > 0 ? orgs[0] : null;
   const canManageFirmware = Boolean(org?.permissions?.includes("manage.devices"));
   const canManageSites = Boolean(org?.permissions?.includes("manage.sites"));
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   return (
     <section className="page ops-page">
@@ -36,9 +37,22 @@ export function Settings() {
           <strong>{unsigned.title}</strong> {unsigned.detail}
         </div>
       ) : (
-        <Panel title="Change password">
-          <ChangePasswordForm />
-        </Panel>
+        <div className="stack">
+          <div className="ops-toolbar">
+            <button type="button" className="btn btn-secondary" onClick={() => setPasswordOpen(true)}>
+              Change password
+            </button>
+            <Link className="btn btn-secondary" to="/local/configure">
+              Configure gateway
+            </Link>
+            <Link className="btn btn-secondary" to="/sites">
+              Sites
+            </Link>
+          </div>
+          <Dialog open={passwordOpen} title="Change password" onClose={() => setPasswordOpen(false)}>
+            <ChangePasswordForm />
+          </Dialog>
+        </div>
       )}
 
       {configured && isAuthenticated && org ? (
@@ -51,24 +65,22 @@ export function Settings() {
         />
       ) : null}
 
-      <Panel title="Gateway">
-        <Link to="/local/configure">Configure</Link>
-      </Panel>
-
       {configured && isAuthenticated && org ? (
-        <Panel title="Firmware">
+        <section className="ops-section" aria-labelledby="settings-firmware-title">
+          <h2 id="settings-firmware-title">Firmware</h2>
           <FirmwareReleasesPanel
             organizationId={id<"organizations">(org.organizationId)}
             canManage={canManageFirmware}
           />
-        </Panel>
+        </section>
       ) : null}
 
-      <Panel title="Retention">
+      <section className="ops-section" aria-labelledby="settings-retention-title">
+        <h2 id="settings-retention-title">Retention</h2>
         <p className="meta">
           Telemetry ~7d · health ~14d · <Link to="/notifications">Notifications</Link>
         </p>
-      </Panel>
+      </section>
     </section>
   );
 }
@@ -133,7 +145,8 @@ function SiteCodeFormatPanel({
   }
 
   return (
-    <Panel title="Site codes">
+    <section className="ops-section" aria-labelledby="settings-codes-title">
+      <h2 id="settings-codes-title">Site codes</h2>
       <div className="filter-bar">
         <label className="filter-field">
           <span>Format</span>
@@ -156,6 +169,6 @@ function SiteCodeFormatPanel({
       </div>
       {error ? <p className="err">{error}</p> : null}
       {message ? <p className="meta">{message}</p> : null}
-    </Panel>
+    </section>
   );
 }

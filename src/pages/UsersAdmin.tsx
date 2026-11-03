@@ -4,8 +4,8 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { OrgGate } from "../admin/OrgGate";
 import { accessMessage } from "../fleet/access";
+import { DataTable } from "../ui/DataTable";
 import { Dialog } from "../ui/Overlay";
-import { Panel } from "../ui/Panel";
 import { PageSkeleton } from "../ui/Skeleton";
 
 export function UsersAdmin() {
@@ -28,13 +28,14 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
   const [message, setMessage] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [grantOpen, setGrantOpen] = useState(false);
   if (roster === undefined || roles === undefined || pending === undefined) {
     return <PageSkeleton rows={5} label="Loading users" />;
   }
   const selectedUser = roster.some((row) => row.userId === userId) ? userId : (roster[0]?.userId ?? "");
   const selectedRole = roles.some((role) => role.roleId === roleId) ? roleId : (roles[0]?.roleId ?? "");
 
-  async function onSubmit(event: FormEvent) {
+  async function onGrant(event: FormEvent) {
     event.preventDefault();
     if (pendingAction) {
       return;
@@ -48,6 +49,7 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
         userId: selectedUser as Id<"users">,
         roleId: selectedRole as Id<"roles">,
       });
+      setGrantOpen(false);
     } catch (caught) {
       setError(accessMessage(caught));
     } finally {
@@ -73,71 +75,80 @@ function Roster({ organizationId }: { organizationId: Id<"organizations"> }) {
 
   return (
     <div className="stack">
-      <div className="filter-bar">
+      <div className="ops-toolbar">
         <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
           Request user
         </button>
+        <button type="button" className="btn btn-secondary" onClick={() => setGrantOpen(true)}>
+          Grant role
+        </button>
       </div>
-      <Panel title="Membership">
-        {roster.length === 0 ? <p className="empty">No members in this page.</p> : null}
-        <ul>
-          {roster.map((row) => (
-            <li key={row.userId}>
-              {row.name} · {row.roleName}
-            </li>
-          ))}
-        </ul>
-        <form className="form-section" onSubmit={onSubmit}>
-          <h2>Grant role</h2>
-          <div className="filter-bar">
-            <label className="filter-field">
-              <span>Member</span>
-              <select value={selectedUser} onChange={(event) => setUserId(event.target.value)}>
-                {roster.map((row) => (
-                  <option key={row.userId} value={row.userId}>
-                    {row.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="filter-field">
-              <span>Role</span>
-              <select value={selectedRole} onChange={(event) => setRoleId(event.target.value)}>
-                {roles.map((role) => (
-                  <option key={role.roleId} value={role.roleId}>
-                    {role.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button type="submit" className="btn btn-primary" disabled={pendingAction}>
-              {pendingAction ? "Granting…" : "Grant role"}
-            </button>
-          </div>
-        </form>
-        {error ? <p className="err">{error}</p> : null}
-        {message ? <p className="notice" role="status">{message}</p> : null}
-      </Panel>
-      <Panel title="Pending member requests">
-        {pending.length === 0 ? <p className="empty">No pending requests.</p> : null}
-        <ul>
-          {pending.map((row) => (
-            <li key={row.requestId} className="btn-row">
-              <span>
-                {row.name} · {row.email} · {row.roleName}
-              </span>
+      {error ? <p className="err">{error}</p> : null}
+      {message ? <p className="notice" role="status">{message}</p> : null}
+      <DataTable
+        dense
+        caption="Membership"
+        rows={roster}
+        getRowKey={(row) => row.userId}
+        empty="No members."
+        columns={[
+          { key: "name", header: "Member", render: (row) => row.name },
+          { key: "role", header: "Role", render: (row) => row.roleName },
+        ]}
+      />
+      <DataTable
+        dense
+        caption="Pending requests"
+        rows={pending}
+        getRowKey={(row) => row.requestId}
+        empty="No pending requests."
+        columns={[
+          { key: "name", header: "Name", render: (row) => row.name },
+          { key: "email", header: "Email", render: (row) => row.email },
+          { key: "role", header: "Role", render: (row) => row.roleName },
+          {
+            key: "confirm",
+            header: "",
+            render: (row) => (
               <button
                 type="button"
-                className="btn"
+                className="btn btn-secondary"
                 disabled={pendingAction}
                 onClick={() => void onConfirm(row.requestId)}
               >
-                Confirm &amp; email
+                Confirm
               </button>
-            </li>
-          ))}
-        </ul>
-      </Panel>
+            ),
+          },
+        ]}
+      />
+      <Dialog open={grantOpen} title="Grant role" onClose={() => setGrantOpen(false)}>
+        <form className="stack" onSubmit={onGrant}>
+          <label className="field">
+            <span>Member</span>
+            <select value={selectedUser} onChange={(event) => setUserId(event.target.value)}>
+              {roster.map((row) => (
+                <option key={row.userId} value={row.userId}>
+                  {row.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span>Role</span>
+            <select value={selectedRole} onChange={(event) => setRoleId(event.target.value)}>
+              {roles.map((role) => (
+                <option key={role.roleId} value={role.roleId}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="submit" className="btn btn-primary" disabled={pendingAction}>
+            {pendingAction ? "Granting…" : "Grant"}
+          </button>
+        </form>
+      </Dialog>
       <RequestMemberDialog
         open={createOpen}
         organizationId={organizationId}

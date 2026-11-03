@@ -27,6 +27,7 @@ import { RequireAuth } from "./auth/RequireAuth";
 import { AuthCallback } from "./auth/integrations/auth0/AuthCallback";
 import { Ops } from "./pages/Ops";
 import { Reports } from "./pages/Reports";
+import { Trends } from "./pages/Trends";
 import { RolesAdmin } from "./pages/RolesAdmin";
 import { Settings } from "./pages/Settings";
 import { SiteDesk } from "./pages/SiteDesk";
@@ -85,6 +86,7 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="gateways" element={<Gateways />} />
                 <Route path="gateways/:id" element={<GatewayDetail />} />
                 <Route path="events" element={<Events />} />
+                <Route path="trends" element={<Trends />} />
                 <Route path="reports" element={<Reports />} />
                 <Route path="maintenance" element={<Maintenance />} />
                 <Route path="notifications" element={<Notifications />} />

@@ -1,7 +1,6 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { Panel } from "../../ui/Panel";
 import { Skeleton } from "../../ui/Skeleton";
 
 const UPDATING = "var(--color-muted-copper)";
@@ -15,16 +14,14 @@ export function RegionStats({ organizationId }: { organizationId: Id<"organizati
   if (stats === undefined) {
     return <Skeleton lines={8} />;
   }
-  const max = Math.max(
-    1,
-    ...stats.regions.map((row) => row.updating + row.nonUpdating),
-  );
+  const max = Math.max(1, ...stats.regions.map((row) => row.updating + row.nonUpdating));
   const counts = stats.siteCounts;
   const total = Math.max(1, counts.total);
 
   return (
     <div className="cc-stats-grid">
-      <Panel title="Regions">
+      <section className="ops-section" aria-labelledby="cc-regions-title">
+        <h2 id="cc-regions-title">Regions</h2>
         <div className="region-chart" role="img" aria-label="Region updating statistics">
           <div className="region-chart-plot">
             {stats.regions.map((row) => {
@@ -34,7 +31,11 @@ export function RegionStats({ organizationId }: { organizationId: Id<"organizati
                   ? 0
                   : (row.updating / (row.updating + row.nonUpdating)) * 100;
               return (
-                <div key={row.region} className="region-bar-col" title={`${row.region}: ${row.updating} updating, ${row.nonUpdating} non-updating`}>
+                <div
+                  key={row.region}
+                  className="region-bar-col"
+                  title={`${row.region}: ${row.updating} updating, ${row.nonUpdating} non-updating`}
+                >
                   <div className="region-bar-stack" style={{ height: `${Math.max(height, 2)}%` }}>
                     <span
                       className="region-bar updating"
@@ -59,9 +60,10 @@ export function RegionStats({ organizationId }: { organizationId: Id<"organizati
             </span>
           </div>
         </div>
-      </Panel>
+      </section>
 
-      <Panel title="Sites">
+      <section className="ops-section" aria-labelledby="cc-sites-stats-title">
+        <h2 id="cc-sites-stats-title">Sites</h2>
         <div className="site-count-stats">
           <svg viewBox="0 0 120 120" className="site-count-ring" aria-hidden="true">
             <circle cx="60" cy="60" r="48" fill="none" stroke="var(--line)" strokeWidth="8" />
@@ -119,17 +121,17 @@ export function RegionStats({ organizationId }: { organizationId: Id<"organizati
             </li>
             <li>
               <i style={{ background: CURRENT }} />
-              <span>Current Data</span>
+              <span>Current</span>
               <strong>{counts.currentData}</strong>
             </li>
             <li>
               <i style={{ background: ACCUMULATED }} />
-              <span>Accumulated Data</span>
+              <span>Accumulated</span>
               <strong>{counts.accumulatedData}</strong>
             </li>
           </ul>
         </div>
-      </Panel>
+      </section>
     </div>
   );
 }

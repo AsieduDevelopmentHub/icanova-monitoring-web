@@ -4,7 +4,7 @@ import { DataTable } from "../ui/DataTable";
 import { Metric } from "../ui/Metric";
 import { StatusMark } from "../ui/StatusMark";
 import { demoFrames, demoSamples, samplesForMode } from "../telemetry/demoLog";
-import { DEMO_GENERATOR_ID, seriesFor, type LogSample } from "../telemetry/logModel";
+import { DEMO_GENERATOR_ID, DEMO_SOURCE, seriesFor, type LogSample } from "../telemetry/logModel";
 import {
   formatReading,
   machineFlag,
@@ -185,10 +185,9 @@ export function GeneratorDetail() {
           {focus ? formatReading(readingOf(focus.readings, "Serial Number")) : "—"}
         </p>
       </header>
-      <div className="notice fixture" role="note">
-        <strong>Demo log, not a live connection.</strong> {focus?.sourceLabel}. Source time is empty
-        because the terminal log has no clock. Live mode is the last sample in that file.
-      </div>
+      <p className="meta" role="note">
+        Demo · {focus?.sourceLabel ?? DEMO_SOURCE}
+      </p>
       <div className="status-row">
         <StatusMark tone={pose === "running" ? "ok" : pose === "stopped" ? "offline" : "neutral"}>
           {pose}
@@ -312,46 +311,43 @@ export function GeneratorDetail() {
       ) : null}
 
       {section?.id === "alarms" ? (
-        <div className="stack-copy">
-          <p>
-            The log does not contain an alarm acknowledgement record. Unsupported phases stay in
-            Electrical as unimplemented. They are not listed here as zeros.
-          </p>
-          <ul className="alarms">
-            {shown.flatMap((sample) => {
-              const items: { key: string; text: string }[] = [];
-              if (sample.alarmPage) {
+        <ul className="alarms">
+          {shown.flatMap((sample) => {
+            const items: { key: string; text: string }[] = [];
+            if (sample.alarmPage) {
+              items.push({
+                key: `${sample.index}-page`,
+                text: `${sampleHeading(sample)}: alarm page ${sample.alarmPage}`,
+              });
+            }
+            for (const reading of sample.readings) {
+              if (
+                reading.quality === "under-range" ||
+                reading.quality === "over-range" ||
+                reading.quality === "invalid" ||
+                reading.quality === "stale"
+              ) {
                 items.push({
-                  key: `${sample.index}-page`,
-                  text: `${sampleHeading(sample)}: alarm page ${sample.alarmPage}`,
+                  key: `${sample.index}-${reading.label}`,
+                  text: `${sampleHeading(sample)}: ${reading.label} is ${qualityLabel(reading.quality)}`,
                 });
               }
-              for (const reading of sample.readings) {
-                if (reading.quality === "under-range" || reading.quality === "over-range" || reading.quality === "invalid" || reading.quality === "stale") {
-                  items.push({
-                    key: `${sample.index}-${reading.label}`,
-                    text: `${sampleHeading(sample)}: ${reading.label} is ${qualityLabel(reading.quality)}`,
-                  });
-                }
-              }
-              return items;
-            }).map((item) => (
-              <li key={item.key}>{item.text}</li>
-            ))}
-          </ul>
-        </div>
+            }
+            return items;
+          }).map((item) => (
+            <li key={item.key}>{item.text}</li>
+          ))}
+        </ul>
       ) : null}
 
       {section?.id === "communications" ? (
-        <div className="stack-copy">
-          <p>
-            Frames are the diagnostic excerpt. TXN 43 prints CRC PASS and INVALID MODBUS FRAME
-            together; both lines are kept. This is not a live Modbus monitor. The gateway page
-            lists function code, address, CRC, latency, and retries.{" "}
-            <Link to="/gateways/log-7320">Open diagnostics</Link>
+        <div className="stack">
+          <p className="meta">
+            Demo frames · <Link to="/gateways/log-7320">Diagnostics</Link>
           </p>
           <DataTable
-            caption="Batch failures in the samples currently in view"
+            dense
+            caption="Batch failures"
             columns={[
               { key: "sample", header: "Sample", render: (row: { sample: string }) => row.sample },
               { key: "address", header: "Address", align: "right", render: (row: { address: number }) => row.address },
@@ -374,25 +370,25 @@ export function GeneratorDetail() {
             }
           />
           <DataTable
-            caption="Diagnostic frames from the log excerpt"
+            dense
+            caption="Frames"
             columns={[
               { key: "txn", header: "Txn", render: (frame) => frame.txn },
               { key: "request", header: "Request", render: (frame) => frame.request ?? "—" },
-              { key: "crc", header: "CRC", render: (frame) => `${frame.crcResult ?? "—"} · rx ${frame.receivedCrc ?? "—"} · calc ${frame.calculatedCrc ?? "—"}` },
+              { key: "crc", header: "CRC", render: (frame) => frame.crcResult ?? "—" },
               { key: "result", header: "Result", render: (frame) => frame.result ?? "—" },
-              { key: "ms", header: "First RX ms", align: "right", render: (frame) => frame.firstRxMs ?? "—" },
+              { key: "ms", header: "ms", align: "right", render: (frame) => frame.firstRxMs ?? "—" },
             ]}
             rows={demoFrames}
             getRowKey={(frame) => String(frame.txn)}
-            empty="No frames in the excerpt."
+            empty="No frames."
           />
         </div>
       ) : null}
 
       {section?.id === "maintenance" ? (
-        <p>
-          Engine hours and starts above are the only maintenance figures in the log. Organization
-          work records are kept separately on <Link to="/maintenance">Maintenance</Link>.
+        <p className="meta">
+          Hours/starts from log · <Link to="/maintenance">Maintenance records</Link>
         </p>
       ) : null}
     </section>

@@ -10,6 +10,8 @@ import { auditActor, auditTime } from "../telemetry/fleetView";
 import { DataTable } from "../ui/DataTable";
 import { Tabs } from "../ui/Tabs";
 import { PageSkeleton } from "../ui/Skeleton";
+import { Drawer } from "../ui/Overlay";
+import { StatusMark } from "../ui/StatusMark";
 
 type AuditRow = {
   _id: string;
@@ -17,6 +19,19 @@ type AuditRow = {
   actorToken: string;
   target: string;
   at: number;
+};
+
+type HealthRow = {
+  _id: string;
+  at: number;
+  deviceId: string;
+  deviceIdentity?: string | null;
+  deviceName: string;
+  reason: string;
+  gatewayTo?: string | null;
+  modbusTo?: string | null;
+  freshnessTo?: string | null;
+  overallTo?: string | null;
 };
 
 type TimelineMode = "health" | "audit";
@@ -33,15 +48,11 @@ export function Events() {
         value={mode}
         onChange={setMode}
         items={[
-          { id: "health", label: "Health transitions" },
-          { id: "audit", label: "Audit log" },
+          { id: "health", label: "Health" },
+          { id: "audit", label: "Audit" },
         ]}
       />
-      <LiveGate
-        emptyLayout="list"
-        emptyCaption="Event timeline"
-        emptyColumns={["When", "Source", "Change"]}
-      >
+      <LiveGate emptyLayout="list" emptyCaption="Events" emptyColumns={["When", "Source", "Change"]}>
         {(org) =>
           mode === "health" ? (
             <SiteSelect organizationId={org.organizationId}>
@@ -75,38 +86,55 @@ function HealthTimeline({
     organizationId: id<"organizations">(organizationId),
     siteId,
   });
+  const [peek, setPeek] = useState<HealthRow | null>(null);
   if (data === undefined) {
     return <PageSkeleton rows={5} label="Loading health timeline" />;
   }
   return (
     <div className="stack">
       <p className="meta">
-        <strong>{siteName}</strong>
+        <Link to={`/sites/${siteId}`}>{siteName}</Link>
+        {" · "}
+        <Link to={`/alarms?site=${siteId}`}>Alarms</Link>
         {data.capped ? " · newest page" : ""}
       </p>
       <DataTable
-        caption={`Health transitions at ${siteName}`}
-        rows={data.rows}
+        dense
+        caption={`Events · ${siteName}`}
+        rows={data.rows as HealthRow[]}
         getRowKey={(row) => row._id}
-        empty="No health transitions are stored for this site yet."
+        empty="No health transitions for this site."
         columns={[
           {
             key: "at",
-            header: "When (UTC)",
-            render: (row) => <span className="tech">{new Date(row.at).toISOString()}</span>,
+            header: "When",
+            render: (row) => (
+              <span className="tech">
+                {new Date(row.at).toLocaleString(undefined, {
+                  month: "short",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            ),
           },
           {
             key: "device",
             header: "Gateway",
-            render: (row) => <Link to={`/gateways/${row.deviceId}`}>{row.deviceName}</Link>,
+            render: (row) => (
+              <Link to={`/gateways/${row.deviceIdentity ?? row.deviceId}`}>{row.deviceName}</Link>
+            ),
           },
           {
-            key: "identity",
-            header: "Identity",
-            render: (row) =>
-              row.deviceIdentity ? <span className="tech">{row.deviceIdentity}</span> : "—",
+            key: "reason",
+            header: "Event",
+            render: (row) => (
+              <button type="button" className="text-btn" onClick={() => setPeek(row)}>
+                {row.reason}
+              </button>
+            ),
           },
-          { key: "reason", header: "Reason", render: (row) => row.reason },
           {
             key: "change",
             header: "Change",
@@ -122,6 +150,37 @@ function HealthTimeline({
           },
         ]}
       />
+      <Drawer open={Boolean(peek)} title="Health event" side="right" onClose={() => setPeek(null)}>
+        {peek ? (
+          <div className="stack alarm-peek">
+            <h3>{peek.reason}</h3>
+            <dl className="facts">
+              <dt>When</dt>
+              <dd className="tech">{new Date(peek.at).toLocaleString()}</dd>
+              <dt>Gateway</dt>
+              <dd>
+                <Link to={`/gateways/${peek.deviceIdentity ?? peek.deviceId}`} onClick={() => setPeek(null)}>
+                  {peek.deviceName}
+                </Link>
+              </dd>
+              <dt>Site</dt>
+              <dd>
+                <Link to={`/sites/${siteId}`} onClick={() => setPeek(null)}>
+                  {siteName}
+                </Link>
+              </dd>
+              <dt>Cloud</dt>
+              <dd>{peek.gatewayTo ? <StatusMark tone="neutral">{peek.gatewayTo}</StatusMark> : "—"}</dd>
+              <dt>Modbus</dt>
+              <dd>{peek.modbusTo ? <StatusMark tone="neutral">{peek.modbusTo}</StatusMark> : "—"}</dd>
+              <dt>Freshness</dt>
+              <dd>{peek.freshnessTo ?? "—"}</dd>
+              <dt>Overall</dt>
+              <dd>{peek.overallTo ?? "—"}</dd>
+            </dl>
+          </div>
+        ) : null}
+      </Drawer>
     </div>
   );
 }
@@ -139,20 +198,21 @@ function AuditList({ organizationId }: { organizationId: string }) {
   return (
     <div className="stack">
       <DataTable
-        caption="Organization audit history"
+        dense
+        caption="Audit"
         rows={page}
         getRowKey={(row) => row._id}
-        empty="No audit events are stored for this organization."
+        empty="No audit events."
         columns={[
-          { key: "time", header: "Time", render: (row) => auditTime(row.at) },
+          { key: "time", header: "Time", render: (row) => <span className="tech">{auditTime(row.at)}</span> },
           { key: "action", header: "Action", render: (row) => row.action },
           { key: "actor", header: "Actor", render: (row) => auditActor(row.actorToken) },
-          { key: "target", header: "Resource", render: (row) => row.target },
+          { key: "target", header: "Resource", render: (row) => <span className="tech">{row.target}</span> },
         ]}
       />
       {data.isDone === false && data.continueCursor ? (
         <button type="button" className="btn btn-secondary" onClick={() => setCursor(data.continueCursor)}>
-          Older events
+          Older
         </button>
       ) : null}
     </div>

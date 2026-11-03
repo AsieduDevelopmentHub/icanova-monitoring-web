@@ -5,6 +5,8 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { PERMISSIONS } from "../../convex/permissions";
 import { accessMessage } from "../fleet/access";
 import { OrgGate } from "../admin/OrgGate";
+import { DataTable } from "../ui/DataTable";
+import { Dialog } from "../ui/Overlay";
 import { PageSkeleton } from "../ui/Skeleton";
 
 export function RolesAdmin() {
@@ -19,6 +21,7 @@ function RoleEditor({ organizationId }: { organizationId: Id<"organizations"> })
   const roles = useQuery(api.organizations.listRoles, { organizationId });
   const createRole = useMutation(api.organizations.createRole);
   const updateRole = useMutation(api.organizations.updateRole);
+  const [open, setOpen] = useState(false);
   const [roleId, setRoleId] = useState("");
   const [name, setName] = useState("");
   const [selected, setSelected] = useState<string[]>(["view.dashboard"]);
@@ -29,13 +32,24 @@ function RoleEditor({ organizationId }: { organizationId: Id<"organizations"> })
   }
   const current = roles.find((role) => role.roleId === roleId);
 
-  function load(nextId: string) {
-    setRoleId(nextId);
+  function openNew() {
+    setRoleId("");
+    setName("");
+    setSelected(["view.dashboard"]);
+    setError(null);
+    setOpen(true);
+  }
+
+  function openEdit(nextId: string) {
     const role = roles?.find((item) => item.roleId === nextId);
-    if (role) {
-      setName(role.name);
-      setSelected(role.permissions);
+    if (!role) {
+      return;
     }
+    setRoleId(nextId);
+    setName(role.name);
+    setSelected(role.permissions);
+    setError(null);
+    setOpen(true);
   }
 
   function toggle(permission: string) {
@@ -57,9 +71,9 @@ function RoleEditor({ organizationId }: { organizationId: Id<"organizations"> })
       if (current) {
         await updateRole({ organizationId, roleId: current.roleId, name, permissions: selected });
       } else {
-        const created = await createRole({ organizationId, name, permissions: selected });
-        setRoleId(created);
+        await createRole({ organizationId, name, permissions: selected });
       }
+      setOpen(false);
     } catch (caught) {
       setError(accessMessage(caught));
     } finally {
@@ -68,39 +82,61 @@ function RoleEditor({ organizationId }: { organizationId: Id<"organizations"> })
   }
 
   return (
-    <form className="stack" onSubmit={onSubmit}>
-      <label className="filter-field">
-        <span>Existing role</span>
-        <select value={roleId} onChange={(event) => load(event.target.value)}>
-          <option value="">New role</option>
-          {roles.map((role) => (
-            <option key={role.roleId} value={role.roleId}>
-              {role.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="filter-field">
-        <span>Name</span>
-        <input value={name} onChange={(event) => setName(event.target.value)} />
-      </label>
-      <fieldset>
-        <legend>Permissions</legend>
-        {PERMISSIONS.map((permission) => (
-          <label key={permission} className="check">
-            <input
-              type="checkbox"
-              checked={selected.includes(permission)}
-              onChange={() => toggle(permission)}
-            />
-            {permission}
+    <div className="stack">
+      <div className="ops-toolbar">
+        <button type="button" className="btn btn-primary" onClick={openNew}>
+          New role
+        </button>
+      </div>
+      <DataTable
+        dense
+        caption="Roles"
+        rows={roles}
+        getRowKey={(row) => row.roleId}
+        empty="No roles."
+        columns={[
+          { key: "name", header: "Role", render: (row) => row.name },
+          {
+            key: "perms",
+            header: "Permissions",
+            render: (row) => <span className="tech">{row.permissions.length}</span>,
+          },
+          {
+            key: "edit",
+            header: "",
+            render: (row) => (
+              <button type="button" className="text-btn" onClick={() => openEdit(row.roleId)}>
+                Edit
+              </button>
+            ),
+          },
+        ]}
+      />
+      <Dialog open={open} title={current ? "Edit role" : "New role"} onClose={() => setOpen(false)}>
+        <form className="stack" onSubmit={onSubmit}>
+          <label className="field">
+            <span>Name</span>
+            <input value={name} onChange={(event) => setName(event.target.value)} required />
           </label>
-        ))}
-      </fieldset>
-      <button type="submit" disabled={pending}>
-        {pending ? "Saving…" : current ? "Update role" : "Create role"}
-      </button>
-      {error ? <p className="err">{error}</p> : null}
-    </form>
+          <fieldset>
+            <legend>Permissions</legend>
+            {PERMISSIONS.map((permission) => (
+              <label key={permission} className="check">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(permission)}
+                  onChange={() => toggle(permission)}
+                />
+                {permission}
+              </label>
+            ))}
+          </fieldset>
+          {error ? <p className="err">{error}</p> : null}
+          <button type="submit" className="btn btn-primary" disabled={pending}>
+            {pending ? "Saving…" : current ? "Update" : "Create"}
+          </button>
+        </form>
+      </Dialog>
+    </div>
   );
 }

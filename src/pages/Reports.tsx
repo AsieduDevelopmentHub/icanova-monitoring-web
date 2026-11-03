@@ -1,14 +1,27 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { OrgGate } from "../admin/OrgGate";
 import { accessMessage } from "../fleet/access";
-import { Panel } from "../ui/Panel";
+import { FilterBar, FilterSelect } from "../ui/FilterBar";
+import { DataTable } from "../ui/DataTable";
+import { EmptyState } from "../ui/EmptyState";
 
 type ReportKind = "alarms" | "maintenance" | "devices" | "deliveries" | "telemetry" | "health";
 type ReportFormat = "csv" | "xlsx" | "pdf";
 
+const KINDS: { value: ReportKind; label: string }[] = [
+  { value: "alarms", label: "Alarms" },
+  { value: "health", label: "Gateway health" },
+  { value: "telemetry", label: "Site summary" },
+  { value: "devices", label: "Gateways" },
+  { value: "maintenance", label: "Maintenance" },
+  { value: "deliveries", label: "Deliveries" },
+];
+
+/** Type C analytics — filters, build, download table. */
 export function Reports() {
   return (
     <OrgGate title="Reports" offline="No export is running.">
@@ -45,42 +58,75 @@ function ExportForm({ organizationId }: { organizationId: Id<"organizations"> })
     }
   }
 
+  const resultRows = file
+    ? [
+        {
+          id: "ready",
+          kind: file.kind,
+          format: file.format,
+          rows: String(file.rowCount),
+        },
+      ]
+    : [];
+
   return (
-    <Panel title="Export">
-      <form className="filter-bar" onSubmit={onSubmit}>
-        <label className="filter-field">
-          <span>Kind</span>
-          <select value={kind} onChange={(event) => setKind(event.target.value as ReportKind)}>
-            <option value="alarms">Alarm report</option>
-            <option value="health">Gateway health transitions</option>
-            <option value="telemetry">Site operational summary</option>
-            <option value="devices">Gateway inventory</option>
-            <option value="maintenance">Maintenance</option>
-            <option value="deliveries">Notification deliveries</option>
-          </select>
-        </label>
-        <label className="filter-field">
-          <span>Format</span>
-          <select value={format} onChange={(event) => setFormat(event.target.value as ReportFormat)}>
-            <option value="csv">CSV</option>
-            <option value="xlsx">Excel</option>
-            <option value="pdf">PDF</option>
-          </select>
-        </label>
-        <button type="submit" className="btn btn-primary" disabled={pending}>
-          {pending ? "Building…" : "Build report"}
-        </button>
+    <div className="stack analytics-page">
+      <p className="meta">
+        <Link to="/trends">Trends</Link>
+        {" · "}
+        <Link to="/alarms">Alarms</Link>
+      </p>
+      <form className="stack" onSubmit={onSubmit}>
+        <FilterBar label="Report filters">
+          <FilterSelect
+            label="Kind"
+            value={kind}
+            onChange={(value) => setKind((KINDS.find((item) => item.value === value)?.value as ReportKind) ?? "alarms")}
+            options={KINDS}
+          />
+          <FilterSelect
+            label="Format"
+            value={format}
+            onChange={(value) => setFormat(value === "xlsx" || value === "pdf" ? value : "csv")}
+            options={[
+              { value: "csv", label: "CSV" },
+              { value: "xlsx", label: "Excel" },
+              { value: "pdf", label: "PDF" },
+            ]}
+          />
+          <button type="submit" className="btn btn-primary" disabled={pending}>
+            {pending ? "Building…" : "Build"}
+          </button>
+        </FilterBar>
       </form>
-      {capped ? (
-        <p className="meta">Row limit reached.</p>
-      ) : null}
-      {file ? (
-        <button type="button" className="btn btn-secondary" onClick={() => downloadReport(file)}>
-          Download {file.kind} ({file.rowCount} rows)
-        </button>
-      ) : null}
+      {capped ? <p className="meta">Row limit reached.</p> : null}
       {error ? <p className="err">{error}</p> : null}
-    </Panel>
+      {file ? (
+        <DataTable
+          dense
+          caption="Export ready"
+          rows={resultRows}
+          getRowKey={(row) => row.id}
+          empty="No export."
+          columns={[
+            { key: "kind", header: "Kind", render: (row) => row.kind },
+            { key: "format", header: "Format", render: (row) => row.format.toUpperCase() },
+            { key: "rows", header: "Rows", align: "right", render: (row) => row.rows },
+            {
+              key: "download",
+              header: "",
+              render: () => (
+                <button type="button" className="btn btn-secondary" onClick={() => downloadReport(file)}>
+                  Download
+                </button>
+              ),
+            },
+          ]}
+        />
+      ) : (
+        <EmptyState title="No export yet" body="Choose a kind and build a report." />
+      )}
+    </div>
   );
 }
 
