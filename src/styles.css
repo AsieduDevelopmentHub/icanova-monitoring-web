@@ -932,6 +932,18 @@ a.brand-lockup:hover .brand-mark {
   background: var(--line);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
+  min-width: 0;
+  max-width: 100%;
+}
+
+/** Odd-count strips (e.g. Critical / Warning / Comm) — one equal row, no dead cell. */
+.metric-grid.metric-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.metric-grid.metric-grid-3 .metric {
+  min-width: 0;
+  padding-inline: var(--space-3);
 }
 
 .metric {
@@ -1389,6 +1401,10 @@ table.cfg td.num {
 
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metric-grid.metric-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .metric-grid.metric-grid-primary {

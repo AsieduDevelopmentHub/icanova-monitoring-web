@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
-import { requireName, requirePermission } from "./identity";
+import { requireName, requirePermission, resolveAppUser } from "./identity";
 import { requireDevice } from "./devices";
 import { boundedPage } from "./limits";
 import { noteGenerator } from "./siteSummary";
@@ -93,7 +93,6 @@ export const resolveKey = query({
       return null;
     }
     const code = key.toLowerCase();
-    const { resolveAppUser } = await import("./identity");
     const resolved = await resolveAppUser(ctx);
     if (!resolved) {
       return null;

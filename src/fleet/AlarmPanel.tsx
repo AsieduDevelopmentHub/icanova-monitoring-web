@@ -62,7 +62,7 @@ function SiteAlarmBody({
     <section className="ops-section stack" aria-labelledby="ops-alarms-title">
       <h2 id="ops-alarms-title">Alarms</h2>
       {summary.banner ? <p className="empty">{summary.banner}</p> : null}
-      <div className="metric-grid">
+      <div className="metric-grid metric-grid-3">
         <Metric label="Critical" value={String(summary.critical)} />
         <Metric label="Warning" value={String(summary.warning)} />
         <Metric label="Comm" value={String(summary.communication)} />
