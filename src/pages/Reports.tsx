@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from "react";
-import { Link } from "react-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -9,15 +8,6 @@ import { Panel } from "../ui/Panel";
 
 type ReportKind = "alarms" | "maintenance" | "devices" | "deliveries" | "telemetry" | "health";
 type ReportFormat = "csv" | "xlsx" | "pdf";
-
-const KIND_HELP: Record<ReportKind, string> = {
-  alarms: "Latest alarm rows for this organization (bounded). Includes state and severity when stored.",
-  maintenance: "Maintenance records for this organization (bounded).",
-  devices: "Registered gateways/devices with identity and site id (bounded).",
-  deliveries: "Notification delivery attempts (bounded).",
-  telemetry: "Stored site summary tallies — not energy totals and not a full history dump.",
-  health: "Recent gateway health transitions for the organization (bounded). Not an uptime percentage.",
-};
 
 export function Reports() {
   return (
@@ -56,7 +46,7 @@ function ExportForm({ organizationId }: { organizationId: Id<"organizations"> })
   }
 
   return (
-    <Panel title="Export" description={KIND_HELP[kind]}>
+    <Panel title="Export">
       <form className="filter-bar" onSubmit={onSubmit}>
         <label className="filter-field">
           <span>Kind</span>
@@ -82,10 +72,7 @@ function ExportForm({ organizationId }: { organizationId: Id<"organizations"> })
         </button>
       </form>
       {capped ? (
-        <div className="notice" role="note">
-          <strong>Bounded export.</strong> This file stopped at the row limit. It is not a complete
-          operational record.
-        </div>
+        <p className="meta">Row limit reached.</p>
       ) : null}
       {file ? (
         <button type="button" className="btn btn-secondary" onClick={() => downloadReport(file)}>
@@ -93,12 +80,6 @@ function ExportForm({ organizationId }: { organizationId: Id<"organizations"> })
         </button>
       ) : null}
       {error ? <p className="err">{error}</p> : null}
-      <p className="meta">
-        Build and download require <code className="tech">export.reports</code>.{" "}
-        <Link to="/events">Open event timeline</Link>
-        {" · "}
-        <Link to="/alarms">Alarm center</Link>
-      </p>
     </Panel>
   );
 }

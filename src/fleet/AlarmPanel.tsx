@@ -28,7 +28,7 @@ export function SiteAlarmPanel({
   permissions: readonly string[];
 }) {
   if (!permissions.includes("view.alarms")) {
-    return <p className="meta">Alarm records require view.alarms.</p>;
+    return null;
   }
   return (
     <FleetBoundary>
@@ -102,9 +102,6 @@ function SiteAlarmBody({
           },
         ]}
       />
-      <p className="meta">
-        <Link to="/alarms">Alarm management</Link>
-      </p>
     </section>
   );
 }
@@ -130,7 +127,7 @@ export function GeneratorAlarms({
     return <Skeleton lines={5} />;
   }
   if (!allowed) {
-    return <p className="meta">Alarm records require view.alarms.</p>;
+    return null;
   }
   if (data === undefined) {
     return <Skeleton lines={5} />;

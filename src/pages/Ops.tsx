@@ -102,9 +102,7 @@ function Overview({ organizationId, orgName }: { organizationId: string; orgName
 
   return (
     <div className="stack">
-      <p className="meta">
-        Organization {orgName}. Sections are independent. {data.dimensionsNote}
-      </p>
+      <p className="meta">{orgName}</p>
 
       {isDenied(data.fleet) ? (
         <SectionDenied title="Fleet health" section={data.fleet} />
@@ -230,8 +228,7 @@ function Overview({ organizationId, orgName }: { organizationId: string; orgName
           const notifications = asRecord(data.notifications);
           return (
             <>
-              <h2>Notifications (recent sample)</h2>
-              <p className="meta">{notifications.note}</p>
+              <h2>Notifications</h2>
               <div className="metric-grid">
                 <Metric label="Pending" value={String(notifications.pending)} />
                 <Metric label="Sent" value={String(notifications.sent)} />
@@ -258,9 +255,8 @@ function Overview({ organizationId, orgName }: { organizationId: string; orgName
             <>
               <h2>Alarms</h2>
               <Metric
-                label="Active/ack in recent page"
+                label="Active / ack"
                 value={String(alarms.activeOrAckInRecentPage)}
-                note={alarms.note}
               />
             </>
           );
@@ -275,8 +271,7 @@ function Overview({ organizationId, orgName }: { organizationId: string; orgName
           const rows = (audit.rows ?? []) as Array<{ action: string; target: string; at: number }>;
           return (
             <>
-              <h2>Audit sample</h2>
-              <p className="meta">{audit.note}</p>
+              <h2>Audit</h2>
               {rows.length === 0 ? (
                 <p className="empty">No audit rows yet.</p>
               ) : (

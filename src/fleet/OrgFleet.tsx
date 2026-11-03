@@ -77,9 +77,7 @@ function SignedFleet() {
           }
         />
       </FilterBar>
-      {selected ? (
-        <p className="meta">Displayed permissions: {selected.permissions.join(", ") || "none"}.</p>
-      ) : (
+      {selected ? null : (
         <EmptyState
           title="No organization linked"
           body="Ask a platform administrator to create an organization and grant your account access."

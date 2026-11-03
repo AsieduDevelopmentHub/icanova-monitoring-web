@@ -163,7 +163,7 @@ function OrgInventory() {
           <RegisterGateway organizationId={orgId} siteFilter={siteFilter} onSiteFilter={setSiteParam} />
         </FleetBoundary>
       ) : (
-        <p className="meta">Gateway registration requires manage.devices.</p>
+        null
       )}
       <FleetBoundary key={`${orgId}:${search}:${statusFilter}:${siteFilter}`}>
         <DeviceTable
@@ -197,9 +197,7 @@ function OrgHealth({ organizationId }: { organizationId: string }) {
   }
   if (!summary.ready) {
     return (
-      <p className="meta">
-        Fleet health tallies appear after the first heartbeat or accepted ingest for a device.
-      </p>
+      <p className="empty">No heartbeats yet.</p>
     );
   }
   return (
@@ -274,10 +272,6 @@ function RegisterGateway({
   return (
     <section className="ops-section" aria-labelledby="gw-register-title">
       <h2 id="gw-register-title">Register gateway</h2>
-      <p className="meta">
-        Product: iCaNova Edge Gateway. Identity must match the device MAC used for ingest. Duplicate
-        identities are rejected inside the organization.
-      </p>
       {page.length === 0 ? (
         <p className="empty">
           No sites yet. Create one on <Link to="/sites">Sites</Link> or Generators first.
@@ -460,10 +454,6 @@ function DeviceTable({
           Next page
         </button>
       ) : null}
-      <p className="meta">
-        Firmware version is not stored. Configuration status is Soft-AP local only — see gateway
-        detail.
-      </p>
     </div>
   );
 }

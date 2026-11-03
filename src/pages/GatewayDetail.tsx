@@ -184,7 +184,6 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
       </Panel>
 
       <Panel title="Configuration">
-        <p className="meta">Modbus and Soft-AP settings apply on the gateway only.</p>
         <dl className="facts">
           <dt>Desired configuration</dt>
           <dd>Not stored as a cloud desired-state document</dd>
@@ -250,7 +249,6 @@ function HealthEvents({ deviceId }: { deviceId: Id<"devices"> }) {
   return (
     <section className="ops-section" aria-labelledby="gw-activity-title">
       <h2 id="gw-activity-title">Activity</h2>
-      <p className="meta">Health transitions for this gateway (heartbeat, ingest, sweep).</p>
       {page.page.length === 0 ? (
         <p className="empty">No health transitions are stored yet.</p>
       ) : (

@@ -232,7 +232,7 @@ function OrgAlarms({
         />
       </FilterBar>
       {scope?.sitesCapped || scope?.generatorsCapped ? (
-        <p className="meta">The site or generator filter lists the first 50 names.</p>
+        <p className="meta">First 50.</p>
       ) : null}
       <FleetBoundary key={`${organizationId}:${status}:${severity}:${category}:${siteValue}:${generatorValue}:${search}`}>
         <AlarmTable organizationId={organizationId} filter={filter} />
@@ -446,7 +446,7 @@ function AlarmTable({
           ))
         )}
       </div>
-      <p className="meta">{copy.note}</p>
+      {copy.note ? <p className="meta">{copy.note}</p> : null}
       {!narrowed && data.continueCursor && !data.isDone ? (
         <button type="button" onClick={() => setCursor(data.continueCursor)}>
           Next page

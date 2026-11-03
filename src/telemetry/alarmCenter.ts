@@ -153,9 +153,7 @@ export function alarmListCopy(args: {
         : "No alarm records match this filter.";
   return {
     empty,
-    note: args.capped
-      ? "This filter stopped at 200 stored alarms. The rows shown are not an organization total."
-      : "The rows shown are not an organization total.",
+    note: args.capped ? "Stopped at 200." : "",
   };
 }
 
@@ -185,9 +183,7 @@ export function siteAlarmSummary(rows: AlarmRecord[], capped: boolean) {
     recent: rows.slice(0, 5),
     empty: rows.length === 0,
     noActive: rows.every((row) => row.status !== "active"),
-    note: capped
-      ? "Latest 50 alarm records for this site. Not an organization total."
-      : "Alarm records loaded for this site. Not an organization total.",
+    note: capped ? "Latest 50." : "",
     banner: rows.length === 0
       ? "No alarm records are stored for this site."
       : rows.every((row) => row.status !== "active")

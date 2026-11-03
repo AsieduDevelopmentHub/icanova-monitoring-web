@@ -140,9 +140,6 @@ export function SiteLocationPicker({
   return (
     <section className="ops-section" aria-labelledby="site-location-title">
       <h2 id="site-location-title">Location</h2>
-      <p className="meta">
-        Click the map, use browser GPS, or enter coordinates. Saved on the site for fleet maps.
-      </p>
       <div ref={mapRef} className="site-map" role="presentation" />
       <form className="filter-bar" onSubmit={(event) => void onSubmit(event)}>
         <label className="filter-field">

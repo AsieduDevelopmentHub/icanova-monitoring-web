@@ -290,13 +290,6 @@ function Settings({ organizationId }: { organizationId: Id<"organizations"> }) {
           }}
         >
           <h2>Organization defaults</h2>
-          <p className="meta">
-            Current minimum severity {settings.minSeverity}. Escalation{" "}
-            {settings.escalateAfterMinutes == null
-              ? "disabled"
-              : `${settings.escalateAfterMinutes} min`}
-            .
-          </p>
           <FilterSelect
             label="Minimum severity"
             value={minSeverity}
@@ -314,7 +307,7 @@ function Settings({ organizationId }: { organizationId: Id<"organizations"> }) {
           <button type="submit">Save organization settings</button>
         </form>
       ) : (
-        <p className="meta">Organization settings require configure.notifications.</p>
+        null
       )}
       <Panel title="Event catalog">
         <DataTable
@@ -335,9 +328,6 @@ function Settings({ organizationId }: { organizationId: Id<"organizations"> }) {
         />
       </Panel>
       <h2>Policies</h2>
-      <p className="meta">
-        Channel × event matrix. Push delivery requires VAPID env plus an active browser subscription.
-      </p>
       {EVENTS.map((eventName) => (
         <div key={eventName} className="filter-bar">
           <span title={eventName}>{labelForNotifyEvent(eventName)}</span>
@@ -512,10 +502,6 @@ function Delivery({ organizationId }: { organizationId: Id<"organizations"> }) {
   return (
     <div className="stack">
       <h2>Delivery history</h2>
-      <p className="meta">
-        Outbox outcomes for email, SMS, and browser push. Accepted by a push service does not mean the
-        notification was displayed or read.
-      </p>
       <DataTable
         caption="Notification attempts"
         rows={deliveries.page}
@@ -560,7 +546,6 @@ function Delivery({ organizationId }: { organizationId: Id<"organizations"> }) {
           },
         ]}
       />
-      <p className="meta">Retries stop after 3 attempts. Provider keys and push endpoints are never shown.</p>
       {error ? <p className="err">{error}</p> : null}
       <RequestButton
         onRequest={(userId) =>
@@ -618,9 +603,6 @@ function PreferenceForm({
       }}
     >
       <h2>Your destinations</h2>
-      <p className="meta">
-        Creating an in-app notification is separate from delivering email, SMS, or browser push.
-      </p>
       <label className="check">
         <input
           type="checkbox"

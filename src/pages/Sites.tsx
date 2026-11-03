@@ -96,7 +96,7 @@ function SiteList({
           />
         </>
       ) : (
-        <p className="meta">Provisioning requires manage.sites and manage.devices.</p>
+        null
       )}
       {page.length === 0 ? (
         <EmptyState
@@ -129,7 +129,6 @@ function SiteList({
       />
       {sites.isDone === false && sites.continueCursor ? (
         <p className="meta">
-          This is not every site.{" "}
           <button type="button" className="btn btn-secondary" onClick={() => setCursor(sites.continueCursor)}>
             Next sites
           </button>
@@ -253,13 +252,12 @@ function SiteDetail({
           }
         }}
       />
-      <p className="meta">{registrationLabel(registered.length, generators.isDone !== false)}</p>
       <p className="meta">
+        {registrationLabel(registered.length, generators.isDone !== false)}
         {summary.ready
-          ? `Site summary: ${summary.generators === null ? "generators not fully counted" : `${summary.generators} generators`}, ${summary.reporting} reporting, gateways ${summary.gatewayOnline ?? 0} online / ${summary.gatewayOffline ?? 0} offline, Modbus ${summary.linkOk} ok / ${summary.linkFail} fail / ${summary.linkDegraded} degraded, telemetry fresh ${summary.telemetryFresh ?? 0} / stale ${summary.telemetryStale ?? 0}.`
-          : "Site summary is stored when a generator is registered or a sample arrives."}{" "}
-        This page of Modbus links: {scope.modbusOk} ok, {scope.modbusFail} fail, {scope.modbusDegraded}{" "}
-        degraded, {scope.unknown} unknown. {scope.note}
+          ? ` · ${summary.generators ?? "—"} gen · ${summary.reporting} reporting · GW ${summary.gatewayOnline ?? 0}/${summary.gatewayOffline ?? 0} · Modbus ${scope.modbusOk}/${scope.modbusFail}/${scope.modbusDegraded}`
+          : ""}
+        {scope.note ? ` · ${scope.note}` : ""}
       </p>
 
       <section className="ops-section" aria-labelledby="site-gateways-title">
@@ -317,9 +315,6 @@ function SiteDetail({
             },
           ]}
         />
-        <p className="meta">
-          <Link to="/gateways">Register another gateway</Link>
-        </p>
       </section>
 
       <DataTable

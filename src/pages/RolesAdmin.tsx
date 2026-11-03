@@ -101,7 +101,6 @@ function RoleEditor({ organizationId }: { organizationId: Id<"organizations"> })
         {pending ? "Saving…" : current ? "Update role" : "Create role"}
       </button>
       {error ? <p className="err">{error}</p> : null}
-      <p className="meta">Saving checks manage.roles. A hidden checkbox is not the authorization.</p>
     </form>
   );
 }

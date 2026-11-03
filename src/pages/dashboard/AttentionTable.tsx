@@ -98,7 +98,6 @@ export function AttentionTable({
     <section className="cc-attention" aria-label="Generators requiring attention">
       <header className="cc-section-head">
         <h2 className="cc-section-title">Attention</h2>
-        <p className="cc-section-desc">Generators with alarms, link faults, or stale telemetry.</p>
       </header>
       <DataTable
         dense

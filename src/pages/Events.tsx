@@ -122,11 +122,6 @@ function HealthTimeline({
           },
         ]}
       />
-      <p className="meta">
-        <Link to="/gateways">Gateway inventory</Link>
-        {" · "}
-        <Link to="/reports">Export reports</Link>
-      </p>
     </div>
   );
 }

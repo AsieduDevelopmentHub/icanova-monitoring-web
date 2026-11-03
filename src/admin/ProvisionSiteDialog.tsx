@@ -96,8 +96,7 @@ export function ProvisionSiteDialog({
     <Dialog open={open} title="Provision site" onClose={close}>
       <div className="stack provision-wizard">
         <p className="meta">
-          Step {step === "site" ? "1" : step === "gateway" ? "2" : "3"} of 3 · Site code format:{" "}
-          {siteCodeFormat === "numeric" ? "numeric" : "text"}
+          {step === "site" ? "1" : step === "gateway" ? "2" : "3"} / 3
         </p>
 
         {step === "site" ? (

@@ -189,10 +189,6 @@ function RequestMemberDialog({
   return (
     <Dialog open={open} title="Request user" onClose={onClose}>
       <form className="stack" onSubmit={(event) => void onSubmit(event)}>
-        <p className="meta">
-          Submits a member request. Confirming it provisions the account and prepares the email
-          notification.
-        </p>
         <label className="field">
           <span>Full name</span>
           <input name="name" required disabled={pending} />

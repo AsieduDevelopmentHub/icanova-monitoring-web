@@ -37,7 +37,7 @@ export function FirmwareReleasesPanel({
   const [message, setMessage] = useState<string | null>(null);
 
   if (!canManage) {
-    return <p className="meta">Publishing firmware requires manage.devices.</p>;
+    return null;
   }
 
   async function onPublish(event: FormEvent) {

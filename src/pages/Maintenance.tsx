@@ -88,7 +88,6 @@ function Records({ organizationId }: { organizationId: Id<"organizations"> }) {
           <input value={notes} onChange={(event) => setNotes(event.target.value)} />
         </label>
         <button type="submit">Record maintenance</button>
-        <p className="meta">Performed time stays empty unless a source clock is supplied. Recording checks manage.maintenance.</p>
       </form>
       {error ? <p className="err">{error}</p> : null}
     </div>

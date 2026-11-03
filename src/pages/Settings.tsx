@@ -52,17 +52,11 @@ export function Settings() {
       ) : null}
 
       <Panel title="Gateway">
-        <p className="meta">
-          Soft-AP Modbus and Wi-Fi stay on the device — <Link to="/local/configure">Configure</Link>.
-        </p>
+        <Link to="/local/configure">Configure</Link>
       </Panel>
 
       {configured && isAuthenticated && org ? (
-        <Panel title="Firmware releases">
-          <p className="meta">
-            Publish ESP32-C3 builds for cloud OTA. Devices check{" "}
-            <span className="tech">/ncu/ota/check</span> with their ingest bearer.
-          </p>
+        <Panel title="Firmware">
           <FirmwareReleasesPanel
             organizationId={id<"organizations">(org.organizationId)}
             canManage={canManageFirmware}
@@ -72,8 +66,7 @@ export function Settings() {
 
       <Panel title="Retention">
         <p className="meta">
-          Telemetry buckets ~7 days · health events ~14 days. Channels:{" "}
-          <Link to="/notifications">Notifications</Link>.
+          Telemetry ~7d · health ~14d · <Link to="/notifications">Notifications</Link>
         </p>
       </Panel>
     </section>
@@ -141,10 +134,6 @@ function SiteCodeFormatPanel({
 
   return (
     <Panel title="Site codes">
-      <p className="meta">
-        Human site codes are shown in the UI instead of internal database ids. Format applies to new
-        provisions.
-      </p>
       <div className="filter-bar">
         <label className="filter-field">
           <span>Format</span>
@@ -162,7 +151,7 @@ function SiteCodeFormatPanel({
             Backfill missing codes
           </button>
         ) : (
-          <p className="meta">Changing format requires manage.sites.</p>
+          <span className="meta">Read only</span>
         )}
       </div>
       {error ? <p className="err">{error}</p> : null}

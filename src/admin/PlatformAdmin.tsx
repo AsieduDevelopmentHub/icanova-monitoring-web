@@ -50,7 +50,6 @@ export function PlatformAdmin() {
     <section className="page">
       <header className="page-head">
         <h1>Platform admin</h1>
-        <p>Create organizations and seed administrators. Normal users cannot self-provision orgs.</p>
       </header>
       <div className="stack">
         <AttachSelfPanel secret={capable.capable ? undefined : secret} />
@@ -103,11 +102,7 @@ function AttachSelfPanel({ secret }: { secret?: string }) {
   }
 
   return (
-    <Panel title="Activate this platform account">
-      <p className="meta">
-        Platform admin email alone does not grant org membership. Attach yourself to an organization
-        to clear “Account not yet activated.”
-      </p>
+    <Panel title="Attach account">
       {orgs.length === 0 ? (
         <p className="meta">No organizations yet — create one below first.</p>
       ) : (
@@ -166,11 +161,7 @@ function DemoSeedPanel({ secret }: { secret?: string }) {
   }
 
   return (
-    <Panel title="Demo fleet seed">
-      <p className="meta">
-        Creates Demo Power Ghana with 56 regional sites, linked gateways, health/telemetry, and
-        Admin / Sub-admin / Operator / Viewer users plus one unactivated account.
-      </p>
+    <Panel title="Demo fleet">
       {error ? <p className="err">{error}</p> : null}
       {ok ? <p className="notice" role="status">{ok}</p> : null}
       <button type="button" className="btn btn-primary" disabled={pending} onClick={() => void onSeed()}>

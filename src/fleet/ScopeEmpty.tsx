@@ -11,21 +11,21 @@ export type ScopeEmptyLayout = "command" | "list" | "desk";
 const COPY: Record<ScopeEmptyReason, { title: string; body: string; action?: ReactNode }> = {
   organization: {
     title: "Account not yet activated",
-    body: "Your account is signed in but is not a member of an organization yet. Platform admins can create or seed an organization from Platform admin; other users need an administrator to grant membership.",
+    body: "No organization membership on this account.",
   },
   sites: {
     title: "No sites yet",
-    body: "Provision a site with its gateway in one workflow from the Sites page.",
-    action: <Link to="/sites">Open Sites</Link>,
+    body: "Provision a site and gateway together.",
+    action: <Link to="/sites">Sites</Link>,
   },
   unsigned: {
     title: "Sign in required",
-    body: "Live organization data is not loaded until a session is present.",
+    body: "",
     action: <Link to="/auth/login">Sign in</Link>,
   },
   offline: {
     title: "Live data unavailable",
-    body: "Convex is not configured in this build, so organization queries are not running.",
+    body: "",
   },
 };
 
@@ -96,24 +96,6 @@ export function ScopeEmpty({
             trailing={<span className="status-strip-pill tone-offline">{copy.title}</span>}
           />
           <EmptyState title={copy.title} body={copy.body} action={copy.action} />
-          <div className="scope-empty-grid">
-            <div className="panel scope-empty-panel">
-              <div className="panel-head">
-                <h2 className="panel-title">Operational view</h2>
-              </div>
-              <div className="panel-body">
-                <p className="meta">No generators to display.</p>
-              </div>
-            </div>
-            <div className="panel scope-empty-panel">
-              <div className="panel-head">
-                <h2 className="panel-title">Attention</h2>
-              </div>
-              <div className="panel-body">
-                <p className="meta">Nothing requires attention.</p>
-              </div>
-            </div>
-          </div>
           <DataTable
             caption="Fleet rows"
             rows={[]}
@@ -149,24 +131,6 @@ export function ScopeEmpty({
       {layout === "desk" ? (
         <>
           <EmptyState title={copy.title} body={copy.body} action={copy.action} />
-          <div className="scope-empty-grid desk">
-            <div className="panel scope-empty-panel">
-              <div className="panel-head">
-                <h2 className="panel-title">Overview</h2>
-              </div>
-              <div className="panel-body">
-                <p className="meta">Counts appear after an organization is linked.</p>
-              </div>
-            </div>
-            <div className="panel scope-empty-panel">
-              <div className="panel-head">
-                <h2 className="panel-title">Activity</h2>
-              </div>
-              <div className="panel-body">
-                <p className="meta">No operational rows yet.</p>
-              </div>
-            </div>
-          </div>
         </>
       ) : null}
     </div>

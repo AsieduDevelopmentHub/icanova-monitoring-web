@@ -26,17 +26,14 @@ export function EventsSection({
         />
       ) : (
         <Panel title="Alarms" actions={<Link to="/alarms">Alarm desk</Link>}>
-          <p className="meta">
-            All Sites view shows fleet alarm pressure on the status strip. Open the alarm desk for
-            acknowledgment and filters.
-          </p>
+          <p className="empty">Select a site.</p>
         </Panel>
       )}
       {siteId ? (
         <RecentActivitySection organizationId={organizationId} siteId={siteId} />
       ) : (
         <Panel title="Events" actions={<Link to="/events">All events</Link>}>
-          <p className="meta">Select a site for health transitions, or open the events timeline.</p>
+          <p className="empty">Select a site.</p>
         </Panel>
       )}
     </div>

@@ -130,7 +130,6 @@ export function Configure() {
             </button>
           ))}
       </div>
-      <p className="meta">Controller commands are not sent to Convex. Stop and off mode stay blocked on the gateway.</p>
 
       <div className="table-wrap">
         <table className="cfg">
