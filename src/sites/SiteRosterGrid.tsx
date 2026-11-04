@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { Link } from "react-router";
 import { GridTable } from "../ui/GridTable";
 import { useLiveNow } from "../ui/useLiveNow";
@@ -10,11 +9,11 @@ import {
   powerSourceLabel,
   siteAttentionIssues,
   siteLastActivityAt,
-  sortSitesByLastUpdated,
   type SiteRosterRow,
 } from "./siteRosterView";
+import { useThrottledRoster } from "./useThrottledRoster";
 
-/** Roster age tick — faster than default 30s so "12s ago" visibly advances. */
+/** Hover age tick — independent of the throttled roster field refresh. */
 const ROSTER_LIVE_TICK_MS = 5_000;
 
 export function SiteRosterGrid({
@@ -25,12 +24,13 @@ export function SiteRosterGrid({
   caption?: string;
 }) {
   const now = useLiveNow(ROSTER_LIVE_TICK_MS);
-  const sorted = useMemo(() => sortSitesByLastUpdated(rows), [rows]);
+  // Stable order + batched Last Updated / health so rows do not jump every ingest.
+  const displayRows = useThrottledRoster(rows);
 
   return (
     <GridTable
       caption={caption}
-      rows={sorted}
+      rows={displayRows}
       getRowKey={(row) => row.siteId}
       empty="No sites"
       initialPageSize={25}

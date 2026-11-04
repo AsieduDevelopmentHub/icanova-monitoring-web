@@ -339,12 +339,60 @@ export const resolveDemoIngestAmbiguity = action({
     secret: v.optional(v.string()),
     organizationId: v.id("organizations"),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ deactivated: number }> => {
     await assertPlatformCaller(ctx, args.secret);
     return await ctx.runMutation(internal.demoSeed.clearDemoGatewayAmbiguity, {
       keepOrganizationId: args.organizationId,
       siteCount: SITE_COUNT,
     });
+  },
+});
+
+/**
+ * Upsert a few maintenance records for demo generators (lab realism).
+ * Call from the fleet sim; not destructive.
+ */
+export const seedDemoMaintenance = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    maxRecords: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.max(1, Math.min(12, args.maxRecords ?? 6));
+    const generators = await ctx.db
+      .query("generators")
+      .withIndex("by_org_site", (q) => q.eq("organizationId", args.organizationId))
+      .take(80);
+    const picks = generators.filter((_, i) => i % 9 === 0).slice(0, limit);
+    const now = Date.now();
+    const summaries = [
+      "Scheduled oil & filter service",
+      "Coolant flush and belt check",
+      "Battery load test",
+      "ATS transfer exercise",
+      "Fuel polish / water drain",
+    ];
+    let created = 0;
+    for (let i = 0; i < picks.length; i += 1) {
+      const generator = picks[i]!;
+      const existing = await ctx.db
+        .query("maintenanceRecords")
+        .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+        .take(40);
+      if (existing.some((row) => row.generatorId === generator._id)) {
+        continue;
+      }
+      await ctx.db.insert("maintenanceRecords", {
+        organizationId: args.organizationId,
+        generatorId: generator._id,
+        summary: summaries[i % summaries.length]!,
+        notes: "Seeded by dev-fleet-sim for realistic lab traffic.",
+        performedAt: now - (i + 1) * 86_400_000,
+        recordedAt: now,
+      });
+      created += 1;
+    }
+    return { created, considered: picks.length };
   },
 });
 

@@ -1,13 +1,13 @@
 ---
-description: Auth, secrets, and production safety
-globs: "{src/auth/**,src/fleet/**,convex/**,docs/security/**,.env*}"
+description: Secrets handling and operational security hygiene
+globs: "{src/auth/**,src/fleet/**,convex/**,docs/security/**,.env*,scripts/**}"
 alwaysApply: false
 ---
 
-# Security & ops
+# Security & ops hygiene
 
-- Missing `AUTH_JWT_AUDIENCE` / `VITE_OIDC_AUDIENCE` disables providers — no legacy fallbacks.
 - Never commit `.env.local`, credentials, or production secrets.
-- Tenant isolation is mandatory: org Id in every data path; tests for cross-tenant denial.
-- Device credentials and ingest keys: rotate/migrate via documented guides only.
-- Prefer existing runbooks under `docs/guide/` and `docs/operations/` over inventing new process files.
+- Device credentials / ingest keys: rotate/migrate only via documented guides (`docs/guide/`, `docs/security/`).
+- Prefer existing runbooks under `docs/guide/` and `docs/operations/` over new process files.
+- Shared `INGEST_SECRET` remains an open exception until per-device credentials are verified — see `api-contracts.mdc`.
+- Tenant isolation and Convex Auth details: `multi-tenant-security.mdc`. Deploy gates: `deployment-safety.mdc`.

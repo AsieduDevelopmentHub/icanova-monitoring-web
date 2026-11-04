@@ -1,0 +1,57 @@
+---
+description: Evidence-based verification and mandatory completion report
+alwaysApply: true
+---
+
+# Verification & completion report
+
+No substantial task is complete because code was written. Verify the actual result.
+
+## Verification levels (do not confuse)
+
+1. Source inspection · 2. Static analysis · 3. Unit · 4. Types · 5. Integration · 6. Contract · 7. Build · 8. Actual UI · 9. Hosted env · 10. Physical hardware
+
+Examples: TS build ≠ tenant isolation; unit pass ≠ live email; frontend build ≠ correct Convex deploy; staging ≠ production readiness.
+
+## After changes
+
+- Run relevant tests (`pnpm test`, targeted vitest). Do not weaken/skip tests to pass.
+- For UI: open the route, check console, verify mobile when claimed.
+- State NOT VERIFIED where evidence is missing. Never invent counts, URLs, or logs.
+
+## Substantial tasks require this exact report
+
+Feature/bug/refactor/schema/auth/API/deploy/config/test-suite/docs-status work. Skip only for trivial Q&A.
+
+### 1. TASK SUMMARY
+- Task / Objective / Final status: COMPLETE | PARTIALLY COMPLETE | BLOCKED / Outcome
+
+### 2. FILES CHANGED
+List created/modified/deleted with brief why (or state none).
+
+### 3. IMPLEMENTATION DETAILS
+What, how, components affected, design decisions, compatibility.
+
+### 4. VERIFICATION AND TEST RESULTS
+Table: Check | Command | Result PASS/FAIL/NOT RUN | Evidence
+
+### 5. ACTUAL BEHAVIOR VERIFICATION
+Routes/interactions/console/backend env/real data — or NOT VERIFIED.
+
+### 6. SECURITY AND DATA-INTEGRITY CHECK
+Authz, tenant isolation, persistence, secrets, credentials, deploy impact; any destructive ops.
+
+### 7. DEPLOYMENT AND ENVIRONMENT STATUS
+Modified or not; build target; URL; Convex id; commit; rollback — or NOT DEPLOYED.
+
+### 8. KNOWN ISSUES AND LIMITATIONS
+Unresolved, deferred, missing evidence, exceptions.
+
+### 9. DOCUMENTATION UPDATED
+Files touched / none.
+
+### 10. FINAL ENGINEERING VERDICT
+COMPLETE — VERIFIED | COMPLETE WITH DOCUMENTED LIMITATIONS | PARTIALLY COMPLETE | BLOCKED | FAILED
+
+### 11. NEXT ACTIONS
+Safe now · needs owner approval · needs production auth · needs hardware auth

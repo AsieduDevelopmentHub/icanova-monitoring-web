@@ -1,0 +1,31 @@
+---
+description: Convex data persistence and telemetry integrity
+globs: "{convex/**/*.ts,src/telemetry/**,src/sites/**,src/fleet/**,src/fixtures/**}"
+alwaysApply: false
+---
+
+# Data integrity
+
+Cloud orgs, sites, gateways, generators, and telemetry are durable Convex records.
+
+## Never
+
+- Add destructive DB resets to ordinary deploys/init.
+- Auto-delete orgs/devices on startup.
+- Replace real cloud data with demo seed in non-demo flows.
+- Convert missing telemetry into `0`.
+- Silently discard valid telemetry.
+- Treat Modbus/Wi-Fi Soft-AP settings as cloud-persisted unless proven.
+
+## Empty UI investigation order
+
+1. Frontend Convex URL · 2. Deployment identity · 3. Auth/session · 4. Org membership/permissions · 5. Query loading/errors · 6. Whether records exist · 7. Persistence last
+
+Do not conclude data was deleted because a page looks empty.
+
+## Telemetry
+
+- Preserve valid negatives and power-factor signs.
+- Distinguish source timestamps vs gateway receipt time; never treat uptime as wall clock.
+- Distinguish stale vs true zero. Handle duplicates/out-of-order deliberately.
+- Preserve raw Modbus evidence when available.

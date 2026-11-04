@@ -1,0 +1,17 @@
+---
+description: Logging and diagnosable failure modes
+globs: "{convex/**/*.ts,src/ops/**,src/notify/**,src/fleet/**,docs/status/**,docs/operations/**}"
+alwaysApply: false
+---
+
+# Observability
+
+Prefer structured, actionable diagnostics that distinguish:
+
+- Authn vs authz failure
+- Backend connectivity vs gateway offline
+- Stale telemetry vs zero measurement
+- Modbus/link vs cloud contact
+- Alarm vs notification delivery failure
+
+Never log passwords, private keys, tokens, API secrets, plaintext device credentials, or sensitive user data without justified need. Avoid generic errors when context is available.

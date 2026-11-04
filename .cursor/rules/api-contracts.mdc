@@ -1,0 +1,24 @@
+---
+description: Gateway ingest and shared telemetry API contracts
+globs: "{convex/ingest*.ts,convex/http.ts,convex/deviceHealth*.ts,convex/telemetry.ts,convex/schema.ts,src/telemetry/**,docs/security/**,docs/guide/*device*,docs/guide/*ingest*}"
+alwaysApply: false
+---
+
+# API contracts (web ↔ gateway)
+
+Before changing payloads:
+
+1. Inspect sender · 2. Receiver · 3. All consumers · 4. Deployed compatibility · 5. Define new contract · 6. Validate · 7. Contract tests · 8. Document breaking changes
+
+## Rules
+
+- No silent rename/remove of fields. Do not invent telemetry fields or Modbus registers.
+- Validate external inputs; handle missing/malformed/stale/unexpected fields.
+- Prefer backward compatibility; version when needed. Preserve raw diagnostic evidence.
+- Cross-repo impact must be called out explicitly.
+
+## Ingest credentials
+
+- Shared `INGEST_SECRET` is a **known unresolved security exception** — never report it resolved without verified per-device migration.
+- Direction: unique per-gateway credentials, server verify, provision/rotate/revoke, org/site binding, audit, leakage protection, replay where supported.
+- Hashed storage + constant-time compare where appropriate. Do not break staging devices without a tested migration.

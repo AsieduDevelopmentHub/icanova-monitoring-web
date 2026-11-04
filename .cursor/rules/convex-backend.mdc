@@ -1,15 +1,15 @@
 ---
-description: Convex schema, queries, auth, and ingest safety
+description: Convex schema, queries, auth hooks, and ingest safety
 globs: convex/**/*.{ts,js}
 alwaysApply: false
 ---
 
 # Convex backend
 
-- Every org-scoped query/mutation: `requirePermission` (or equivalent) before data access.
-- Indexes first; avoid full table scans. Bound `.take()` / pagination on list endpoints.
-- Schema changes stay additive and intentional — update `schema.ts` with the code that needs them.
-- Device ingest: credentialed, rate-limited, honest health transitions (`deviceHealth`, freshness windows).
+- Every org-scoped query/mutation: authorize before data access (`requirePermission` / authz).
+- Indexes first; bound `.take()` / pagination. Additive, intentional schema changes with `schema.ts`.
+- Device ingest: credentialed, rate-limited, honest health/freshness transitions.
+- Deterministic sorts when UI order matters (e.g. roster by last activity).
 - Never log secrets, JWTs, device credentials, or raw auth headers.
-- Prefer deterministic sorts in queries when UI order matters (e.g. roster by last activity).
-- Tests: convex/vitest coverage for authz, health, and ingest edge cases when touching those paths.
+- Demo/seed paths must not wipe or replace durable tenant data outside explicit staging tools.
+- Cover authz, health, and ingest edge cases with convex/vitest when those paths change.

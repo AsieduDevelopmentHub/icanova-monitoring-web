@@ -6,20 +6,11 @@ alwaysApply: false
 
 # React UI
 
-- Functional components; colocate view helpers near features (`src/sites/`, `src/pages/…`).
-- Shell topbar owns the page title — do not duplicate large `page-head` titles on CC/Sites.
-- Dense tables: fixed/capped column widths, ellipsis overflow, alarm icon **inside** the Site Name cell (not a far-right column).
-- Pagination: icon controls + compact meta; **single horizontal row on mobile** (`flex-wrap: nowrap`).
-- Live indicators: client tick (`useLiveNow`) for age-based state; Convex for data push.
-- Styles live in `src/styles.css` tokens (graphite / copper / restrained chrome). Avoid purple-AI / neon tropes.
-- After UI CSS changes: verify at `max-width: 720px` (and desktop) before reporting done.
-
-```css
-/* ❌ BAD — base rule after mobile override undoes nowrap */
-@media (max-width: 720px) { .pager { flex-wrap: nowrap; } }
-.pager { flex-wrap: wrap; }
-
-/* ✅ GOOD — mobile overrides after base */
-.pager { flex-wrap: nowrap; }
-@media (max-width: 720px) { .pager { gap: 0.3rem; } }
-```
+- Follow existing architecture; functional components; colocate helpers (`src/sites/`, `src/pages/…`).
+- Shell topbar owns page title — no duplicate large `page-head` on CC/Sites.
+- Handle loading, empty, error, offline explicitly. Never show unavailable telemetry as healthy zero.
+- Dense tables: capped widths, ellipsis; alarm icon **inside** Site Name cell.
+- Pagination: icon controls; **one horizontal row on mobile** (`flex-wrap: nowrap`). Place mobile CSS **after** base rules.
+- Live indicators: `useLiveNow` for age; Convex for data push. Preserve routes/workflows unless intentional.
+- Styles: `src/styles.css` tokens; avoid purple-AI/neon tropes.
+- After significant UI changes: verify actual browser behavior (incl. ~390–720px) before claiming done.

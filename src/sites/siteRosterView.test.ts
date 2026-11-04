@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyRosterOrder,
   compareSitesByLastUpdated,
   formatActivityAge,
   powerSourceLabel,
   siteAttentionIssues,
+  sortSitesByCode,
   sortSitesByLastUpdated,
 } from "./siteRosterView";
 
@@ -29,20 +31,23 @@ const base = {
 };
 
 describe("powerSourceLabel", () => {
-  it("names generator when reporting", () => {
+  it("names generator when reporting without rpm/mains hints", () => {
     expect(powerSourceLabel({ ...base, reporting: 1, generators: 1 })).toBe("Generator");
     expect(powerSourceLabel({ ...base, reporting: 2, generators: 3 })).toBe("Generator ×3");
   });
 
-  it("does not invent grid or solar", () => {
+  it("does not invent grid without mains readings", () => {
     expect(powerSourceLabel({ ...base, gatewayOnline: 1 })).toBe("Gateway (no telemetry)");
     expect(powerSourceLabel(base)).toBe("—");
   });
 
-  it("treats lastTelemetryAt as generator telemetry even when reporting is 0", () => {
-    expect(
-      powerSourceLabel({ ...base, reporting: 0, lastTelemetryAt: Date.now(), generators: 1 }),
-    ).toBe("Generator");
+  it("labels running rpm as Generator and present mains as Mains", () => {
+    expect(powerSourceLabel({ ...base, primaryRpm: 1500, mainsL1: 230 })).toBe("Generator");
+    expect(powerSourceLabel({ ...base, primaryRpm: 0, mainsL1: 230 })).toBe("Mains");
+    expect(powerSourceLabel({ ...base, primaryRpm: 0, mainsL1: 230, alarmCount: 2 })).toBe(
+      "Mains (alarm)",
+    );
+    expect(powerSourceLabel({ ...base, primaryRpm: 0, lastTelemetryAt: Date.now() })).toBe("Stopped");
   });
 });
 
@@ -85,5 +90,29 @@ describe("sortSitesByLastUpdated", () => {
     ];
     expect(sortSitesByLastUpdated(rows).map((row) => row.siteId)).toEqual(["c", "d", "a", "b"]);
     expect(compareSitesByLastUpdated(rows[0], rows[3])).toBeGreaterThan(0);
+  });
+});
+
+describe("sortSitesByCode", () => {
+  it("keeps a stable site-id order independent of telemetry age", () => {
+    const rows = [
+      { ...base, siteId: "b", code: "S002", name: "Bravo", lastTelemetryAt: 9_000 },
+      { ...base, siteId: "a", code: "S001", name: "Alpha", lastTelemetryAt: 100 },
+      { ...base, siteId: "c", code: "S010", name: "Charlie", lastTelemetryAt: 50 },
+    ];
+    expect(sortSitesByCode(rows).map((row) => row.siteId)).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("applyRosterOrder", () => {
+  it("preserves frozen order while merging newer field values", () => {
+    const order = ["a", "b"];
+    const latest = [
+      { ...base, siteId: "b", code: "S002", name: "Bravo", lastTelemetryAt: 200 },
+      { ...base, siteId: "a", code: "S001", name: "Alpha", lastTelemetryAt: 100 },
+      { ...base, siteId: "c", code: "S003", name: "Charlie", lastTelemetryAt: 300 },
+    ];
+    expect(applyRosterOrder(order, latest).map((row) => row.siteId)).toEqual(["a", "b", "c"]);
+    expect(applyRosterOrder(order, latest)[0]?.lastTelemetryAt).toBe(100);
   });
 });

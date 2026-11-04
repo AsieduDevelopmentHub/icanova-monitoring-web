@@ -52,7 +52,11 @@ export function FleetMap({ sites }: Props) {
     if (!mapRef.current || mapObj.current) {
       return;
     }
-    const map = L.map(mapRef.current, { scrollWheelZoom: true }).setView(FALLBACK_CENTER, FALLBACK_ZOOM);
+    const map = L.map(mapRef.current, {
+      scrollWheelZoom: true,
+      // Fade leaves popups stuck at opacity:0 under some zoom/fitBounds races.
+      fadeAnimation: false,
+    }).setView(FALLBACK_CENTER, FALLBACK_ZOOM);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
       attribution: "&copy; OpenStreetMap",
@@ -78,7 +82,11 @@ export function FleetMap({ sites }: Props) {
     const bounds: L.LatLngExpression[] = [];
     for (const row of placed) {
       const { tone, label } = siteStatus(row);
-      const marker = L.marker([row.latitude, row.longitude], { icon: markerIcon(tone) });
+      const marker = L.marker([row.latitude, row.longitude], {
+        icon: markerIcon(tone),
+        keyboard: true,
+        riseOnHover: true,
+      });
       const code = row.code ? ` · ${row.code}` : "";
       marker.bindPopup(
         `<div class="fleet-map-popup">
@@ -86,7 +94,11 @@ export function FleetMap({ sites }: Props) {
           <div class="meta">${escapeHtml(label)}</div>
           <a href="/sites/${row.siteId}">Open site</a>
         </div>`,
+        { maxWidth: 280, autoPan: true, closeButton: true, className: "fleet-map-popup-wrap" },
       );
+      marker.on("click", () => {
+        marker.openPopup();
+      });
       marker.addTo(layer);
       bounds.push([row.latitude, row.longitude]);
     }

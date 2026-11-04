@@ -13,19 +13,41 @@ export type SiteRosterRow = SiteHealthFields & {
   activeCommProblems: number;
   lastTelemetryAt: number | null;
   lastGatewayContactAt: number | null;
+  /** Primary generator RPM when known (from telemetryCurrent). */
+  primaryRpm?: number | null;
+  /** Mains L1 volts when known (extra.mainsL1). */
+  mainsL1?: number | null;
+  alarmCount?: number | null;
+  link?: string | null;
 };
 
 export { siteLastActivityAt };
 
-/** Honest power-source label from what we actually store (no grid/solar invention). */
+/**
+ * Honest power-source label from stored telemetry.
+ * Generator when RPM is measured running; Mains when engine is stopped but
+ * mains L1 is present; otherwise fall back to reporting / gateway contact.
+ */
 export function powerSourceLabel(row: SiteRosterRow): string {
-  const gens = row.generators;
+  const rpm = row.primaryRpm;
+  const mains = row.mainsL1;
+  const alarms = row.alarmCount ?? 0;
+  if (typeof rpm === "number" && Number.isFinite(rpm) && rpm > 0) {
+    return alarms > 0 ? "Generator (alarm)" : "Generator";
+  }
+  if (typeof mains === "number" && Number.isFinite(mains) && mains >= 100) {
+    return alarms > 0 ? "Mains (alarm)" : "Mains";
+  }
   const hasTelemetry =
     row.reporting > 0 ||
     (row.lastTelemetryAt != null && Number.isFinite(row.lastTelemetryAt));
   if (hasTelemetry) {
+    if (typeof rpm === "number" && rpm === 0) {
+      return alarms > 0 ? "Stopped (alarm)" : "Stopped";
+    }
+    const gens = row.generators;
     if (gens == null) {
-      return "Generator";
+      return "Telemetry";
     }
     if (gens <= 0) {
       return "Telemetry";
@@ -43,11 +65,16 @@ export function siteAttentionIssues(row: SiteRosterRow): string[] {
   if (row.overallUnhealthy > 0) {
     issues.push("Device unhealthy");
   }
-  if (row.linkFail > 0) {
+  if (row.linkFail > 0 || row.link === "fail") {
     issues.push("Modbus link fail");
   }
   if (row.gatewayOffline > 0) {
     issues.push("Gateway offline");
+  }
+  if ((row.alarmCount ?? 0) > 0) {
+    issues.push(
+      row.alarmCount === 1 ? "1 generator alarm" : `${row.alarmCount} generator alarms`,
+    );
   }
   if (row.activeCommProblems > 0) {
     issues.push(
@@ -78,6 +105,54 @@ export function sortSitesByLastUpdated<T extends {
   lastGatewayContactAt: number | null;
 }>(rows: readonly T[]): T[] {
   return [...rows].sort(compareSitesByLastUpdated);
+}
+
+/** Stable fleet roster order — does not reshuffle when telemetry ages change. */
+export function compareSitesByCode(
+  a: { code: string | null; name: string },
+  b: { code: string | null; name: string },
+): number {
+  const aCode = a.code?.trim() || "";
+  const bCode = b.code?.trim() || "";
+  if (aCode && bCode) {
+    const byCode = aCode.localeCompare(bCode, undefined, { numeric: true, sensitivity: "base" });
+    if (byCode !== 0) {
+      return byCode;
+    }
+  } else if (aCode || bCode) {
+    return aCode ? -1 : 1;
+  }
+  return a.name.localeCompare(b.name);
+}
+
+export function sortSitesByCode<T extends { code: string | null; name: string }>(
+  rows: readonly T[],
+): T[] {
+  return [...rows].sort(compareSitesByCode);
+}
+
+/**
+ * Merge latest Convex rows onto a frozen siteId order so pagination / row
+ * positions stay put while Last Updated and health fields refresh.
+ */
+export function applyRosterOrder<T extends { siteId: string }>(
+  order: readonly string[],
+  latest: readonly T[],
+): T[] {
+  const byId = new Map(latest.map((row) => [row.siteId, row]));
+  const ordered: T[] = [];
+  for (const siteId of order) {
+    const row = byId.get(siteId);
+    if (row) {
+      ordered.push(row);
+      byId.delete(siteId);
+    }
+  }
+  // New sites (provisioned after order freeze) append in stable code/name order.
+  const extras = sortSitesByCode(
+    [...byId.values()] as Array<T & { code: string | null; name: string }>,
+  );
+  return [...ordered, ...extras];
 }
 
 /** Absolute wall clock for tooltips / copy. */

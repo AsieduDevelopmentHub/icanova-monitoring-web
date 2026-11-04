@@ -1,0 +1,15 @@
+---
+description: Docs and phase-status honesty
+globs: "{docs/**,README.md,gpt.md}"
+alwaysApply: false
+---
+
+# Documentation & status
+
+When architecture, security, deploy, config, or ops behavior changes:
+
+- Update the relevant guide/runbook and applicable phase/status record.
+- Record real test commands/results, env changes, migrations, risks.
+- Distinguish verified vs planned. Never mark an exception resolved without evidence.
+- Never mark a phase complete merely because planned code was written.
+- Prefer updating existing `docs/` files over inventing parallel docs.

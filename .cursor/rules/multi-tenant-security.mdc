@@ -1,0 +1,18 @@
+---
+description: Convex Auth, tenant isolation, and authorization
+globs: "{convex/auth*.ts,convex/authz.ts,convex/permissions.ts,convex/identity*.ts,convex/organizations.ts,convex/sites.ts,convex/devices.ts,convex/generators.ts,convex/platformAdmin.ts,convex/ingest*.ts,convex/deviceIdentity.ts,src/auth/**,src/fleet/**,src/admin/**}"
+alwaysApply: false
+---
+
+# Multi-tenant security
+
+- **Active auth:** Convex Auth Password. **Auth0:** future/inactive — do not re-enable in login paths without an explicit architecture decision.
+- Never trust frontend-supplied org/site/gateway/generator IDs as ownership proof.
+- Validate permissions on the backend (`requirePermission` / authz). Enforce org ownership on every protected resource.
+- Cross-organization access must be impossible. Protect admin mutations.
+- Handle session expiry/logout correctly; do not leak sensitive account data in errors.
+- Fail closed when audience/provider config is missing (no legacy fallbacks).
+
+## Required test coverage when touching authz
+
+Unauthenticated · unauthorized · cross-org · wrong role · revoked session · invalid device credentials · invalid/expired tokens.

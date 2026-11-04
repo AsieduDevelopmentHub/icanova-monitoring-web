@@ -1,0 +1,32 @@
+---
+description: Staging/production Convex and Cloudflare Pages deployment safety
+globs: "{package.json,scripts/**,.env*,.github/**,wrangler*,docs/deployment/**,docs/operations/**,docs/guide/*deploy*,docs/guide/*environment*}"
+alwaysApply: false
+---
+
+# Deployment safety
+
+| Environment | Convex | Id |
+|---|---|---|
+| Development | `effervescent-kangaroo-10` | kangaroo |
+| Staging | `dapper-roadrunner-247` | roadrunner |
+| Production | `tremendous-sturgeon-449` | sturgeon |
+| Recovery | `vivid-mosquito-28` | mosquito |
+
+Pages project: `icanova`. Staging: `https://icanova.pages.dev`.
+
+## Staging build (mandatory)
+
+Use **`pnpm build:staging` only** — never bare `pnpm build` for staging. Vite production mode can bake `.env.local` (wrong Convex) into the bundle.
+
+### Before staging deploy
+
+1. Confirm `build:staging` · 2. Target `roadrunner` · 3. Expected Convex URL · 4. Secret scan · 5. Inspect dist (no private creds / no accidental production URL) · 6. Intended commit + clean intent
+
+### After staging deploy
+
+Open live URL → loads → talks to `roadrunner` → auth → key routes → org/device data if present → console/logs → record URL, commit, rollback. Build success ≠ deploy success.
+
+## Production
+
+**Not authorized by default.** Do not deploy/configure/`sturgeon`, migrate prod users, or point Pages at production without explicit owner authorization. Bugfix / “prepare production” / docs edits ≠ prod auth. Keep `mosquito` isolated. Never copy staging secrets into production.

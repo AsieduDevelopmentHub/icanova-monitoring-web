@@ -1,0 +1,23 @@
+---
+description: Safe change process for substantial work
+alwaysApply: true
+---
+
+# Change management
+
+## Before
+
+1. Inspect current implementation + relevant docs  
+2. Identify dependencies and affected repos  
+3. Identify security/data risks  
+4. Define intended behavior  
+5. Make the smallest safe change  
+
+## After
+
+- Inspect the diff; remove accidental edits  
+- Check compatibility; run relevant tests  
+- Update docs when ops/security/architecture changed  
+- Report remaining risks  
+
+Prefer reversible changes. No unrelated refactors. No destructive migrations without explicit approval and a verified recovery plan.

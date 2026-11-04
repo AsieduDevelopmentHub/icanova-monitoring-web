@@ -1889,7 +1889,9 @@ table.cfg td.num {
   margin: 0.75rem 0;
   border: 1px solid var(--line);
   background: var(--bg-inset);
-  z-index: 0;
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
 }
 
 .sites-page {
@@ -1958,14 +1960,26 @@ table.cfg td.num {
   color: var(--color-muted-copper, #b87333);
 }
 
+.fleet-map {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
 .fleet-map-stage {
   height: min(520px, 70vh);
   margin: 0;
 }
 
+.fleet-map-stage.leaflet-container {
+  font: inherit;
+  z-index: 1;
+}
+
 .fleet-map-marker {
-  background: transparent;
-  border: 0;
+  background: transparent !important;
+  border: 0 !important;
+  pointer-events: auto !important;
 }
 
 .fleet-map-dot {
@@ -1976,6 +1990,7 @@ table.cfg td.num {
   border: 2px solid var(--color-warm-white, #f7f4ef);
   box-shadow: 0 0 0 1px rgb(0 0 0 / 25%);
   background: var(--color-industrial-steel, #707780);
+  pointer-events: none;
 }
 
 .fleet-map-marker.tone-ok .fleet-map-dot {
@@ -1994,9 +2009,23 @@ table.cfg td.num {
   background: var(--color-industrial-steel, #707780);
 }
 
+.fleet-map-popup-wrap {
+  z-index: 1000;
+}
+
+/* Leaflet fade-anim defaults to opacity:0 until a pane selector wins; force visible. */
+.fleet-map-stage .leaflet-popup {
+  opacity: 1 !important;
+}
+
 .fleet-map-popup {
   font: inherit;
   min-width: 8rem;
+  color: var(--ink);
+}
+
+.fleet-map-popup .meta {
+  margin: 0.25rem 0 0.5rem;
 }
 
 .fleet-map-popup a {
@@ -3637,6 +3666,13 @@ html[data-theme="dark"] {
   border-radius: 6px;
   background: var(--bg-elevated, var(--bg));
   box-shadow: 0 8px 24px rgb(0 0 0 / 14%);
+}
+
+/* Portaled above overflow:hidden table cells / scroll shells. */
+.site-alarm-popover.is-portal {
+  position: fixed;
+  right: auto;
+  z-index: 80;
 }
 
 .site-alarm-popover-head {

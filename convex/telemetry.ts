@@ -315,7 +315,7 @@ export const siteRoster = query({
       .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
       .take(200);
     const bySite = new Map(summaries.map((row) => [row.siteId, row]));
-    const gatewayBySite = new Map<string, { identity: string; name: string }>();
+    const gatewayBySite = new Map<string, { identity: string; name: string; deviceId: Id<"devices"> }>();
     for (const device of devices) {
       if (!device.siteId) {
         continue;
@@ -324,12 +324,41 @@ export const siteRoster = query({
       if (gatewayBySite.has(key)) {
         continue;
       }
-      gatewayBySite.set(key, { identity: device.identity, name: device.name });
+      gatewayBySite.set(key, {
+        identity: device.identity,
+        name: device.name,
+        deviceId: device._id,
+      });
     }
-    const rows = sites.map((site) => {
+    const rows = [];
+    for (const site of sites) {
       const summary = bySite.get(site._id);
       const gateway = gatewayBySite.get(String(site._id));
-      return {
+      let primaryRpm: number | null = null;
+      let mainsL1: number | null = null;
+      let alarmCount: number | null = null;
+      let link: string | null = null;
+      if (gateway) {
+        const gens = await ctx.db
+          .query("generators")
+          .withIndex("by_device", (q) => q.eq("deviceId", gateway.deviceId))
+          .take(1);
+        const generator = gens[0];
+        if (generator && generator.organizationId === args.organizationId) {
+          const current = await ctx.db
+            .query("telemetryCurrent")
+            .withIndex("by_generator", (q) => q.eq("generatorId", generator._id))
+            .unique();
+          if (current && current.organizationId === args.organizationId) {
+            primaryRpm = current.rpm;
+            alarmCount = current.alarmCount;
+            link = current.link;
+            const mains = current.extra?.mainsL1;
+            mainsL1 = typeof mains === "number" && Number.isFinite(mains) ? mains : null;
+          }
+        }
+      }
+      rows.push({
         siteId: site._id,
         name: site.name,
         code: site.code ?? null,
@@ -348,13 +377,27 @@ export const siteRoster = query({
         overallUnhealthy: summary?.overallUnhealthy ?? 0,
         lastTelemetryAt: summary?.lastTelemetryAt ?? null,
         lastGatewayContactAt: summary?.lastGatewayContactAt ?? null,
-      };
-    });
+        primaryRpm,
+        mainsL1,
+        alarmCount,
+        link,
+      });
+    }
+    // Stable site-code order — clients throttle field refreshes so ingest does
+    // not reshuffle pagination every time one gateway posts.
     rows.sort((a, b) => {
-      const aAt = Math.max(a.lastTelemetryAt ?? 0, a.lastGatewayContactAt ?? 0);
-      const bAt = Math.max(b.lastTelemetryAt ?? 0, b.lastGatewayContactAt ?? 0);
-      if (bAt !== aAt) {
-        return bAt - aAt;
+      const aCode = a.code?.trim() || "";
+      const bCode = b.code?.trim() || "";
+      if (aCode && bCode) {
+        const byCode = aCode.localeCompare(bCode, undefined, {
+          numeric: true,
+          sensitivity: "base",
+        });
+        if (byCode !== 0) {
+          return byCode;
+        }
+      } else if (aCode || bCode) {
+        return aCode ? -1 : 1;
       }
       return a.name.localeCompare(b.name);
     });
