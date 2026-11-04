@@ -885,6 +885,101 @@ export const requestSiteReconcile = mutation({
   },
 });
 
+/**
+ * Rebuild orgHealthSummaries (and each site) from deviceHealthCurrent.
+ * Use after OCC storms or seed so dashboard tallies match live rows.
+ */
+export const reconcileOrg = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    cursor: v.union(v.string(), v.null()),
+    tallies: v.optional(
+      v.object({
+        devicesTracked: v.number(),
+        gatewayOnline: v.number(),
+        gatewayOffline: v.number(),
+        gatewayUnknown: v.number(),
+        modbusOk: v.number(),
+        modbusDegraded: v.number(),
+        modbusFail: v.number(),
+        modbusUnknown: v.number(),
+        telemetryFresh: v.number(),
+        telemetryStale: v.number(),
+        telemetryMissing: v.number(),
+        overallHealthy: v.number(),
+        overallDegraded: v.number(),
+        overallUnhealthy: v.number(),
+        overallUnknown: v.number(),
+        activeCommProblems: v.number(),
+      }),
+    ),
+    lastGatewayContactAt: v.optional(v.union(v.number(), v.null())),
+    lastTelemetryAt: v.optional(v.union(v.number(), v.null())),
+    sitesQueued: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    if (!args.sitesQueued) {
+      const sites = await ctx.db
+        .query("sites")
+        .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+        .take(200);
+      for (const site of sites) {
+        await ctx.scheduler.runAfter(0, internal.deviceHealth.reconcileSite, {
+          siteId: site._id,
+          cursor: null,
+        });
+      }
+    }
+    let tallies = args.tallies ? { ...args.tallies } : { ...EMPTY_HEALTH_TALLIES };
+    let lastGatewayContactAt = args.lastGatewayContactAt ?? null;
+    let lastTelemetryAt = args.lastTelemetryAt ?? null;
+    const page = await ctx.db
+      .query("deviceHealthCurrent")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .paginate({ numItems: HEALTH_SWEEP_BATCH, cursor: args.cursor });
+    for (const row of page.page) {
+      tallies = shiftHealthTallies(tallies, null, snapshotOf(row), false);
+      if (row.lastGatewayContactAt != null) {
+        lastGatewayContactAt = Math.max(lastGatewayContactAt ?? 0, row.lastGatewayContactAt);
+      }
+      if (row.lastTelemetryAt != null) {
+        lastTelemetryAt = Math.max(lastTelemetryAt ?? 0, row.lastTelemetryAt);
+      }
+    }
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(0, internal.deviceHealth.reconcileOrg, {
+        organizationId: args.organizationId,
+        cursor: page.continueCursor,
+        tallies,
+        lastGatewayContactAt,
+        lastTelemetryAt,
+        sitesQueued: true,
+      });
+      return;
+    }
+    const org = await ensureOrgSummary(ctx, args.organizationId);
+    await ctx.db.patch(org._id, {
+      ...tallies,
+      lastGatewayContactAt,
+      lastTelemetryAt: lastTelemetryAt ?? org.lastTelemetryAt,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/** Admin: rebuild org + site health tallies from current device health. */
+export const requestOrgReconcile = mutation({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "manage.devices");
+    await ctx.scheduler.runAfter(0, internal.deviceHealth.reconcileOrg, {
+      organizationId: args.organizationId,
+      cursor: null,
+    });
+    return { scheduled: true as const };
+  },
+});
+
 export async function loadHealth(
   ctx: QueryCtx,
   deviceId: Id<"devices">,

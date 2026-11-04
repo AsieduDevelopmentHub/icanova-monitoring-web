@@ -1,0 +1,34 @@
+---
+description: Core architecture, honesty, and verification for every change
+alwaysApply: true
+---
+
+# iCaNova Monitoring — architecture
+
+## Product
+
+- Platform: **iCaNova Monitoring**. Edge companion: **iCaNova Edge Gateway**.
+- Terminology: `docs/product/terminology.md`. Do not invent brand/product names.
+- Auth/env identifiers stay as-is unless a migration is approved (no casual renames).
+
+## Architecture
+
+- Org-scoped Convex backend (`convex/`). React SPA (`src/`). Fail closed on auth/audience.
+- Prefer shared components (`src/ui/`, `src/sites/`) over page-local copies.
+- Live data: Convex `useQuery` subscriptions — no full page reloads for refresh.
+- Keep cloud contact, Modbus/link health, and measurement freshness **separate**. Never collapse into one fake “uptime” badge.
+- Do not invent telemetry fields (grid/solar/power source) the backend does not store.
+
+## Implementation discipline
+
+- Match existing patterns, tokens, and naming before adding abstractions.
+- Smallest change that solves the request. No drive-by refactors or unsolicited docs.
+- CSS: place responsive overrides **after** base rules so cascade cannot undo them.
+- Tables/pagers must stay usable on ~390px width: one-line controls where intended, no clipped critical labels.
+
+## Verify before claiming done
+
+1. Reproduce or inspect the actual UI/state (browser, tests, or computed styles).
+2. Confirm the fix at the reported viewport (mobile vs desktop).
+3. Run relevant tests (`pnpm test` / targeted vitest) when logic changes.
+4. Only then report success — never assert “fixed” from code edit alone.

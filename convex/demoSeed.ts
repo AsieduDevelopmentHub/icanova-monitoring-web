@@ -202,6 +202,43 @@ export const createDemoOrg = internalMutation({
 });
 
 /**
+ * Deactivate active demo-gw-* rows so ingest is not 409-ambiguous after reseeds.
+ * When keepOrganizationId is set, that org's demo gateways stay active.
+ */
+export const clearDemoGatewayAmbiguity = internalMutation({
+  args: {
+    keepOrganizationId: v.optional(v.id("organizations")),
+    siteCount: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const n = args.siteCount ?? SITE_COUNT;
+    let deactivated = 0;
+    for (let i = 1; i <= n; i += 1) {
+      const identity = `demo-gw-${String(i).padStart(3, "0")}`;
+      const matches = await ctx.db
+        .query("devices")
+        .withIndex("by_identity", (q) => q.eq("identity", identity))
+        .take(32);
+      for (const device of matches) {
+        if (device.lifecycle === "inactive") {
+          continue;
+        }
+        if (args.keepOrganizationId && device.organizationId === args.keepOrganizationId) {
+          continue;
+        }
+        await ctx.db.patch(device._id, {
+          lifecycle: "inactive",
+          lifecycleChangedAt: now,
+        });
+        deactivated += 1;
+      }
+    }
+    return { deactivated };
+  },
+});
+
+/**
  * Platform-only: seed a demo organization with 56 sites/gateways and four role users.
  * Password for all demo users: DemoPassw0rd!
  * Also creates an unactivated account (no membership): pending@demo.icanova.test
@@ -217,6 +254,11 @@ export const seedDemoFleet = action({
     const boot = (await ctx.runMutation(internal.demoSeed.createDemoOrg, {
       name: orgName,
     })) as { organizationId: Id<"organizations">; adminRoleId: Id<"roles"> };
+
+    // Prior reseeds leave duplicate demo-gw identities; clear them before insert.
+    await ctx.runMutation(internal.demoSeed.clearDemoGatewayAmbiguity, {
+      siteCount: SITE_COUNT,
+    });
 
     const fleet = (await ctx.runMutation(internal.demoSeed.insertFleet, {
       organizationId: boot.organizationId,
@@ -265,5 +307,22 @@ export const seedDemoFleet = action({
       unactivated: { email: pendingEmail, username: "demo_pending" },
       password: DEMO_PASSWORD,
     };
+  },
+});
+
+/**
+ * Platform-only: keep one demo org's gateways active; deactivate other demo-gw-* clones.
+ */
+export const resolveDemoIngestAmbiguity = action({
+  args: {
+    secret: v.optional(v.string()),
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args) => {
+    await assertPlatformCaller(ctx, args.secret);
+    return await ctx.runMutation(internal.demoSeed.clearDemoGatewayAmbiguity, {
+      keepOrganizationId: args.organizationId,
+      siteCount: SITE_COUNT,
+    });
   },
 });

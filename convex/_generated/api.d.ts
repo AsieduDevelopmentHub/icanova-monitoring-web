@@ -29,6 +29,8 @@ import type * as firmwareReleases from "../firmwareReleases.js";
 import type * as formats from "../formats.js";
 import type * as gatewayIdentity from "../gatewayIdentity.js";
 import type * as generators from "../generators.js";
+import type * as geoMath from "../geoMath.js";
+import type * as geoip from "../geoip.js";
 import type * as http from "../http.js";
 import type * as identity from "../identity.js";
 import type * as ingest from "../ingest.js";
@@ -99,6 +101,8 @@ declare const fullApi: ApiFromModules<{
   formats: typeof formats;
   gatewayIdentity: typeof gatewayIdentity;
   generators: typeof generators;
+  geoMath: typeof geoMath;
+  geoip: typeof geoip;
   http: typeof http;
   identity: typeof identity;
   ingest: typeof ingest;

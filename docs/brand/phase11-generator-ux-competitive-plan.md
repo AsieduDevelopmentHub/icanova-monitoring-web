@@ -221,7 +221,7 @@ Each page: **competitor lesson → iCaNova layout → must-have data → anti-pa
 | Dense site table + drill to Command Center filtered by site | Nested donut of invented running/non-running categories |
 | Optional small status strip per selected site | Alarm trend bars from fake series |
 
-Map ([`04-sites-on-map.png`](./competitor-inspiration/04-sites-on-map.png)): **Phase 12+** only if geo coordinates exist.
+Map ([`04-sites-on-map.png`](./competitor-inspiration/04-sites-on-map.png)): **Phase 12** — see [`phase12-fleet-map-notes.md`](./phase12-fleet-map-notes.md).
 
 ---
 

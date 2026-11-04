@@ -6,6 +6,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   ChevronUp,
   Cpu,
   Eye,
@@ -51,6 +53,8 @@ export type IconName =
   | "eyeOff"
   | "chevronLeft"
   | "chevronRight"
+  | "chevronsLeft"
+  | "chevronsRight"
   | "chevronDown"
   | "chevronUp";
 
@@ -78,6 +82,8 @@ const ICONS: Record<IconName, LucideIcon> = {
   eyeOff: EyeOff,
   chevronLeft: ChevronLeft,
   chevronRight: ChevronRight,
+  chevronsLeft: ChevronsLeft,
+  chevronsRight: ChevronsRight,
   chevronDown: ChevronDown,
   chevronUp: ChevronUp,
 };

@@ -1,0 +1,13 @@
+---
+description: Auth, secrets, and production safety
+globs: "{src/auth/**,src/fleet/**,convex/**,docs/security/**,.env*}"
+alwaysApply: false
+---
+
+# Security & ops
+
+- Missing `AUTH_JWT_AUDIENCE` / `VITE_OIDC_AUDIENCE` disables providers — no legacy fallbacks.
+- Never commit `.env.local`, credentials, or production secrets.
+- Tenant isolation is mandatory: org Id in every data path; tests for cross-tenant denial.
+- Device credentials and ingest keys: rotate/migrate via documented guides only.
+- Prefer existing runbooks under `docs/guide/` and `docs/operations/` over inventing new process files.

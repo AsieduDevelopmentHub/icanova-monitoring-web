@@ -32,9 +32,10 @@ function rateEnv(name: string, fallback: number): number {
   return Number.isFinite(n) && n >= 1 ? Math.floor(n) : fallback;
 }
 
-/** Hash IP to a short key so raw addresses are not stored as free text longer than needed. */
-function ipKeyFromRequest(request: Request): string | null {
-  const forwarded = request.headers.get("x-forwarded-for") ?? request.headers.get("cf-connecting-ip");
+/** First public-facing client IP from proxy headers (plaintext; do not persist). */
+function clientIpFromRequest(request: Request): string | null {
+  const forwarded =
+    request.headers.get("x-forwarded-for") ?? request.headers.get("cf-connecting-ip");
   if (!forwarded) {
     return null;
   }
@@ -42,11 +43,21 @@ function ipKeyFromRequest(request: Request): string | null {
   if (!first || first.length > 64) {
     return null;
   }
+  return first;
+}
+
+/** Hash IP to a short key so raw addresses are not stored as free text longer than needed. */
+function hashIpKey(ip: string): string {
   let hash = 0;
-  for (let i = 0; i < first.length; i += 1) {
-    hash = (hash * 31 + first.charCodeAt(i)) >>> 0;
+  for (let i = 0; i < ip.length; i += 1) {
+    hash = (hash * 31 + ip.charCodeAt(i)) >>> 0;
   }
   return hash.toString(16);
+}
+
+function ipKeyFromRequest(request: Request): string | null {
+  const first = clientIpFromRequest(request);
+  return first ? hashIpKey(first) : null;
 }
 
 function extractIdentity(record: Record<string, unknown>): string | null {
@@ -204,6 +215,20 @@ http.route({
           }
           if (result.status === "ok") {
             await note(ctx, "heartbeat_ok", orgId);
+            const clientIp = clientIpFromRequest(request);
+            const geoIpKey = clientIp ? hashIpKey(clientIp) : null;
+            if (clientIp && geoIpKey) {
+              try {
+                await ctx.scheduler.runAfter(0, internal.geoip.resolveAndApply, {
+                  identity,
+                  clientIp,
+                  ipKey: geoIpKey,
+                  ...(orgId ? { organizationId: orgId as Id<"organizations"> } : {}),
+                });
+              } catch {
+                // GeoIP must never break heartbeat.
+              }
+            }
           }
         } catch {
           // Heartbeat probes stay 204 when persistence fails for unknown/transient errors.
@@ -405,6 +430,11 @@ http.route({
         : typeof body.lon === "number"
           ? body.lon
           : Number.NaN;
+    const sourceRaw = typeof body.source === "string" ? body.source.trim().toLowerCase() : "";
+    const source =
+      sourceRaw === "browser" || sourceRaw === "ip" || sourceRaw === "manual"
+        ? sourceRaw
+        : "manual";
     const auth = await authorizeDeviceOrIngest(
       ctx,
       request.headers.get("Authorization"),
@@ -424,6 +454,7 @@ http.route({
         identity,
         latitude,
         longitude,
+        source,
         ...(auth.organizationId
           ? { organizationId: auth.organizationId as Id<"organizations"> }
           : {}),

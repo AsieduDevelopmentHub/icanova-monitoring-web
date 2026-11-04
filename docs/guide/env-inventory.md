@@ -43,6 +43,8 @@ Never put an OIDC client **secret** in `VITE_*`. Active SPA login uses Convex Au
 | `TEST_NOTIFY_EMAIL` | Staging tests only | No | Override destination; never a production customer inbox |
 | `TEST_NOTIFY_PHONE` | Staging tests only | No | Override destination; never a production customer MSISDN |
 
+Site IP geolocation (gateway heartbeat → map pin) uses **ipwho.is** over HTTPS and needs **no Convex env**. IPinfo Lite is country-only and is not used.
+
 ## 3. NCU collector (`tools/.env` in firmware repo)
 
 | Variable | Required | Secret | Purpose |

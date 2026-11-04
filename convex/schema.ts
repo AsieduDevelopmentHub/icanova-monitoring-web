@@ -111,6 +111,23 @@ export default defineSchema({
     latitude: v.optional(v.number()),
     longitude: v.optional(v.number()),
     locationUpdatedAt: v.optional(v.number()),
+    /**
+     * Provenance for map coordinates.
+     * Missing + coords ⇒ treat as commissioned/manual for move-aware IP geo.
+     */
+    locationSource: v.optional(
+      v.union(v.literal("manual"), v.literal("browser"), v.literal("ip")),
+    ),
+    /** Hashed ingress IP of the last applied/considered IP fix (not plaintext). */
+    locationIpKey: v.optional(v.string()),
+    /** Last time an IP geo fix was considered (debounce). */
+    locationIpCheckedAt: v.optional(v.number()),
+    /** Pending relocation candidate from IP geo (move-aware confirmation). */
+    locationPendingLat: v.optional(v.number()),
+    locationPendingLon: v.optional(v.number()),
+    locationPendingCount: v.optional(v.number()),
+    locationPendingIpKey: v.optional(v.string()),
+    locationPendingAt: v.optional(v.number()),
     /** Optional administrative region label (e.g. Ghana region). */
     region: v.optional(v.string()),
   })
@@ -369,6 +386,9 @@ export default defineSchema({
     firmwareVersion: v.optional(v.string()),
     firmwareGit: v.optional(v.string()),
     firmwareReportedAt: v.optional(v.number()),
+    /** Hashed ingress IP from last GeoIP consideration (not plaintext). */
+    lastIngressIpKey: v.optional(v.string()),
+    lastGeoAt: v.optional(v.number()),
   })
     .index("by_device", ["deviceId"])
     .index("by_org", ["organizationId"])

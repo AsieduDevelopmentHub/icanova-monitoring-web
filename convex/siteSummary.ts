@@ -107,8 +107,14 @@ export async function noteSample(
     args.link,
     args.hadCurrent,
   );
+  // First sample for a generator increments. Seeded telemetryCurrent rows already
+  // exist (hadCurrent=true) but never bumped reporting — lift to at least 1.
+  const reporting =
+    args.hadCurrent && !created
+      ? Math.max(summary.reporting, 1)
+      : summary.reporting + 1;
   await ctx.db.patch(summary._id, {
-    reporting: summary.reporting + (args.hadCurrent && !created ? 0 : 1),
+    reporting,
     linkOk: links.ok,
     linkFail: links.fail,
     linkDegraded: links.degraded,

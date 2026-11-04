@@ -11,7 +11,7 @@ iCaNova focus today: **generators + gateways + site monitoring** — not full to
 | [`01-site-listing.jpg`](./01-site-listing.jpg) | Site listing + alarm bar chart + nested donut | Dense fleet table + top KPIs in one viewport | Spreadsheet chrome; tiny type; low hierarchy; no equipment hero |
 | [`02-site-details.png`](./02-site-details.png) | Site details (charts + status tiles + DG table) | Multi-panel ops desk; phase electrical grid; last-updated | Colored tile mosaic; equal-weight cards; generic admin look |
 | [`03-asset-generator.png`](./03-asset-generator.png) | Generator asset detail | Alarm strip + live AC/fuel/controller blocks | Form-heavy config mid-page; no visual twin; wall of labels |
-| [`04-sites-on-map.png`](./04-sites-on-map.png) | Sites on map | Geo situational awareness at fleet scale | Out of near-term iCaNova scope (map optional later) |
+| [`04-sites-on-map.png`](./04-sites-on-map.png) | Sites on map | Geo situational awareness at fleet scale | Spreadsheet-only listing; fake pins — **Phase 12:** Sites List \| Map + honest coords ([phase12-fleet-map-notes.md](../phase12-fleet-map-notes.md)) |
 | [`05-device-health.png`](./05-device-health.png) | Device / router health | Honest device identity fields + usage viz | Card mosaic; firmware/router fields we do not invent |
 | [`06-graphical-dashboard-3d.png`](./06-graphical-dashboard-3d.png) | **Graphical site layout (isometric)** | Catchiest: site schematic with energy path | Clip-art isometric; static dashed lines; dated icons |
 | [`07-energy-distribution.png`](./07-energy-distribution.png) | Energy distribution block diagram | Clear source → ATS → rectifier → battery → load | Flat 2D icons; grey inactive / green dashed active only |

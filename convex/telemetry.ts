@@ -310,14 +310,34 @@ export const siteRoster = query({
       .query("siteSummaries")
       .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
       .take(200);
+    const devices = await ctx.db
+      .query("devices")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .take(200);
     const bySite = new Map(summaries.map((row) => [row.siteId, row]));
-    return sites.map((site) => {
+    const gatewayBySite = new Map<string, { identity: string; name: string }>();
+    for (const device of devices) {
+      if (!device.siteId) {
+        continue;
+      }
+      const key = String(device.siteId);
+      if (gatewayBySite.has(key)) {
+        continue;
+      }
+      gatewayBySite.set(key, { identity: device.identity, name: device.name });
+    }
+    const rows = sites.map((site) => {
       const summary = bySite.get(site._id);
+      const gateway = gatewayBySite.get(String(site._id));
       return {
         siteId: site._id,
         name: site.name,
         code: site.code ?? null,
         region: site.region ?? null,
+        latitude: site.latitude ?? null,
+        longitude: site.longitude ?? null,
+        gatewayId: gateway?.identity ?? null,
+        gatewayName: gateway?.name ?? null,
         generators: summary?.generators ?? null,
         reporting: summary?.reporting ?? 0,
         gatewayOnline: summary?.gatewayOnline ?? 0,
@@ -330,6 +350,15 @@ export const siteRoster = query({
         lastGatewayContactAt: summary?.lastGatewayContactAt ?? null,
       };
     });
+    rows.sort((a, b) => {
+      const aAt = Math.max(a.lastTelemetryAt ?? 0, a.lastGatewayContactAt ?? 0);
+      const bAt = Math.max(b.lastTelemetryAt ?? 0, b.lastGatewayContactAt ?? 0);
+      if (bAt !== aAt) {
+        return bAt - aAt;
+      }
+      return a.name.localeCompare(b.name);
+    });
+    return rows;
   },
 });
 

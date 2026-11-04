@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { id } from "../fleet/access";
@@ -12,12 +13,26 @@ import {
   siteTrendsPath,
 } from "../fleet/paths";
 import { LiveGate } from "../fleet/scope";
+import { SiteLocationPicker } from "../sites/SiteLocationPicker";
 import { storedFreshness } from "../telemetry/freshness";
 import { EmptyState } from "../ui/EmptyState";
 import { QueryErrorBoundary } from "../ui/QueryErrorBoundary";
 import { PageSkeleton } from "../ui/Skeleton";
 import { StatusMark } from "../ui/StatusMark";
 import { CommandBoard } from "./dashboard/CommandBoard";
+
+function locationSourceLabel(source: string | null | undefined): string {
+  if (source === "ip") {
+    return "IP";
+  }
+  if (source === "browser") {
+    return "Browser";
+  }
+  if (source === "manual") {
+    return "Manual";
+  }
+  return "Manual";
+}
 
 /** Type B site desk — control room for one physical installation. */
 export function SiteDesk() {
@@ -50,19 +65,24 @@ function DeskBody({
   siteId: Id<"sites">;
   permissions: readonly string[];
 }) {
+  const orgId = id<"organizations">(organizationId);
   const site = useQuery(api.sites.get, {
-    organizationId: id<"organizations">(organizationId),
+    organizationId: orgId,
     siteId,
   });
   const devices = useQuery(api.devices.list, {
-    organizationId: id<"organizations">(organizationId),
+    organizationId: orgId,
     siteId,
     paginationOpts: { numItems: 20, cursor: null },
   });
   const telemetry = useQuery(api.telemetry.currentForSite, {
-    organizationId: id<"organizations">(organizationId),
+    organizationId: orgId,
     siteId,
   });
+  const setLocation = useMutation(api.sites.setLocation);
+  const [locationPending, setLocationPending] = useState(false);
+  const canManageLocation = permissions.includes("manage.sites");
+
   if (site === undefined) {
     return <PageSkeleton rows={6} label="Loading site" />;
   }
@@ -146,6 +166,43 @@ function DeskBody({
           </ul>
         )}
       </section>
+
+      {canManageLocation ? (
+        <>
+          <SiteLocationPicker
+            latitude={site.latitude}
+            longitude={site.longitude}
+            pending={locationPending}
+            onSave={async (latitude, longitude) => {
+              setLocationPending(true);
+              try {
+                await setLocation({
+                  organizationId: orgId,
+                  siteId,
+                  latitude,
+                  longitude,
+                  source: "manual",
+                });
+              } finally {
+                setLocationPending(false);
+              }
+            }}
+          />
+          {site.latitude != null && site.longitude != null ? (
+            <p className="meta">Source: {locationSourceLabel(site.locationSource)}</p>
+          ) : null}
+        </>
+      ) : site.latitude != null && site.longitude != null ? (
+        <p className="meta">
+          Location: {site.latitude.toFixed(6)}, {site.longitude.toFixed(6)}
+          {` · ${locationSourceLabel(site.locationSource)}`}
+          {site.locationUpdatedAt != null
+            ? ` · updated ${new Date(site.locationUpdatedAt).toLocaleString()}`
+            : ""}
+        </p>
+      ) : (
+        <p className="meta">No coordinates saved for this site.</p>
+      )}
 
       <FleetBoundary>
         <QueryErrorBoundary title="Site board unavailable">

@@ -4,6 +4,11 @@ import type { Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { writeAudit } from "./audits";
+import {
+  decideIpLocation,
+  IP_LOOKUP_DEBOUNCE_MS,
+  type LocationSource,
+} from "./geoMath";
 import { isGatewayIdentity, normalizeGatewayIdentity } from "./gatewayIdentity";
 import { assertSameOrg, requireName, requirePermission } from "./identity";
 import { boundedPage, MAX_PAGE } from "./limits";
@@ -13,6 +18,22 @@ import {
   normalizeSiteCodeFormat,
   requireSiteCode,
 } from "./siteCodes";
+
+const locationSourceValidator = v.union(
+  v.literal("manual"),
+  v.literal("browser"),
+  v.literal("ip"),
+);
+
+function clearPendingFields() {
+  return {
+    locationPendingLat: undefined,
+    locationPendingLon: undefined,
+    locationPendingCount: undefined,
+    locationPendingIpKey: undefined,
+    locationPendingAt: undefined,
+  };
+}
 
 export async function requireSite(
   ctx: QueryCtx | MutationCtx,
@@ -70,6 +91,10 @@ export const get = query({
       name: site.name,
       code: site.code ?? null,
       region: site.region ?? null,
+      latitude: site.latitude ?? null,
+      longitude: site.longitude ?? null,
+      locationUpdatedAt: site.locationUpdatedAt ?? null,
+      locationSource: site.locationSource ?? null,
     };
   },
 });
@@ -237,6 +262,7 @@ export const provision = mutation({
       latitude?: number;
       longitude?: number;
       locationUpdatedAt?: number;
+      locationSource?: LocationSource;
     } = {
       organizationId: args.organizationId,
       name,
@@ -250,6 +276,7 @@ export const provision = mutation({
       siteFields.latitude = requireCoordinate(args.latitude, "latitude");
       siteFields.longitude = requireCoordinate(args.longitude, "longitude");
       siteFields.locationUpdatedAt = Date.now();
+      siteFields.locationSource = "manual";
     }
     const siteId = await ctx.db.insert("sites", siteFields);
     await ctx.db.patch(deviceId, { siteId });
@@ -342,19 +369,24 @@ export const setLocation = mutation({
     siteId: v.id("sites"),
     latitude: v.number(),
     longitude: v.number(),
+    source: v.optional(locationSourceValidator),
   },
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "manage.sites");
     const site = await requireSite(ctx, args.organizationId, args.siteId);
     const latitude = requireCoordinate(args.latitude, "latitude");
     const longitude = requireCoordinate(args.longitude, "longitude");
+    const source: LocationSource =
+      args.source === "browser" || args.source === "ip" ? args.source : "manual";
     await ctx.db.patch(site._id, {
       latitude,
       longitude,
       locationUpdatedAt: Date.now(),
+      locationSource: source,
+      ...clearPendingFields(),
     });
     await writeAudit(ctx, args.organizationId, "site.location", site._id);
-    return { siteId: site._id, latitude, longitude };
+    return { siteId: site._id, latitude, longitude, locationSource: source };
   },
 });
 
@@ -365,6 +397,7 @@ export const setLocationForIdentity = internalMutation({
     latitude: v.number(),
     longitude: v.number(),
     organizationId: v.optional(v.id("organizations")),
+    source: v.optional(locationSourceValidator),
   },
   handler: async (ctx, args) => {
     const identity = normalizeGatewayIdentity(args.identity);
@@ -373,6 +406,8 @@ export const setLocationForIdentity = internalMutation({
     }
     const latitude = requireCoordinate(args.latitude, "latitude");
     const longitude = requireCoordinate(args.longitude, "longitude");
+    const source: LocationSource =
+      args.source === "browser" || args.source === "ip" ? args.source : "manual";
     const matches = await ctx.db
       .query("devices")
       .withIndex("by_identity", (q) => q.eq("identity", identity))
@@ -401,9 +436,178 @@ export const setLocationForIdentity = internalMutation({
       latitude,
       longitude,
       locationUpdatedAt: Date.now(),
+      locationSource: source,
+      ...clearPendingFields(),
     });
     return {
       status: "ok" as const,
+      siteId: site._id,
+      organizationId: device.organizationId,
+    };
+  },
+});
+
+/**
+ * Decide whether an IP GeoIP lookup should run for this device/site.
+ * Updates lastIngressIpKey on health when a device health row exists.
+ */
+export const gateIpLookup = internalMutation({
+  args: {
+    identity: v.string(),
+    ipKey: v.string(),
+    organizationId: v.optional(v.id("organizations")),
+    now: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const identity = normalizeGatewayIdentity(args.identity);
+    if (!isGatewayIdentity(identity) || !args.ipKey) {
+      return { proceed: false as const, reason: "invalid" as const };
+    }
+    const matches = await ctx.db
+      .query("devices")
+      .withIndex("by_identity", (q) => q.eq("identity", identity))
+      .take(5);
+    const scoped = args.organizationId
+      ? matches.filter((device) => device.organizationId === args.organizationId)
+      : matches;
+    if (scoped.length !== 1) {
+      return { proceed: false as const, reason: "unresolved" as const };
+    }
+    const device = scoped[0];
+    if (device.lifecycle === "inactive" || !device.siteId) {
+      return { proceed: false as const, reason: "unavailable" as const };
+    }
+    const site = await ctx.db.get(device.siteId);
+    if (!site || site.organizationId !== device.organizationId) {
+      return { proceed: false as const, reason: "unknown" as const };
+    }
+
+    const now = args.now ?? Date.now();
+    const health = await ctx.db
+      .query("deviceHealthCurrent")
+      .withIndex("by_device", (q) => q.eq("deviceId", device._id))
+      .unique();
+    if (health) {
+      await ctx.db.patch(health._id, {
+        lastIngressIpKey: args.ipKey,
+        lastGeoAt: now,
+      });
+    }
+
+    const pendingOpen = (site.locationPendingCount ?? 0) > 0;
+    const sameIp = site.locationIpKey === args.ipKey;
+    const checkedAt = site.locationIpCheckedAt ?? 0;
+    if (!pendingOpen && sameIp && now - checkedAt < IP_LOOKUP_DEBOUNCE_MS) {
+      return {
+        proceed: false as const,
+        reason: "debounced" as const,
+        siteId: site._id,
+        deviceId: device._id,
+        organizationId: device.organizationId,
+      };
+    }
+
+    return {
+      proceed: true as const,
+      siteId: site._id,
+      deviceId: device._id,
+      organizationId: device.organizationId,
+    };
+  },
+});
+
+/** Apply an IP-derived WGS84 fix with move-aware hysteresis. */
+export const considerIpLocation = internalMutation({
+  args: {
+    identity: v.string(),
+    latitude: v.number(),
+    longitude: v.number(),
+    ipKey: v.string(),
+    organizationId: v.optional(v.id("organizations")),
+    now: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const identity = normalizeGatewayIdentity(args.identity);
+    if (!isGatewayIdentity(identity) || !args.ipKey) {
+      return { status: "invalid" as const };
+    }
+    const latitude = requireCoordinate(args.latitude, "latitude");
+    const longitude = requireCoordinate(args.longitude, "longitude");
+    const matches = await ctx.db
+      .query("devices")
+      .withIndex("by_identity", (q) => q.eq("identity", identity))
+      .take(5);
+    const scoped = args.organizationId
+      ? matches.filter((device) => device.organizationId === args.organizationId)
+      : matches;
+    if (scoped.length === 0) {
+      return { status: "unknown" as const };
+    }
+    if (scoped.length > 1) {
+      return { status: "ambiguous" as const };
+    }
+    const device = scoped[0];
+    if (device.lifecycle === "inactive") {
+      return { status: "inactive" as const };
+    }
+    if (!device.siteId) {
+      return { status: "unassigned" as const };
+    }
+    const site = await ctx.db.get(device.siteId);
+    if (!site || site.organizationId !== device.organizationId) {
+      return { status: "unknown" as const };
+    }
+
+    const now = args.now ?? Date.now();
+    const decision = decideIpLocation({
+      currentLat: site.latitude,
+      currentLon: site.longitude,
+      source: site.locationSource,
+      pendingLat: site.locationPendingLat,
+      pendingLon: site.locationPendingLon,
+      pendingCount: site.locationPendingCount,
+      pendingIpKey: site.locationPendingIpKey,
+      fixLat: latitude,
+      fixLon: longitude,
+      ipKey: args.ipKey,
+    });
+
+    if (decision.action === "ignore") {
+      await ctx.db.patch(site._id, {
+        locationIpKey: args.ipKey,
+        locationIpCheckedAt: now,
+      });
+      return { status: "ignored" as const, reason: decision.reason };
+    }
+
+    if (decision.action === "pending") {
+      await ctx.db.patch(site._id, {
+        locationIpKey: args.ipKey,
+        locationIpCheckedAt: now,
+        locationPendingLat: decision.lat,
+        locationPendingLon: decision.lon,
+        locationPendingCount: decision.count,
+        locationPendingIpKey: decision.ipKey,
+        locationPendingAt: now,
+      });
+      return {
+        status: "pending" as const,
+        count: decision.count,
+        siteId: site._id,
+      };
+    }
+
+    await ctx.db.patch(site._id, {
+      latitude,
+      longitude,
+      locationUpdatedAt: now,
+      locationSource: "ip",
+      locationIpKey: args.ipKey,
+      locationIpCheckedAt: now,
+      ...(decision.clearPending ? clearPendingFields() : {}),
+    });
+    return {
+      status: "applied" as const,
       siteId: site._id,
       organizationId: device.organizationId,
     };

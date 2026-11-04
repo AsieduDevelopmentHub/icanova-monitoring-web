@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../../hardware/icanova-edge-gateway"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"postman.settings.dotenv-detection-notification-visibility": false
+	}
+}
