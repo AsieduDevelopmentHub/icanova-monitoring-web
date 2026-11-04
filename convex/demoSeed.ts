@@ -164,6 +164,10 @@ export const attachDemoMembership = internalMutation({
     roleName: v.string(),
   },
   handler: async (ctx, args) => {
+    const targetOrg = await ctx.db.get(args.organizationId);
+    if (!targetOrg) {
+      throw new ConvexError("Organization not found");
+    }
     const roles = await ctx.db
       .query("roles")
       .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
@@ -171,6 +175,23 @@ export const attachDemoMembership = internalMutation({
     const role = roles.find((row) => row.name === args.roleName);
     if (!role) {
       throw new ConvexError(`Role ${args.roleName} not found`);
+    }
+    // Drop memberships on older same-named demo orgs so the UI defaults correctly.
+    const prior = await ctx.db
+      .query("memberships")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .take(40);
+    for (const membership of prior) {
+      if (membership.organizationId === args.organizationId) {
+        continue;
+      }
+      const other = await ctx.db.get(membership.organizationId);
+      if (other && other.name === targetOrg.name) {
+        await ctx.db.delete(membership._id);
+        await ctx.db.patch(other._id, {
+          name: `${other.name} (archived)`,
+        });
+      }
     }
     const existing = await ctx.db
       .query("memberships")
@@ -324,5 +345,71 @@ export const resolveDemoIngestAmbiguity = action({
       keepOrganizationId: args.organizationId,
       siteCount: SITE_COUNT,
     });
+  },
+});
+
+/** Point demo users at one live Demo Power Ghana org; archive older clones' memberships. */
+export const retargetDemoMemberships = internalMutation({
+  args: { keepOrganizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const keep = await ctx.db.get(args.keepOrganizationId);
+    if (!keep) {
+      return { ok: false as const, reason: "missing" };
+    }
+    const roles = await ctx.db
+      .query("roles")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.keepOrganizationId))
+      .take(20);
+    const byName = new Map(roles.map((role) => [role.name, role]));
+    let moved = 0;
+    let archived = 0;
+    for (const demo of DEMO_USERS) {
+      const email = normalizeEmail(demo.email);
+      if (!email) {
+        continue;
+      }
+      const users = await ctx.db
+        .query("users")
+        .withIndex("email", (q) => q.eq("email", email))
+        .take(3);
+      for (const user of users) {
+        const mems = await ctx.db
+          .query("memberships")
+          .withIndex("by_user", (q) => q.eq("userId", user._id))
+          .take(40);
+        for (const membership of mems) {
+          if (membership.organizationId === args.keepOrganizationId) {
+            continue;
+          }
+          const org = await ctx.db.get(membership.organizationId);
+          if (org && org.name.startsWith("Demo Power Ghana")) {
+            await ctx.db.delete(membership._id);
+            if (!org.name.includes("archived")) {
+              await ctx.db.patch(org._id, { name: `${org.name} (archived)` });
+              archived += 1;
+            }
+          }
+        }
+        const role = byName.get(demo.roleName);
+        if (!role) {
+          continue;
+        }
+        const existing = await ctx.db
+          .query("memberships")
+          .withIndex("by_org_user", (q) =>
+            q.eq("organizationId", args.keepOrganizationId).eq("userId", user._id),
+          )
+          .unique();
+        if (!existing) {
+          await ctx.db.insert("memberships", {
+            organizationId: args.keepOrganizationId,
+            userId: user._id,
+            roleId: role._id,
+          });
+          moved += 1;
+        }
+      }
+    }
+    return { ok: true as const, keepOrganizationId: args.keepOrganizationId, moved, archived };
   },
 });

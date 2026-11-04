@@ -5,6 +5,7 @@ import { useLiveNow } from "../ui/useLiveNow";
 import { SiteAlarmBell } from "./SiteAlarmBell";
 import { siteLiveState } from "./siteStatus";
 import {
+  formatActivityAge,
   formatLastUpdated,
   powerSourceLabel,
   siteAttentionIssues,
@@ -13,6 +14,9 @@ import {
   type SiteRosterRow,
 } from "./siteRosterView";
 
+/** Roster age tick — faster than default 30s so "12s ago" visibly advances. */
+const ROSTER_LIVE_TICK_MS = 5_000;
+
 export function SiteRosterGrid({
   rows,
   caption = "Sites",
@@ -20,7 +24,7 @@ export function SiteRosterGrid({
   rows: readonly SiteRosterRow[];
   caption?: string;
 }) {
-  const now = useLiveNow();
+  const now = useLiveNow(ROSTER_LIVE_TICK_MS);
   const sorted = useMemo(() => sortSitesByLastUpdated(rows), [rows]);
 
   return (
@@ -62,13 +66,18 @@ export function SiteRosterGrid({
           header: "Last Updated",
           width: "10rem",
           render: (row) => {
+            const at = siteLastActivityAt(row);
             const live = siteLiveState(row, now);
+            const absolute = formatLastUpdated(at);
+            const age = formatActivityAge(at, now);
             return (
-              <span className="cc-live-cell">
-                <span className="tech">{formatLastUpdated(siteLastActivityAt(row))}</span>
+              <span className="cc-live-cell" title={`${live.label} · ${age}`}>
+                <span className="tech" title={age}>
+                  {absolute}
+                </span>
                 <span
                   className={`cc-live-dot tone-${live.tone}`}
-                  title={live.label}
+                  title={`${live.label} · ${age}`}
                   aria-label={live.label}
                 />
               </span>

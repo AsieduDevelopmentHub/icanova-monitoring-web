@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   compareSitesByLastUpdated,
+  formatActivityAge,
   powerSourceLabel,
   siteAttentionIssues,
   sortSitesByLastUpdated,
@@ -42,6 +43,16 @@ describe("powerSourceLabel", () => {
     expect(
       powerSourceLabel({ ...base, reporting: 0, lastTelemetryAt: Date.now(), generators: 1 }),
     ).toBe("Generator");
+  });
+});
+
+describe("formatActivityAge", () => {
+  const now = 1_700_000_060_000;
+  it("shows relative age for live tables", () => {
+    expect(formatActivityAge(null, now)).toBe("—");
+    expect(formatActivityAge(now - 400, now)).toBe("just now");
+    expect(formatActivityAge(now - 12_000, now)).toBe("12s ago");
+    expect(formatActivityAge(now - 125_000, now)).toBe("2m ago");
   });
 });
 

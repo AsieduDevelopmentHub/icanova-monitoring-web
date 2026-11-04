@@ -1,7 +1,12 @@
 /**
- * Age of a Convex current document. This is not the ESP32 Modbus poll interval
- * and it is not the link state. The uplink period is 30 seconds, so 3 minutes
- * is about six missed batches before a stored reading is called stale.
+ * Client display window for a stored reading / site activity.
+ * Must stay aligned with Convex `HEALTH_STALE_MS` (deviceHealth sweep).
+ *
+ * Meaning: if `now - updatedAt` (or lastTelemetryAt) exceeds this, the UI may
+ * show "stale" / "Stop". It is **age of last successful write**, not Modbus
+ * link fail and not "Convex stopped pushing".
+ *
+ * Real uplink is ~30s; 3 minutes ≈ six missed batches before we call it stale.
  */
 export const STORED_STALE_MS = 3 * 60 * 1000;
 

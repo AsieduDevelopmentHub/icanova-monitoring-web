@@ -47,10 +47,13 @@ export const mine = query({
         organizationId: organization._id,
         name: organization.name,
         roleName: role.name,
+        createdAt: organization.createdAt,
         siteCodeFormat: normalizeSiteCodeFormat(organization.siteCodeFormat),
         permissions: role.permissions.filter(isPermission),
       });
     }
+    // Newest org first so reseeds / lab clones become the default selection.
+    rows.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
     return rows;
   },
 });

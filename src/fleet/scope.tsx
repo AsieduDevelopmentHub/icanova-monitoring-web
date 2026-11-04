@@ -12,7 +12,13 @@ import { FleetBoundary } from "./boundary";
 import { id } from "./access";
 import { ScopeEmpty, type ScopeEmptyLayout } from "./ScopeEmpty";
 
-type OrgRow = { organizationId: string; name: string; permissions: string[] };
+type OrgRow = {
+  organizationId: string;
+  name: string;
+  permissions: string[];
+  createdAt?: number;
+  roleName?: string;
+};
 
 export function LiveGate({
   children,
@@ -113,7 +119,17 @@ function OrgBody({
   }
   const listed = orgs as OrgRow[];
   const org = listed.find((item) => item.organizationId === picked) ?? listed[0];
-  const showOrgPicker = platform?.capable === true && listed.length > 1;
+  // Any multi-org user needs a picker — reseeds can leave duplicate demo orgs.
+  const showOrgPicker = listed.length > 1;
+  const orgOptions = listed.map((item) => {
+    const dupes = listed.filter((row) => row.name === item.name).length > 1;
+    const when =
+      typeof item.createdAt === "number" ? new Date(item.createdAt).toLocaleDateString() : null;
+    return {
+      value: item.organizationId,
+      label: dupes && when ? `${item.name} (${when})` : item.name,
+    };
+  });
   return (
     <div className="stack">
       {showOrgPicker ? (
@@ -122,7 +138,7 @@ function OrgBody({
             label="Organization"
             value={org.organizationId}
             onChange={setPicked}
-            options={listed.map((item) => ({ value: item.organizationId, label: item.name }))}
+            options={orgOptions}
           />
         </FilterBar>
       ) : null}

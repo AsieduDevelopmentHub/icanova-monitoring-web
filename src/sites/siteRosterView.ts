@@ -80,11 +80,11 @@ export function sortSitesByLastUpdated<T extends {
   return [...rows].sort(compareSitesByLastUpdated);
 }
 
+/** Absolute wall clock for tooltips / copy. */
 export function formatLastUpdated(at: number | null): string {
   if (at == null || !Number.isFinite(at)) {
     return "—";
   }
-  // Include seconds so live ingest is visible within the same minute.
   return new Date(at).toLocaleString(undefined, {
     year: "numeric",
     month: "2-digit",
@@ -94,4 +94,31 @@ export function formatLastUpdated(at: number | null): string {
     second: "2-digit",
     hour12: false,
   });
+}
+
+/**
+ * Relative age for dense live tables. Tick the parent with useLiveNow so this
+ * string moves even when Convex has not pushed a newer timestamp yet.
+ */
+export function formatActivityAge(at: number | null, now: number): string {
+  if (at == null || !Number.isFinite(at) || !Number.isFinite(now)) {
+    return "—";
+  }
+  const age = Math.max(0, now - at);
+  if (age < 1000) {
+    return "just now";
+  }
+  const seconds = Math.floor(age / 1000);
+  if (seconds < 60) {
+    return `${seconds}s ago`;
+  }
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) {
+    return `${hours}h ago`;
+  }
+  return formatLastUpdated(at);
 }
