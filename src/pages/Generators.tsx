@@ -18,9 +18,6 @@ import type { BoardRow } from "./dashboard/types";
 export function Generators() {
   return (
     <section className="page ops-page">
-      <header className="page-head">
-        <h1>Generators</h1>
-      </header>
       <LiveGate
         emptyLayout="list"
         emptyCaption="Generators"
@@ -91,6 +88,7 @@ function GeneratorList({
         <FilterSearch label="Search" value={query} onChange={setQuery} placeholder="Name or site" />
         <FilterSelect
           label="State"
+          searchable={false}
           value={state}
           onChange={setState}
           options={[

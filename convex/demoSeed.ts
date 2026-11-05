@@ -143,7 +143,7 @@ export const insertFleet = internalMutation({
         alarmCount: 0,
         rpm: fresh ? 1500 + (i % 40) : null,
         rpmQuality: q,
-        batteryV: fresh ? 24 + (i % 5) * 0.1 : null,
+        batteryV: fresh ? 12.8 + (i % 5) * 0.2 : null,
         batteryQuality: q,
         frequencyHz: fresh ? 50 : null,
         frequencyQuality: q,

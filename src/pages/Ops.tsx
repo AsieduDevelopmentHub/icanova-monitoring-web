@@ -30,9 +30,6 @@ function asRecord(section: unknown): Record<string, any> {
 export function Ops() {
   return (
     <section className="page ops-page">
-      <header className="page-head">
-        <h1>Ops desk</h1>
-      </header>
       {import.meta.env.VITE_CONVEX_URL ? (
         <SignedOps />
       ) : (

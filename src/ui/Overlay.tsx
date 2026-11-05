@@ -1,8 +1,12 @@
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
 import { Icon } from "./icons";
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const SWIPE_CLOSE_PX = 100;
+const SWIPE_VELOCITY = 0.45;
+const MOBILE_SHEET_MQ = "(max-width: 720px)";
 
 function useDismiss(open: boolean, onClose: () => void) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -53,6 +57,95 @@ function useDismiss(open: boolean, onClose: () => void) {
   return { panelRef, closeRef };
 }
 
+/** Mobile bottom-sheet: drag the handle/header down to dismiss. */
+function useSwipeDismiss(
+  open: boolean,
+  onClose: () => void,
+  panelRef: RefObject<HTMLDivElement | null>,
+  handleRef: RefObject<HTMLElement | null>,
+) {
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const panel = panelRef.current;
+    const handle = handleRef.current;
+    if (!panel || !handle) {
+      return;
+    }
+
+    let startY = 0;
+    let startT = 0;
+    let dragging = false;
+    let active = false;
+
+    const clearTransform = () => {
+      panel.style.transform = "";
+      panel.style.transition = "";
+    };
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!window.matchMedia(MOBILE_SHEET_MQ).matches) {
+        return;
+      }
+      if (event.button !== 0 && event.pointerType === "mouse") {
+        return;
+      }
+      dragging = true;
+      active = true;
+      startY = event.clientY;
+      startT = performance.now();
+      panel.style.transition = "none";
+      handle.setPointerCapture?.(event.pointerId);
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (!dragging || !active) {
+        return;
+      }
+      const dy = Math.max(0, event.clientY - startY);
+      panel.style.transform = `translateY(${dy}px)`;
+    };
+
+    const onPointerUp = (event: PointerEvent) => {
+      if (!dragging || !active) {
+        return;
+      }
+      dragging = false;
+      active = false;
+      const dy = Math.max(0, event.clientY - startY);
+      const dt = Math.max(1, performance.now() - startT);
+      const velocity = dy / dt;
+      panel.style.transition = "transform 180ms ease";
+      if (dy >= SWIPE_CLOSE_PX || velocity >= SWIPE_VELOCITY) {
+        panel.style.transform = "translateY(100%)";
+        window.setTimeout(() => {
+          clearTransform();
+          onCloseRef.current();
+        }, 160);
+      } else {
+        panel.style.transform = "translateY(0)";
+        window.setTimeout(clearTransform, 180);
+      }
+    };
+
+    handle.addEventListener("pointerdown", onPointerDown);
+    handle.addEventListener("pointermove", onPointerMove);
+    handle.addEventListener("pointerup", onPointerUp);
+    handle.addEventListener("pointercancel", onPointerUp);
+    return () => {
+      handle.removeEventListener("pointerdown", onPointerDown);
+      handle.removeEventListener("pointermove", onPointerMove);
+      handle.removeEventListener("pointerup", onPointerUp);
+      handle.removeEventListener("pointercancel", onPointerUp);
+      clearTransform();
+    };
+  }, [open, panelRef, handleRef]);
+}
+
 export function Drawer({
   open,
   title,
@@ -97,6 +190,7 @@ export function Drawer({
   );
 }
 
+/** Sheet-first dialog: desktop right panel, mobile bottom sheet with swipe dismiss. */
 export function Dialog({
   open,
   title,
@@ -110,6 +204,8 @@ export function Dialog({
 }) {
   const titleId = useId();
   const { panelRef, closeRef } = useDismiss(open, onClose);
+  const handleRef = useRef<HTMLDivElement>(null);
+  useSwipeDismiss(open, onClose, panelRef, handleRef);
   if (!open) {
     return null;
   }
@@ -117,12 +213,15 @@ export function Dialog({
     <div className="overlay" onMouseDown={onClose}>
       <div
         ref={panelRef}
-        className="dialog"
+        className="dialog sheet"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         onMouseDown={(event) => event.stopPropagation()}
       >
+        <div className="sheet-grab" ref={handleRef} aria-hidden="true">
+          <span className="sheet-handle" />
+        </div>
         <header className="overlay-head">
           <h2 id={titleId}>{title}</h2>
           <button ref={closeRef} type="button" className="icon-btn" onClick={onClose} aria-label="Close">

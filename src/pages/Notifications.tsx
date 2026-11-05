@@ -119,6 +119,7 @@ function Inbox({ organizationId }: { organizationId: Id<"organizations"> }) {
       <div className="filter-bar">
         <FilterSelect
           label="State"
+          searchable={false}
           value={readFilter}
           onChange={(value) => setReadFilter(value as typeof readFilter)}
           options={[
@@ -138,6 +139,7 @@ function Inbox({ organizationId }: { organizationId: Id<"organizations"> }) {
         />
         <FilterSelect
           label="Severity"
+          searchable={false}
           value={severity}
           onChange={(value) => setSeverity(value as typeof severity)}
           options={[
@@ -296,6 +298,7 @@ function Settings({ organizationId }: { organizationId: Id<"organizations"> }) {
           <h2>Organization defaults</h2>
           <FilterSelect
             label="Minimum severity"
+            searchable={false}
             value={minSeverity}
             onChange={(value) => setMinSeverity(value as typeof minSeverity)}
             options={[
@@ -646,6 +649,7 @@ function PreferenceForm({
       </label>
       <FilterSelect
         label="Personal minimum severity"
+        searchable={false}
         value={minSeverity}
         onChange={(value) => setMinSeverity(value as typeof minSeverity)}
         options={[

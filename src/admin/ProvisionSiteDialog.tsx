@@ -4,6 +4,7 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { accessMessage } from "../fleet/access";
 import { Dialog } from "../ui/Overlay";
+import { useDebouncedValue } from "../ui/useDebouncedValue";
 
 type Step = "site" | "gateway" | "review";
 
@@ -27,6 +28,7 @@ export function ProvisionSiteDialog({
   const [longitude, setLongitude] = useState("");
   const [mode, setMode] = useState<"pick" | "register">("pick");
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [deviceId, setDeviceId] = useState("");
   const [gatewayName, setGatewayName] = useState("");
   const [gatewayIdentity, setGatewayIdentity] = useState("");
@@ -35,7 +37,7 @@ export function ProvisionSiteDialog({
 
   const unassigned = useQuery(
     api.devices.listUnassigned,
-    open ? { organizationId, search } : "skip",
+    open ? { organizationId, search: debouncedSearch } : "skip",
   );
   const provision = useMutation(api.sites.provision);
 

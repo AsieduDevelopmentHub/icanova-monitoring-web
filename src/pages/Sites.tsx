@@ -139,6 +139,7 @@ function SiteList({
         />
         <FilterSelect
           label="State"
+          searchable={false}
           value={state}
           onChange={setState}
           options={[

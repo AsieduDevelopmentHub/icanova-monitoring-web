@@ -48,9 +48,6 @@ import "./styles.css";
 function ConfigurePage() {
   return (
     <div className="page ops-page">
-      <header className="page-head">
-        <h1>Configure</h1>
-      </header>
       <Configure />
     </div>
   );

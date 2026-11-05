@@ -31,10 +31,7 @@ export function ConvexGenerator() {
   if (!key) {
     return (
       <section className="page ops-page">
-        <header className="page-head">
-          <h1>Generator</h1>
-          <p>Missing id.</p>
-        </header>
+        <p className="meta">Missing generator id.</p>
       </section>
     );
   }
@@ -57,10 +54,7 @@ function ConvexResolver({ publicKey }: { publicKey: string }) {
   if (resolved === null) {
     return (
       <section className="page ops-page">
-        <header className="page-head">
-          <h1>Generator</h1>
-          <p>Not found.</p>
-        </header>
+        <p className="meta">Generator not found.</p>
       </section>
     );
   }
@@ -137,22 +131,13 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
 
   return (
     <section className="page ops-page">
-      <header className="page-head">
-        <div>
-          <p className="crumb-row meta">
-            <Link to="/app">Command Center</Link>
-            <span aria-hidden="true"> / </span>
-            <Link to="/sites">Sites</Link>
-            <span aria-hidden="true"> / </span>
-            <Link to={`/sites/${detail.siteId}`}>Site</Link>
-            <span aria-hidden="true"> / </span>
-            <span>{detail.name}</span>
-          </p>
-          <h1>{detail.name}</h1>
+      <header className="page-identity">
+        <div className="page-identity-main">
+          <h1 className="page-identity-title">{detail.name}</h1>
           <p className="meta">
             <Link to={`/alarms?site=${detail.siteId}&generator=${generatorId}`}>Alarms</Link>
             {" · "}
-            <Link to={`/trends?site=${detail.siteId}&generator=${generatorId}`}>Trends</Link>
+            <Link to="/trends">Trends</Link>
             {" · "}
             <Link to={`/sites/${detail.siteId}`}>Site desk</Link>
           </p>
@@ -301,6 +286,7 @@ function HistoryCharts({ generatorId }: { generatorId: string }) {
       <FilterBar label="Range">
         <FilterSelect
           label="Range"
+          searchable={false}
           value={range}
           onChange={(value) => setRange(RANGES.find((item) => item === value) ?? "day")}
           options={[

@@ -22,10 +22,7 @@ export function OrgGate({
 }) {
   return (
     <section className="page ops-page">
-      <header className="page-head">
-        <h1>{title}</h1>
-        {lede ? <p>{lede}</p> : null}
-      </header>
+      {lede ? <p className="page-lede meta">{lede}</p> : null}
       {import.meta.env.VITE_CONVEX_URL ? (
         <Signed offline={offline} emptyLayout={emptyLayout}>
           {children}

@@ -17,6 +17,8 @@ export type SiteRosterRow = SiteHealthFields & {
   primaryRpm?: number | null;
   /** Mains L1 volts when known (extra.mainsL1). */
   mainsL1?: number | null;
+  /** Starter battery volts when measured (12 V system). */
+  batteryV?: number | null;
   alarmCount?: number | null;
   link?: string | null;
 };
@@ -75,6 +77,9 @@ export function siteAttentionIssues(row: SiteRosterRow): string[] {
     issues.push(
       row.alarmCount === 1 ? "1 generator alarm" : `${row.alarmCount} generator alarms`,
     );
+  }
+  if (typeof row.batteryV === "number" && Number.isFinite(row.batteryV) && row.batteryV < 11.5) {
+    issues.push("Low 12 V battery");
   }
   if (row.activeCommProblems > 0) {
     issues.push(

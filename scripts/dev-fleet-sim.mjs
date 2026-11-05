@@ -209,6 +209,44 @@ function seedMaintenanceOnce() {
 }
 
 /**
+ * Genset starter pack is a 12 V system (realistic field band).
+ * Nominal ~12 V, typical average ~13 V, charge ceiling ~14.5 V.
+ * Wire `batt10` is tenths of a volt (Convex ingest ÷10 → batteryV).
+ * Returns { batt10, chg10?, lowBatt }.
+ */
+function battery12(kind, n, tick, engineOn) {
+  const wobble = (tick + n * 7) % 4;
+  let batt10;
+  let lowBatt = false;
+  if (kind === "mains") {
+    // Utility / site float charger ~13.2–13.8 V
+    batt10 = 132 + (n % 6) + wobble;
+  } else if (kind === "stopped" || kind === "maintenance") {
+    // Resting pack ~12.4–12.9 V
+    batt10 = 124 + (n % 5) + (wobble % 3);
+  } else if (kind === "link_fail") {
+    batt10 = 128 + (n % 4);
+  } else if (kind === "degraded") {
+    // Weak / sagging ~12.0–12.4 V
+    batt10 = 120 + (n % 4);
+  } else if (kind === "alarm" && n % 3 === 0) {
+    // Low-battery alarm ~11.0–11.5 V
+    batt10 = 110 + (n % 5);
+    lowBatt = true;
+  } else {
+    // Engine running / alternator charging ~13.6–14.5 V (cap 14.5)
+    batt10 = Math.min(145, 136 + (n % 9) + (wobble % 3));
+  }
+  /** @type {{ batt10: number, chg10?: number, lowBatt: boolean }} */
+  const out = { batt10, lowBatt };
+  if (engineOn && !lowBatt) {
+    // Charge alt a touch above pack, never above ~14.5 V sense
+    out.chg10 = Math.min(145, Math.max(batt10 + 2, 138 + (n % 6)));
+  }
+  return out;
+}
+
+/**
  * Full sample for Site Desk / Operational Area / roster power source.
  * Wire names match convex/metrics.ts (decoded into extra.*).
  */
@@ -219,15 +257,16 @@ function sampleFor(row, n, tick, scenario) {
   const baseHours = Math.floor(row.hoursBase + tick / 3600);
 
   if (kind === "mains" || (kind === "alarm" && n % 2 === 0)) {
-    const alm = kind === "alarm" ? 1 + (n % 3) : 0;
+    const almBase = kind === "alarm" ? 1 + (n % 3) : 0;
+    const bat = battery12(kind === "mains" ? "mains" : "alarm", n, tick, false);
     return {
       t: tick,
       age: 1,
       link: "ok",
-      alm,
+      alm: bat.lowBatt ? Math.max(almBase, 1) : almBase,
       mode: null,
       rpm: 0,
-      batt10: 252 + (n % 5),
+      batt10: bat.batt10,
       hz10: 0,
       kw100: 0,
       van10: 0,
@@ -253,6 +292,7 @@ function sampleFor(row, n, tick, scenario) {
   }
 
   if (kind === "stopped" || kind === "maintenance") {
+    const bat = battery12(kind, n, tick, false);
     return {
       t: tick,
       age: 1,
@@ -260,7 +300,7 @@ function sampleFor(row, n, tick, scenario) {
       alm: 0,
       mode: null,
       rpm: 0,
-      batt10: 246 + (n % 6),
+      batt10: bat.batt10,
       hz10: 0,
       kw100: 0,
       van10: 0,
@@ -283,19 +323,22 @@ function sampleFor(row, n, tick, scenario) {
 
   if (kind === "link_fail") {
     const link = row.linkPhase === "ok" ? "ok" : "fail";
+    const engOn = link === "ok";
+    const bat = battery12(kind, n, tick, engOn);
     return {
       t: tick,
       age: 2,
       link,
-      alm: link === "fail" ? 0 : 0,
+      alm: 0,
       mode: null,
-      rpm: link === "ok" ? 1500 : null,
-      batt10: 240,
-      hz10: link === "ok" ? 500 : null,
-      kw100: link === "ok" ? load * 100 : null,
-      van10: link === "ok" ? 2300 : null,
-      vbn10: link === "ok" ? 2290 : null,
-      vcn10: link === "ok" ? 2310 : null,
+      rpm: engOn ? 1500 : null,
+      batt10: bat.batt10,
+      ...(bat.chg10 != null ? { chg10: bat.chg10 } : {}),
+      hz10: engOn ? 500 : null,
+      kw100: engOn ? load * 100 : null,
+      van10: engOn ? 2300 : null,
+      vbn10: engOn ? 2290 : null,
+      vcn10: engOn ? 2310 : null,
       fuel: 70,
       cool: 78,
       eh100: baseHours * 100,
@@ -304,6 +347,7 @@ function sampleFor(row, n, tick, scenario) {
   }
 
   if (kind === "degraded") {
+    const bat = battery12(kind, n, tick, true);
     return {
       t: tick,
       age: 3,
@@ -311,7 +355,8 @@ function sampleFor(row, n, tick, scenario) {
       alm: 0,
       mode: null,
       rpm: 1450 + (n % 20),
-      batt10: 236,
+      batt10: bat.batt10,
+      chg10: bat.chg10,
       hz10: 490,
       kw100: Math.max(10, load - 15) * 100,
       van10: 2200,
@@ -328,7 +373,8 @@ function sampleFor(row, n, tick, scenario) {
   }
 
   // running (+ alarm on genset)
-  const alm = kind === "alarm" ? 1 + (n % 4) : 0;
+  const bat = battery12(kind === "alarm" ? "alarm" : "running", n, tick, true);
+  const alm = bat.lowBatt ? Math.max(1, 1 + (n % 4)) : kind === "alarm" ? 1 + (n % 4) : 0;
   return {
     t: tick,
     age: 1,
@@ -336,7 +382,7 @@ function sampleFor(row, n, tick, scenario) {
     alm,
     mode: null,
     rpm: 1480 + ((tick + n) % 40),
-    batt10: 240 + (n % 12),
+    batt10: bat.batt10,
     hz10: 495 + (n % 8),
     kw100: load * 100,
     van10: 2280 + (n % 50),
@@ -355,7 +401,7 @@ function sampleFor(row, n, tick, scenario) {
     oilc: 85 + (n % 10),
     eh100: baseHours * 100,
     starts: 80 + (n % 120),
-    chg10: 270 + (n % 10),
+    ...(bat.chg10 != null ? { chg10: bat.chg10 } : {}),
     pa: load * 300,
     pb: load * 290,
     pc: load * 310,
@@ -412,12 +458,13 @@ async function tickGateway(n, now) {
   row.seq += 1;
   const effective =
     scenario === "link_fail" && row.linkPhase === "recover" ? "running" : scenario;
+  const sample = sampleFor(row, n, now % 1_000_000, effective);
   const batch = await postJson({
     identity,
     boot: row.boot,
     seq: row.seq,
     epoch: sessionEpoch,
-    samples: [sampleFor(row, n, now % 1_000_000, effective)],
+    samples: [sample],
   });
   return {
     identity,
@@ -427,6 +474,7 @@ async function tickGateway(n, now) {
     batch: batch.status,
     accepted: batchAccepted(batch.status, batch.body),
     detail: batch.body,
+    batt10: typeof sample.batt10 === "number" ? sample.batt10 : null,
   };
 }
 
@@ -449,6 +497,11 @@ async function runRound(round) {
   let ok = 0;
   let fail = 0;
   let skipped = 0;
+  let battMin = Infinity;
+  let battMax = -Infinity;
+  let battSum = 0;
+  let battN = 0;
+  let lowBatt = 0;
   const failures = [];
   for (let n = 1; n <= count; n += 1) {
     try {
@@ -466,6 +519,13 @@ async function runRound(round) {
             failures.push(`${r.identity} ${r.scenario} hb=${r.hb} batch=${r.batch} ${r.detail}`);
           }
         }
+        if (typeof r.batt10 === "number") {
+          battMin = Math.min(battMin, r.batt10);
+          battMax = Math.max(battMax, r.batt10);
+          battSum += r.batt10;
+          battN += 1;
+          if (r.batt10 < 115) lowBatt += 1;
+        }
       }
     } catch (err) {
       fail += 1;
@@ -476,8 +536,11 @@ async function runRound(round) {
     if (paceMs) await sleep(paceMs);
   }
   const ts = new Date().toISOString();
+  const battAvg = battN > 0 ? (battSum / battN / 10).toFixed(1) : "—";
+  const battLo = battN > 0 ? (battMin / 10).toFixed(1) : "—";
+  const battHi = battN > 0 ? (battMax / 10).toFixed(1) : "—";
   console.log(
-    `${ts} round=${round} ok=${ok} fail=${fail} silent≈${skipped} mix{ ${tallyScenarios()} }`,
+    `${ts} round=${round} ok=${ok} fail=${fail} silent≈${skipped} batt12V{ n=${battN} avg=${battAvg} min=${battLo} max=${battHi} low≈${lowBatt} } mix{ ${tallyScenarios()} }`,
   );
   for (const line of failures) {
     console.log(`  fail: ${line}`);

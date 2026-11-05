@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -22,13 +22,11 @@ import { ScopeEmpty } from "../fleet/ScopeEmpty";
 import { PageSkeleton, Skeleton } from "../ui/Skeleton";
 import { SessionPulse } from "../ui/SessionPulse";
 import { StatusMark } from "../ui/StatusMark";
+import { useDebouncedValue } from "../ui/useDebouncedValue";
 
 export function Gateways() {
   return (
     <section className="page ops-page">
-      <header className="page-head">
-        <h1>Gateways</h1>
-      </header>
       {import.meta.env.VITE_CONVEX_URL ? <SignedInventory /> : <DemoInventory />}
     </section>
   );
@@ -87,6 +85,23 @@ function OrgInventory() {
   const [picked, setPicked] = useState("");
   const [registerOpen, setRegisterOpen] = useState(false);
   const [params, setParams] = useSearchParams();
+  const [searchDraft, setSearchDraft] = useState(() => params.get("deviceq") ?? "");
+  const search = useDebouncedValue(searchDraft, 300);
+
+  useEffect(() => {
+    const current = params.get("deviceq") ?? "";
+    if (current === search) {
+      return;
+    }
+    const next = new URLSearchParams(params);
+    if (search) {
+      next.set("deviceq", search);
+    } else {
+      next.delete("deviceq");
+    }
+    setParams(next, { replace: true });
+  }, [search, params, setParams]);
+
   if (orgs === undefined) {
     return <PageSkeleton rows={4} label="Loading organizations" />;
   }
@@ -103,7 +118,6 @@ function OrgInventory() {
   }
   const org = orgs.find((item) => item.organizationId === picked) ?? orgs[0];
   const orgId = org.organizationId;
-  const search = params.get("deviceq") ?? "";
   const siteFilter = params.get("site") ?? "";
   const statusFilter = params.get("gwstatus") ?? "all";
   const canManage = org.permissions.includes("manage.devices");
@@ -129,20 +143,13 @@ function OrgInventory() {
         />
         <FilterSearch
           label="Search"
-          value={search}
-          onChange={(value) => {
-            const next = new URLSearchParams(params);
-            if (value) {
-              next.set("deviceq", value);
-            } else {
-              next.delete("deviceq");
-            }
-            setParams(next);
-          }}
+          value={searchDraft}
+          onChange={setSearchDraft}
           placeholder="Name or identity"
         />
         <FilterSelect
           label="Cloud status"
+          searchable={false}
           value={statusFilter}
           onChange={(value) => {
             const next = new URLSearchParams(params);

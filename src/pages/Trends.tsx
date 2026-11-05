@@ -1,29 +1,26 @@
-import { useMemo } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link } from "react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { id } from "../fleet/access";
-import { siteGeneratorPath, sitePath } from "../fleet/paths";
+import { sitePath } from "../fleet/paths";
 import { LiveGate } from "../fleet/scope";
-import { formatStat, seriesStats } from "../telemetry/seriesStats";
+import {
+  powerSourceLabel,
+  siteAttentionIssues,
+  siteLastActivityAt,
+  type SiteRosterRow,
+} from "../sites/siteRosterView";
 import { DataTable } from "../ui/DataTable";
 import { EmptyState } from "../ui/EmptyState";
-import { FilterBar, FilterSelect } from "../ui/FilterBar";
-import { SeriesChart } from "../ui/SeriesChart";
+import { Metric } from "../ui/Metric";
 import { PageSkeleton, Skeleton } from "../ui/Skeleton";
-import type { BoardRow } from "./dashboard/types";
+import { StatusMark } from "../ui/StatusMark";
 
-const RANGES = ["hour", "six", "day", "week"] as const;
-type RangeName = (typeof RANGES)[number];
-
-/** Type C — analytics with optional site context. */
+/** Org-wide health / status desk — not single-generator charts. */
 export function Trends() {
   return (
     <section className="page ops-page analytics-page">
-      <header className="page-head">
-        <h1>Trends</h1>
-      </header>
-      <LiveGate emptyLayout="list" emptyCaption="Trends" emptyColumns={["Metric", "Latest", "Min", "Max"]}>
+      <LiveGate emptyLayout="list" emptyCaption="Trends" emptyColumns={["Site", "Cloud", "Link", "Freshness"]}>
         {(org) => <TrendsBody organizationId={org.organizationId} permissions={org.permissions} />}
       </LiveGate>
     </section>
@@ -37,222 +34,177 @@ function TrendsBody({
   organizationId: string;
   permissions: readonly string[];
 }) {
-  const [params, setParams] = useSearchParams();
-  const rangeParam = params.get("range");
-  const range: RangeName = RANGES.find((item) => item === rangeParam) ?? "day";
-  const siteFilter = params.get("site") ?? "";
-  const selected = params.get("generator") ?? "";
-
-  const data = useQuery(
-    api.telemetry.currentForOrg,
-    permissions.includes("view.telemetry")
-      ? { organizationId: id<"organizations">(organizationId) }
+  const orgId = id<"organizations">(organizationId);
+  const overview = useQuery(
+    api.siteStats.commandOverview,
+    permissions.includes("view.dashboard") ? { organizationId: orgId } : "skip",
+  );
+  const roster = useQuery(
+    api.telemetry.siteRoster,
+    permissions.includes("view.telemetry") || permissions.includes("view.dashboard")
+      ? { organizationId: orgId }
       : "skip",
   );
-  const rows = useMemo(() => (Array.isArray(data?.rows) ? (data.rows as BoardRow[]) : []), [data]);
-  const sites = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const row of rows) {
-      if (row.siteId) {
-        map.set(row.siteId, row.siteName ?? "Site");
-      }
-    }
-    return [...map.entries()].map(([value, label]) => ({ value, label }));
-  }, [rows]);
 
-  if (!permissions.includes("view.telemetry")) {
-    return <EmptyState title="Telemetry required" body="view.telemetry is needed for trends." />;
+  if (!permissions.includes("view.dashboard") && !permissions.includes("view.telemetry")) {
+    return <EmptyState title="Access required" body="Dashboard or telemetry permission is needed for trends." />;
   }
-  if (data === undefined) {
-    return <PageSkeleton rows={6} label="Loading fleet" />;
-  }
-  if (rows.length === 0) {
-    return <EmptyState title="No generators" body="Provision a site with generators to chart trends." />;
+  if (overview === undefined || roster === undefined) {
+    return <PageSkeleton rows={6} label="Loading org health" />;
   }
 
-  const scoped = siteFilter ? rows.filter((row) => row.siteId === siteFilter) : rows;
-  const pool = scoped.length > 0 ? scoped : rows;
-  const generatorId =
-    pool.find((row) => row.generatorId === selected)?.generatorId ?? pool[0]?.generatorId ?? "";
-  const generator = pool.find((row) => row.generatorId === generatorId);
-
-  function setSite(value: string) {
-    const next = new URLSearchParams(params);
-    if (!value || value === "all") {
-      next.delete("site");
-    } else {
-      next.set("site", value);
-    }
-    next.delete("generator");
-    setParams(next);
-  }
-
-  function setGenerator(value: string) {
-    const next = new URLSearchParams(params);
-    next.set("generator", value);
-    const row = rows.find((item) => item.generatorId === value);
-    if (row?.siteId) {
-      next.set("site", row.siteId);
-    }
-    setParams(next);
-  }
-
-  function setRange(value: string) {
-    const next = new URLSearchParams(params);
-    if (value === "day") {
-      next.delete("range");
-    } else {
-      next.set("range", value);
-    }
-    setParams(next);
-  }
-
-  return (
-    <div className="stack">
-      <FilterBar label="Trend filters">
-        <FilterSelect
-          label="Site"
-          value={siteFilter || "all"}
-          onChange={setSite}
-          options={[{ value: "all", label: "All sites" }, ...sites]}
-        />
-        <FilterSelect
-          label="Generator"
-          value={generatorId}
-          onChange={setGenerator}
-          options={pool.map((row) => ({
-            value: row.generatorId,
-            label: `${row.name}${row.siteName ? ` · ${row.siteName}` : ""}`,
-          }))}
-        />
-        <FilterSelect
-          label="Range"
-          value={range}
-          onChange={setRange}
-          options={[
-            { value: "hour", label: "1 hour" },
-            { value: "six", label: "6 hours" },
-            { value: "day", label: "24 hours" },
-            { value: "week", label: "7 days" },
-          ]}
-        />
-      </FilterBar>
-      {generator ? (
-        <p className="meta">
-          {generator.siteId ? (
-            <Link to={siteGeneratorPath(generator.siteId, generator.generatorId)}>{generator.name}</Link>
-          ) : (
-            generator.name
-          )}
-          {generator.siteId ? (
-            <>
-              {" · "}
-              <Link to={sitePath(generator.siteId)}>{generator.siteName ?? "Site"}</Link>
-            </>
-          ) : null}
-          {" · "}
-          <Link to="/reports">Export</Link>
-        </p>
-      ) : null}
-      <TrendCharts generatorId={generatorId} range={range} />
-    </div>
+  const rows = roster as SiteRosterRow[];
+  const counts = overview.siteCounts;
+  const attention = rows.filter(
+    (row) => row.overallUnhealthy > 0 || row.gatewayOffline > 0 || row.linkFail > 0 || (row.alarmCount ?? 0) > 0,
   );
-}
-
-function TrendCharts({ generatorId, range }: { generatorId: string; range: RangeName }) {
-  const series = useQuery(api.telemetry.series, {
-    generatorId: id<"generators">(generatorId),
-    range,
-  });
-  const caption =
-    range === "hour" ? "1h" : range === "six" ? "6h" : range === "week" ? "7d" : "24h";
-
-  if (series === undefined) {
-    return <Skeleton lines={8} />;
-  }
-
-  const strip = [
-    { label: "Power", unit: "kW", points: series.power },
-    { label: "Frequency", unit: "Hz", points: series.frequency },
-    { label: "RPM", unit: "rpm", points: series.rpm },
-    { label: "Battery", unit: "V", points: series.battery },
-    { label: "L1 voltage", unit: "V", points: series.voltage },
-  ].map((item) => {
-    const stats = seriesStats(item.points);
-    return {
-      label: item.label,
-      unit: item.unit,
-      latest: formatStat(stats.latest),
-      min: formatStat(stats.min),
-      max: formatStat(stats.max),
-      average: formatStat(stats.average),
-      count: String(stats.count),
-    };
-  });
+  const cloudOffline = rows.filter((row) => row.gatewayOffline > 0).length;
+  const linkFail = rows.filter((row) => row.linkFail > 0 || row.link === "fail").length;
+  const alarmSites = rows.filter((row) => (row.alarmCount ?? 0) > 0).length;
 
   return (
     <div className="stack">
-      {series.capped ? <p className="meta">Read limit reached.</p> : null}
-      <div className="cc-charts">
-        <SeriesChart
-          title="Power"
-          unit="kW"
-          points={series.power}
-          reduced={Boolean(series.reduced.power)}
-          caption={caption}
-          height={260}
+      <p className="meta page-lede">
+        Organization health across sites. Cloud contact, Modbus link, and sample freshness are tracked separately.
+      </p>
+
+      <div className="metric-grid metric-grid-primary">
+        <Metric label="Sites" value={String(counts.total)} />
+        <Metric label="Cloud updating" value={String(counts.updating)} tone="ok" />
+        <Metric
+          label="Cloud not updating"
+          value={String(counts.nonUpdating)}
+          tone={counts.nonUpdating > 0 ? "warn" : "ok"}
         />
-        <SeriesChart
-          title="Frequency"
-          unit="Hz"
-          points={series.frequency}
-          reduced={Boolean(series.reduced.frequency)}
-          caption={caption}
-          height={220}
+        <Metric label="Fresh telemetry" value={String(counts.currentData)} tone="ok" />
+        <Metric
+          label="Accumulated / stale"
+          value={String(counts.accumulatedData)}
+          tone={counts.accumulatedData > 0 ? "warn" : "ok"}
         />
+        <Metric label="Attention sites" value={String(attention.length)} tone={attention.length > 0 ? "alarm" : "ok"} />
       </div>
-      <div className="cc-charts">
-        <SeriesChart
-          title="RPM"
-          unit="rpm"
-          points={series.rpm}
-          reduced={Boolean(series.reduced.rpm)}
-          caption={caption}
-          height={200}
-        />
-        <SeriesChart
-          title="Battery"
-          unit="V"
-          points={series.battery}
-          reduced={Boolean(series.reduced.battery)}
-          caption={caption}
-          height={200}
-        />
-        <SeriesChart
-          title="L1 voltage"
-          unit="V"
-          points={series.voltage}
-          reduced={Boolean(series.reduced.voltage)}
-          caption={caption}
-          height={200}
-        />
+
+      <div className="metric-grid">
+        <Metric label="Sites · cloud offline" value={String(cloudOffline)} tone={cloudOffline > 0 ? "warn" : "ok"} />
+        <Metric label="Sites · Modbus fail" value={String(linkFail)} tone={linkFail > 0 ? "alarm" : "ok"} />
+        <Metric label="Sites · active alarms" value={String(alarmSites)} tone={alarmSites > 0 ? "alarm" : "ok"} />
       </div>
-      <DataTable
-        dense
-        caption="Measured statistics"
-        rows={strip}
-        getRowKey={(row) => row.label}
-        empty="No measured history in this range."
-        columns={[
-          { key: "label", header: "Measurement", render: (row) => row.label },
-          { key: "unit", header: "Unit", render: (row) => row.unit },
-          { key: "latest", header: "Latest", align: "right", render: (row) => row.latest },
-          { key: "min", header: "Min", align: "right", render: (row) => row.min },
-          { key: "max", header: "Max", align: "right", render: (row) => row.max },
-          { key: "average", header: "Avg", align: "right", render: (row) => row.average },
-          { key: "count", header: "Readings", align: "right", render: (row) => row.count },
-        ]}
-      />
+
+      {overview.regions.length > 0 ? (
+        <section className="ops-section" aria-labelledby="trends-regions-title">
+          <h2 id="trends-regions-title" className="cc-section-title">
+            Regional cloud status
+          </h2>
+          <DataTable
+            dense
+            caption="Sites updating by region (gateway online)"
+            rows={overview.regions.filter((row) => row.updating + row.nonUpdating > 0)}
+            getRowKey={(row) => row.region}
+            empty="No regional activity yet."
+            columns={[
+              { key: "region", header: "Region", render: (row) => row.region },
+              {
+                key: "updating",
+                header: "Updating",
+                align: "right",
+                render: (row) => row.updating,
+              },
+              {
+                key: "nonUpdating",
+                header: "Not updating",
+                align: "right",
+                render: (row) => row.nonUpdating,
+              },
+            ]}
+          />
+        </section>
+      ) : (
+        <Skeleton lines={3} />
+      )}
+
+      <section className="ops-section" aria-labelledby="trends-sites-title">
+        <header className="cc-section-head">
+          <h2 id="trends-sites-title" className="cc-section-title">
+            Site status
+          </h2>
+          <Link to="/sites" className="meta">
+            Manage sites
+          </Link>
+        </header>
+        {rows.length === 0 ? (
+          <EmptyState title="No sites" body="Provision a site to see org health trends." action={<Link to="/sites">Sites</Link>} />
+        ) : (
+          <DataTable
+            dense
+            caption="Org site health"
+            rows={rows}
+            getRowKey={(row) => row.siteId}
+            empty="No sites."
+            columns={[
+              {
+                key: "name",
+                header: "Site",
+                render: (row) => <Link to={sitePath(row.siteId)}>{row.name}</Link>,
+              },
+              {
+                key: "region",
+                header: "Region",
+                render: (row) => row.region ?? "—",
+              },
+              {
+                key: "cloud",
+                header: "Cloud",
+                render: (row) => (
+                  <StatusMark tone={row.gatewayOffline > 0 ? "warn" : row.gatewayOnline > 0 ? "ok" : "neutral"}>
+                    {row.gatewayOffline > 0 ? "offline" : row.gatewayOnline > 0 ? "online" : "—"}
+                  </StatusMark>
+                ),
+              },
+              {
+                key: "link",
+                header: "Modbus",
+                render: (row) => (
+                  <StatusMark tone={row.linkFail > 0 || row.link === "fail" ? "alarm" : row.link === "ok" ? "ok" : "neutral"}>
+                    {row.linkFail > 0 || row.link === "fail" ? "fail" : row.link ?? "—"}
+                  </StatusMark>
+                ),
+              },
+              {
+                key: "fresh",
+                header: "Freshness",
+                render: (row) => {
+                  const at = siteLastActivityAt(row);
+                  if (at == null) {
+                    return "—";
+                  }
+                  const ageMin = Math.round((Date.now() - at) / 60_000);
+                  return ageMin <= 15 ? "fresh" : ageMin <= 60 ? "aging" : "stale";
+                },
+              },
+              {
+                key: "power",
+                header: "Power",
+                render: (row) => powerSourceLabel(row),
+              },
+              {
+                key: "alarms",
+                header: "Alarms",
+                align: "right",
+                render: (row) => row.alarmCount ?? 0,
+              },
+              {
+                key: "issues",
+                header: "Attention",
+                render: (row) => {
+                  const issues = siteAttentionIssues(row);
+                  return issues.length ? issues.join(" · ") : "—";
+                },
+              },
+            ]}
+          />
+        )}
+      </section>
     </div>
   );
 }

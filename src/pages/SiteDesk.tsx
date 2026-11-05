@@ -110,16 +110,9 @@ function DeskBody({
 
   return (
     <div className="stack">
-      <header className="page-head">
-        <div>
-          <p className="crumb-row meta">
-            <Link to="/app">Command Center</Link>
-            <span aria-hidden="true"> / </span>
-            <Link to="/sites">Sites</Link>
-            <span aria-hidden="true"> / </span>
-            <span>{site.name}</span>
-          </p>
-          <h1>{site.name}</h1>
+      <header className="page-identity">
+        <div className="page-identity-main">
+          <h1 className="page-identity-title">{site.name}</h1>
           <p className="meta">
             {site.code ? <span className="tech">{site.code}</span> : null}
             {site.region ? (

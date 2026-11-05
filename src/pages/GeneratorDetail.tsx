@@ -131,20 +131,14 @@ export function GeneratorDetail() {
     }
     return (
       <section className="page ops-page">
-        <header className="page-head">
-          <h1>Generator</h1>
-          <p>That id is not in the demo log.</p>
-        </header>
+        <p className="meta">That id is not in the demo log.</p>
       </section>
     );
   }
   if (sectionParam && !section) {
     return (
       <section className="page ops-page">
-        <header className="page-head">
-          <h1>Unknown section</h1>
-          <p>This detail page does not have that section.</p>
-        </header>
+        <p className="meta">This detail page does not have that section.</p>
       </section>
     );
   }
@@ -177,13 +171,17 @@ export function GeneratorDetail() {
 
   return (
     <section className="page ops-page">
-      <header className="page-head">
-        <h1>Model {focus ? formatReading(readingOf(focus.readings, "Model Number")) : "—"}</h1>
-        <p>
-          {focus?.mode ?? "Mode unavailable"} · control status{" "}
-          {focus ? formatReading(readingOf(focus.readings, "Control Unit Status")) : "—"} · serial{" "}
-          {focus ? formatReading(readingOf(focus.readings, "Serial Number")) : "—"}
-        </p>
+      <header className="page-identity">
+        <div className="page-identity-main">
+          <h1 className="page-identity-title">
+            Model {focus ? formatReading(readingOf(focus.readings, "Model Number")) : "—"}
+          </h1>
+          <p className="meta">
+            {focus?.mode ?? "Mode unavailable"} · control status{" "}
+            {focus ? formatReading(readingOf(focus.readings, "Control Unit Status")) : "—"} · serial{" "}
+            {focus ? formatReading(readingOf(focus.readings, "Serial Number")) : "—"}
+          </p>
+        </div>
       </header>
       <p className="meta" role="note">
         Demo · {focus?.sourceLabel ?? DEMO_SOURCE}

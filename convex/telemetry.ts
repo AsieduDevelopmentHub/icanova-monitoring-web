@@ -336,6 +336,7 @@ export const siteRoster = query({
       const gateway = gatewayBySite.get(String(site._id));
       let primaryRpm: number | null = null;
       let mainsL1: number | null = null;
+      let batteryV: number | null = null;
       let alarmCount: number | null = null;
       let link: string | null = null;
       if (gateway) {
@@ -355,6 +356,12 @@ export const siteRoster = query({
             link = current.link;
             const mains = current.extra?.mainsL1;
             mainsL1 = typeof mains === "number" && Number.isFinite(mains) ? mains : null;
+            batteryV =
+              current.batteryQuality === "measured" &&
+              typeof current.batteryV === "number" &&
+              Number.isFinite(current.batteryV)
+                ? current.batteryV
+                : null;
           }
         }
       }
@@ -379,6 +386,7 @@ export const siteRoster = query({
         lastGatewayContactAt: summary?.lastGatewayContactAt ?? null,
         primaryRpm,
         mainsL1,
+        batteryV,
         alarmCount,
         link,
       });

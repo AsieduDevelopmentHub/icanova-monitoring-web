@@ -41,9 +41,6 @@ export function Events() {
   const [mode, setMode] = useState<TimelineMode>("health");
   return (
     <section className="page ops-page">
-      <header className="page-head">
-        <h1>Events</h1>
-      </header>
       <Tabs
         label="Timeline source"
         value={mode}

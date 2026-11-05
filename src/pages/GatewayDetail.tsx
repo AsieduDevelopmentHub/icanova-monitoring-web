@@ -37,10 +37,7 @@ export function GatewayDetail() {
     if (deviceId !== DEMO_GENERATOR_ID) {
       return (
         <section className="page ops-page">
-          <header className="page-head">
-            <h1>Gateway</h1>
-            <p>That id is not in the demo log.</p>
-          </header>
+          <p className="meta">That id is not in the demo log.</p>
         </section>
       );
     }
@@ -57,11 +54,13 @@ function DemoGateway() {
   const name = demoFrames[0]?.device ?? "DSE 7320 / 7320 MKII";
   return (
     <section className="page ops-page">
-      <header className="page-head">
-        <h1>{name}</h1>
-        <p>
-          <Link to="/sites">Sites</Link>
-        </p>
+      <header className="page-identity">
+        <div className="page-identity-main">
+          <h1 className="page-identity-title">{name}</h1>
+          <p className="meta">
+            <Link to="/sites">Sites</Link>
+          </p>
+        </div>
       </header>
       <p className="meta" role="note">
         Demo · {DEMO_SOURCE}
@@ -116,22 +115,9 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
 
   return (
     <section className="page ops-page">
-      <header className="page-head">
-        <div>
-          <p className="crumb-row meta">
-            <Link to="/app">Command Center</Link>
-            <span aria-hidden="true"> / </span>
-            <Link to="/sites">Sites</Link>
-            <span aria-hidden="true"> / </span>
-            {detail.device.siteId ? (
-              <Link to={`/sites/${detail.device.siteId}`}>{detail.siteName ?? "Site"}</Link>
-            ) : (
-              <span>Site</span>
-            )}
-            <span aria-hidden="true"> / </span>
-            <span>{detail.device.name}</span>
-          </p>
-          <h1>{detail.device.name}</h1>
+      <header className="page-identity">
+        <div className="page-identity-main">
+          <h1 className="page-identity-title">{detail.device.name}</h1>
           <p className="meta">
             {detail.device.siteId ? (
               <>

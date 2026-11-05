@@ -22,9 +22,6 @@ export function Settings() {
 
   return (
     <section className="page ops-page">
-      <header className="page-head">
-        <h1>Settings</h1>
-      </header>
       {!configured ? (
         <EmptyState
           title="Convex is not configured"

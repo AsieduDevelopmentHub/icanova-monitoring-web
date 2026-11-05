@@ -80,12 +80,14 @@ function ExportForm({ organizationId }: { organizationId: Id<"organizations"> })
         <FilterBar label="Report filters">
           <FilterSelect
             label="Kind"
+            searchable={false}
             value={kind}
             onChange={(value) => setKind((KINDS.find((item) => item.value === value)?.value as ReportKind) ?? "alarms")}
             options={KINDS}
           />
           <FilterSelect
             label="Format"
+            searchable={false}
             value={format}
             onChange={(value) => setFormat(value === "xlsx" || value === "pdf" ? value : "csv")}
             options={[

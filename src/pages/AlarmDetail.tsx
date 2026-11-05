@@ -36,10 +36,7 @@ export function AlarmDetail() {
     if (!demo) {
       return (
         <section className="page ops-page">
-          <header className="page-head">
-            <h1>Alarm</h1>
-            <p>That id is not in the demo log.</p>
-          </header>
+          <p className="meta">That id is not in the demo log.</p>
         </section>
       );
     }
@@ -55,11 +52,13 @@ export function AlarmDetail() {
 function DemoAlarm({ row }: { row: (typeof demoRows)[number] }) {
   return (
     <section className="page ops-page">
-      <header className="page-head">
-        <h1>{row.summary}</h1>
-        <p>
-          <Link to="/alarms">Alarms</Link>
-        </p>
+      <header className="page-identity">
+        <div className="page-identity-main">
+          <h1 className="page-identity-title">{row.summary}</h1>
+          <p className="meta">
+            <Link to="/alarms">Alarms</Link>
+          </p>
+        </div>
       </header>
       <p className="meta" role="note">
         Demo · {DEMO_SOURCE}
@@ -107,16 +106,9 @@ function StoredAlarm({ alarmId }: { alarmId: string }) {
 
   return (
     <section className="page ops-page">
-      <header className="page-head">
-        <div>
-          <p className="crumb-row meta">
-            <Link to="/app">Command Center</Link>
-            <span aria-hidden="true"> / </span>
-            <Link to="/alarms">Alarms</Link>
-            <span aria-hidden="true"> / </span>
-            <span>Detail</span>
-          </p>
-          <h1>{alarm.summary}</h1>
+      <header className="page-identity">
+        <div className="page-identity-main">
+          <h1 className="page-identity-title">{alarm.summary}</h1>
         </div>
       </header>
       <div className="status-row">

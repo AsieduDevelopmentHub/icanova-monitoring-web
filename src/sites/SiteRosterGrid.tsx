@@ -91,6 +91,24 @@ export function SiteRosterGrid({
           render: (row) => powerSourceLabel(row),
         },
         {
+          key: "battery",
+          header: "Battery",
+          align: "right",
+          width: "5.5rem",
+          render: (row) => {
+            const v = row.batteryV;
+            if (typeof v !== "number" || !Number.isFinite(v)) {
+              return "—";
+            }
+            const tone = v < 11.5 ? "warn" : v < 12.2 ? "warn" : "ok";
+            return (
+              <span className={`tech tone-${tone}`} title="12 V starter battery">
+                {v.toFixed(1)} V
+              </span>
+            );
+          },
+        },
+        {
           key: "gateway",
           header: "Gateway ID",
           width: "8rem",

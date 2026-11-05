@@ -36,9 +36,6 @@ type LiveRow = {
 export function Monitor() {
   return (
     <section className="page ops-page">
-      <header className="page-head">
-        <h1>Live Systems</h1>
-      </header>
       <LiveGate>
         {(org) => (
           <SiteSelect organizationId={org.organizationId}>

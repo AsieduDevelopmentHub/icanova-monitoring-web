@@ -22,9 +22,6 @@ export function PlatformAdmin() {
   if (!capable.capable && !secret) {
     return (
       <section className="page ops-page">
-        <header className="page-head">
-          <h1>Platform admin</h1>
-        </header>
         <EmptyState
           title="Restricted"
           body="Sign in with a platform-admin email, or paste PLATFORM_ADMIN_SECRET to continue."
@@ -48,9 +45,6 @@ export function PlatformAdmin() {
   }
   return (
     <section className="page ops-page">
-      <header className="page-head">
-        <h1>Platform admin</h1>
-      </header>
       <div className="stack">
         <AttachSelfPanel secret={capable.capable ? undefined : secret} />
         <DemoSeedPanel secret={capable.capable ? undefined : secret} />

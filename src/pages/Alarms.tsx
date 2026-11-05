@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -26,6 +26,7 @@ import { Metric } from "../ui/Metric";
 import { StatusMark } from "../ui/StatusMark";
 import { PageSkeleton } from "../ui/Skeleton";
 import { Dialog } from "../ui/Overlay";
+import { useDebouncedValue } from "../ui/useDebouncedValue";
 
 const demoRows = demoAlarms(demoSamples);
 
@@ -40,9 +41,6 @@ function oneOf<T extends string>(value: string | null, allowed: readonly T[], fa
 export function Alarms() {
   return (
     <section className="page ops-page">
-      <header className="page-head">
-        <h1>Alarms</h1>
-      </header>
       {import.meta.env.VITE_CONVEX_URL ? (
         <LiveGate
           emptyLayout="list"
@@ -96,6 +94,7 @@ function DemoAlarmList() {
         <FilterSearch label="Search" value={search} onChange={setSearch} placeholder="Link, batch, page" />
         <FilterSelect
           label="Kind"
+          searchable={false}
           value={kind}
           onChange={setKind}
           options={[
@@ -142,7 +141,8 @@ function OrgAlarms({
   permissions: readonly string[];
 }) {
   const [params, setParams] = useSearchParams();
-  const search = params.get("orgq") ?? "";
+  const [searchDraft, setSearchDraft] = useState(params.get("orgq") ?? "");
+  const search = useDebouncedValue(searchDraft, 300);
   const status = oneOf(params.get("state"), STATUSES, "all");
   const severity = oneOf(params.get("severity"), SEVERITIES, "all");
   const category = oneOf(params.get("category"), CATEGORIES, "all");
@@ -166,6 +166,20 @@ function OrgAlarms({
     setParams(next);
   }
 
+  useEffect(() => {
+    const current = params.get("orgq") ?? "";
+    if (current === search) {
+      return;
+    }
+    const next = new URLSearchParams(params);
+    if (search) {
+      next.set("orgq", search);
+    } else {
+      next.delete("orgq");
+    }
+    setParams(next, { replace: true });
+  }, [search, params, setParams]);
+
   const sites = scope?.sites ?? [];
   const generators = scope?.generators ?? [];
   const siteValue =
@@ -188,15 +202,17 @@ function OrgAlarms({
   return (
     <div className="stack alarm-board">
       <FilterBar label="Alarm filters">
-        <FilterSearch label="Search" value={search} onChange={(value) => setParam("orgq", value)} />
+        <FilterSearch label="Search" value={searchDraft} onChange={setSearchDraft} />
         <FilterSelect
           label="Status"
+          searchable={false}
           value={status}
           onChange={(value) => setParam("state", value)}
           options={STATUSES.map((value) => ({ value, label: value === "all" ? "All statuses" : value }))}
         />
         <FilterSelect
           label="Severity"
+          searchable={false}
           value={severity}
           onChange={(value) => setParam("severity", value)}
           options={SEVERITIES.map((value) => ({
@@ -206,6 +222,7 @@ function OrgAlarms({
         />
         <FilterSelect
           label="Category"
+          searchable={false}
           value={category}
           onChange={(value) => setParam("category", value)}
           options={CATEGORIES.map((value) => ({
@@ -310,6 +327,7 @@ function RecordAlarm({ organizationId }: { organizationId: string }) {
         />
         <FilterSelect
           label="Record as"
+          searchable={false}
           value={recordKind}
           onChange={(value) => setRecordKind(value === "controller" ? "controller" : "transport")}
           options={[
