@@ -19,6 +19,7 @@ export function GridTable<T>({
   caption,
   initialPageSize = 25,
   rowClassName,
+  renderMobileRow,
 }: {
   columns: GridColumn<T>[];
   rows: T[];
@@ -27,6 +28,7 @@ export function GridTable<T>({
   caption?: string;
   initialPageSize?: (typeof PAGE_SIZES)[number];
   rowClassName?: (row: T) => string | undefined;
+  renderMobileRow?: (row: T) => ReactNode;
 }) {
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(initialPageSize);
   const [page, setPage] = useState(0);
@@ -49,7 +51,7 @@ export function GridTable<T>({
   const atEnd = safePage >= pageCount - 1;
 
   return (
-    <div className="grid-table">
+    <div className={`grid-table${renderMobileRow ? " has-mobile-rows" : ""}`}>
       <div className="grid-table-scroll">
         <table className="data-table dense grid-table-table">
           {caption ? <caption>{caption}</caption> : null}
@@ -99,6 +101,19 @@ export function GridTable<T>({
           </tbody>
         </table>
       </div>
+      {renderMobileRow ? (
+        <div className="grid-table-mobile" role="list" aria-label={caption ?? "Rows"}>
+          {pageRows.length > 0 ? (
+            pageRows.map((row) => (
+              <div key={getRowKey(row)} role="listitem">
+                {renderMobileRow(row)}
+              </div>
+            ))
+          ) : (
+            <p className="grid-table-mobile-empty">{empty}</p>
+          )}
+        </div>
+      ) : null}
       <footer className="grid-table-pager">
         <div className="grid-table-meta">
           <label className="grid-table-size">

@@ -13,4 +13,6 @@ alwaysApply: false
 - Pagination: icon controls; **one horizontal row on mobile** (`flex-wrap: nowrap`). Place mobile CSS **after** base rules.
 - Live indicators: `useLiveNow` for age; Convex for data push. Preserve routes/workflows unless intentional.
 - Styles: `src/styles.css` tokens; avoid purple-AI/neon tropes.
+- Read `docs/brand/app-ui-system.md` and the competitor benchmark at `docs/brand/competitor-inspiration/README.md` before substantial app UI work. Borrow information hierarchy, fleet density, clear status, and multi-panel operational patterns; never copy competitor branding, logos, or layouts verbatim.
+- Keep the refresh focused on the authenticated app; marketing pages and Command Center dashboard content remain unchanged. Shared shell changes may still appear on `/app`.
 - After significant UI changes: verify actual browser behavior (incl. ~390–720px) before claiming done.

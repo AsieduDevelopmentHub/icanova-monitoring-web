@@ -15,6 +15,7 @@ export function DataTable<T>({
   caption,
   dense,
   rowClassName,
+  renderMobileRow,
 }: {
   columns: Column<T>[];
   rows: T[];
@@ -23,9 +24,10 @@ export function DataTable<T>({
   caption?: string;
   dense?: boolean;
   rowClassName?: (row: T) => string | undefined;
+  renderMobileRow?: (row: T) => ReactNode;
 }) {
   return (
-    <div className="table-wrap">
+    <div className={`table-wrap${renderMobileRow ? " has-mobile-rows" : ""}`}>
       <table className={`data-table${dense ? " dense" : ""}`}>
         {caption ? <caption>{caption}</caption> : null}
         <thead>
@@ -60,6 +62,19 @@ export function DataTable<T>({
           )}
         </tbody>
       </table>
+      {renderMobileRow ? (
+        <div className="data-table-mobile" role="list" aria-label={caption ?? "Rows"}>
+          {rows.length > 0 ? (
+            rows.map((row) => (
+              <div key={getRowKey(row)} role="listitem">
+                {renderMobileRow(row)}
+              </div>
+            ))
+          ) : (
+            <p className="data-table-mobile-empty">{empty}</p>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

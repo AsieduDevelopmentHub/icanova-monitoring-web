@@ -11,6 +11,7 @@ import {
   siteLastActivityAt,
   type SiteRosterRow,
 } from "./siteRosterView";
+import { StatusMark } from "../ui/StatusMark";
 import { useThrottledRoster } from "./useThrottledRoster";
 
 /** Hover age tick — independent of the throttled roster field refresh. */
@@ -19,13 +20,71 @@ const ROSTER_LIVE_TICK_MS = 5_000;
 export function SiteRosterGrid({
   rows,
   caption = "Sites",
+  mobileCards = false,
 }: {
   rows: readonly SiteRosterRow[];
   caption?: string;
+  mobileCards?: boolean;
 }) {
   const now = useLiveNow(ROSTER_LIVE_TICK_MS);
   // Stable order + batched Last Updated / health so rows do not jump every ingest.
   const displayRows = useThrottledRoster(rows);
+  const renderMobileRow = mobileCards
+    ? (row: SiteRosterRow) => {
+        const issues = siteAttentionIssues(row);
+        const activityAt = siteLastActivityAt(row);
+        const live = siteLiveState(row, now);
+        return (
+          <article className="site-roster-card">
+            <header className="site-roster-card-head">
+              <div className="site-roster-card-identity">
+                <span className="site-roster-card-code tech">{row.code ?? "—"}</span>
+                <Link to={`/sites/${row.siteId}`} title={row.name}>
+                  {row.name}
+                </Link>
+              </div>
+              <SiteAlarmBell
+                siteId={row.siteId}
+                siteLabel={`${row.code ?? "—"} | ${row.name}`}
+                issues={issues}
+              />
+            </header>
+            <div className="site-roster-card-status">
+              <StatusMark tone={live.tone}>{live.label}</StatusMark>
+              <span className="meta" title={formatLastUpdated(activityAt)}>
+                {formatActivityAge(activityAt, now)}
+              </span>
+            </div>
+            <dl className="site-roster-card-facts">
+              <div>
+                <dt>Power source</dt>
+                <dd>{powerSourceLabel(row)}</dd>
+              </div>
+              <div>
+                <dt>Battery</dt>
+                <dd className="tech">
+                  {typeof row.batteryV === "number" && Number.isFinite(row.batteryV)
+                    ? `${row.batteryV.toFixed(1)} V`
+                    : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt>Gateway</dt>
+                <dd className="tech">{row.gatewayId ?? "—"}</dd>
+              </div>
+              <div>
+                <dt>Region</dt>
+                <dd>{row.region ?? "—"}</dd>
+              </div>
+              <div>
+                <dt>Generators</dt>
+                <dd>{row.generators ?? "—"}</dd>
+              </div>
+            </dl>
+          </article>
+        );
+      }
+    : undefined;
 
   return (
     <GridTable
@@ -34,6 +93,7 @@ export function SiteRosterGrid({
       getRowKey={(row) => row.siteId}
       empty="No sites"
       initialPageSize={25}
+      renderMobileRow={renderMobileRow}
       columns={[
         {
           key: "code",

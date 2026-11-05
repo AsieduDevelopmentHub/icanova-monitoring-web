@@ -201,6 +201,11 @@ function OrgAlarms({
 
   return (
     <div className="stack alarm-board">
+      {canManageAlarms(permissions) ? (
+        <div className="alarm-toolbar">
+          <RecordAlarm organizationId={organizationId} />
+        </div>
+      ) : null}
       <FilterBar label="Alarm filters">
         <FilterSearch label="Search" value={searchDraft} onChange={setSearchDraft} />
         <FilterSelect
@@ -255,7 +260,6 @@ function OrgAlarms({
       <FleetBoundary key={`${organizationId}:${status}:${severity}:${category}:${siteValue}:${generatorValue}:${search}`}>
         <AlarmTable organizationId={organizationId} filter={filter} permissions={permissions} />
       </FleetBoundary>
-      {canManageAlarms(permissions) ? <RecordAlarm organizationId={organizationId} /> : null}
     </div>
   );
 }
@@ -309,7 +313,7 @@ function RecordAlarm({ organizationId }: { organizationId: string }) {
 
   return (
     <>
-      <button type="button" className="btn btn-secondary" onClick={() => setOpen(true)}>
+      <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
         Record note
       </button>
       <Dialog open={open} title="Record note" onClose={() => setOpen(false)}>
@@ -401,7 +405,7 @@ function AlarmTable({
       <section className="ops-section" aria-labelledby="alarm-analytics-title">
         <h2 id="alarm-analytics-title">Summary</h2>
         {data.capped ? <p className="meta">Query capped.</p> : null}
-        <div className="metric-grid">
+        <div className="metric-grid metric-grid-3 alarm-summary-grid">
           <Metric label="Rows" value={String(records.length)} />
           <Metric label="Active" value={String(active)} />
           <Metric label="Ack" value={String(acknowledged)} />
@@ -417,6 +421,50 @@ function AlarmTable({
         rows={records}
         getRowKey={(row) => row.id}
         empty={copy.empty}
+        renderMobileRow={(row) => (
+          <article className={`alarm-list-card${row.status === "active" ? " is-active" : ""}`}>
+            <header className="alarm-list-card-head">
+              <StatusMark tone={severityTone(row.severity)}>{row.severity}</StatusMark>
+              <StatusMark tone={row.status === "active" ? "alarm" : row.status === "acknowledged" ? "warn" : "neutral"}>
+                {row.status}
+              </StatusMark>
+            </header>
+            <button type="button" className="alarm-list-card-title" onClick={() => setPeekId(row.id)}>
+              {row.title}
+            </button>
+            <dl className="alarm-list-card-facts">
+              <div>
+                <dt>Site</dt>
+                <dd>{row.siteId ? <Link to={`/sites/${row.siteId}`}>{row.siteName}</Link> : row.siteName}</dd>
+              </div>
+              <div>
+                <dt>Generator</dt>
+                <dd>
+                  {row.generatorId && row.siteId ? (
+                    <Link to={`/sites/${row.siteId}/generators/${row.generatorId}`}>{row.generatorName}</Link>
+                  ) : (
+                    row.generatorName
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Category</dt>
+                <dd>{row.category}</dd>
+              </div>
+              <div>
+                <dt>Started</dt>
+                <dd className="tech">
+                  {new Date(row.firstOccurredAt).toLocaleString(undefined, {
+                    month: "short",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </dd>
+              </div>
+            </dl>
+          </article>
+        )}
         columns={[
           {
             key: "severity",

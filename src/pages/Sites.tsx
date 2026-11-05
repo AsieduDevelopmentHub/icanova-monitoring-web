@@ -157,7 +157,7 @@ function SiteList({
       ) : view === "map" ? (
         <FleetMap sites={filtered} />
       ) : (
-        <SiteRosterGrid rows={filtered} caption="Sites" />
+        <SiteRosterGrid rows={filtered} caption="Sites" mobileCards />
       )}
     </div>
   );
