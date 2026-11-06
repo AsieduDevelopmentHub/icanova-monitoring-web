@@ -1,10 +1,4 @@
 import { Link } from "react-router";
-import {
-  siteAlarmsPath,
-  siteEventsPath,
-  siteMaintenancePath,
-  siteTrendsPath,
-} from "../../fleet/paths";
 import { StatusStrip, type StripItem } from "../../ui/StatusStrip";
 
 type FleetStripProps = {
@@ -66,14 +60,7 @@ export function FleetStatusStrip({
           <span className={`status-strip-pill tone-${tone}`} data-tone={tone}>
             {subtitle}
           </span>
-          {siteId ? (
-            <>
-              <Link to={siteAlarmsPath(siteId)}>Alarms</Link>
-              <Link to={siteEventsPath(siteId)}>Events</Link>
-              <Link to={siteTrendsPath(siteId)}>Trends</Link>
-              <Link to={siteMaintenancePath(siteId)}>Maintenance</Link>
-            </>
-          ) : (
+          {!siteId && (
             <>
               <Link to="/alarms">Alarms</Link>
               <Link to="/sites">Sites</Link>

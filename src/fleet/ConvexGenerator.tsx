@@ -13,9 +13,7 @@ import {
   type MachinePose,
 } from "../telemetry/readings";
 import { storedFreshness } from "../telemetry/freshness";
-import { PowerFlowTwinLazy } from "../viz/PowerFlowTwinLazy";
 import type { TwinStatus } from "../viz/CommandTwin";
-import { derivePowerFlow } from "../viz/powerFlowModel";
 import { SeriesChart } from "../ui/SeriesChart";
 import { DataTable } from "../ui/DataTable";
 import { formatStat, seriesStats } from "../telemetry/seriesStats";
@@ -25,6 +23,9 @@ import { fuelHint, fuelTone } from "../telemetry/fuelLevel";
 import { storedReading, id } from "./access";
 import { FleetBoundary } from "./boundary";
 import { GeneratorAlarms } from "./AlarmPanel";
+import { gatewayView } from "../telemetry/deviceHealthView";
+import { GeneratorFleetViz } from "../pages/dashboard/GeneratorFleetViz";
+import { MonitoringPath } from "../ui/MonitoringPath";
 
 export function ConvexGenerator() {
   const { id: key } = useParams();
@@ -63,6 +64,9 @@ function ConvexResolver({ publicKey }: { publicKey: string }) {
 
 function ConvexBody({ generatorId }: { generatorId: string }) {
   const detail = useQuery(api.generators.detail, { generatorId: id<"generators">(generatorId) });
+  const gatewayHealth = useQuery(api.deviceHealth.getForGenerator, {
+    generatorId: id<"generators">(generatorId),
+  });
   const history = usePaginatedQuery(
     api.telemetry.history,
     { generatorId: id<"generators">(generatorId) },
@@ -102,25 +106,9 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
   const flag = machineFlag(typeof current?.link === "string" ? current.link : null);
   const freshness = storedFreshness(current?.updatedAt ?? null, Date.now());
   const twinStatus = twinStatusFromPose(pose, flag);
-  const linkRaw = typeof current?.link === "string" ? current.link.toLowerCase() : "";
-  const flow = derivePowerFlow({
-    label: detail.name,
-    twinStatus,
-    gatewayOnline: null,
-    linkOk: linkRaw.includes("fail")
-      ? false
-      : linkRaw.includes("ok") || linkRaw.includes("up")
-        ? true
-        : null,
-    hasSample: current?.updatedAt != null,
-    stale: freshness.stale,
-    engineRunning: pose === "running",
-    powerKw: power.quality === "measured" && power.value != null ? power.value : null,
-    voltageL1: voltage.quality === "measured" && voltage.value != null ? voltage.value : null,
-    batteryV: battery.quality === "measured" && battery.value != null ? battery.value : null,
-    frequencyHz:
-      frequency.quality === "measured" && frequency.value != null ? frequency.value : null,
-  });
+  const gateway = gatewayView(gatewayHealth?.gatewayStatus);
+  const modbusTone =
+    flag === "fault" ? "alarm" : flag === "warning" ? "warn" : current?.link ? "ok" : "offline";
   const updatedAtLabel =
     current?.updatedAt == null
       ? null
@@ -143,26 +131,63 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
           </p>
         </div>
       </header>
-      <div className="status-row">
-        {freshness.stale ? <StatusMark tone="warn">stale</StatusMark> : null}
-        <StatusMark tone={flag === "fault" ? "alarm" : flag === "warning" ? "warn" : "ok"}>
-          {current?.link ?? "link —"}
-        </StatusMark>
-        <span className="meta">
-          {freshness.label}
-          {updatedAtLabel ? ` · ${updatedAtLabel}` : ""}
-          {current?.alarmCount == null ? "" : ` · alarms ${current.alarmCount}`}
-          {current?.mode ? ` · ${current.mode}` : ""}
-        </span>
-      </div>
       <div className="gen-flagship">
-        <PowerFlowTwinLazy flow={flow} />
+        <div className="gen-monitoring-overview">
+          <MonitoringPath
+            nodes={[
+              {
+                label: "Gateway contact",
+                value: gatewayHealth === undefined ? "Loading" : gateway.label,
+                tone: gatewayHealth === undefined ? "neutral" : gateway.tone,
+              },
+              {
+                label: "Controller link",
+                value: current?.link ?? "Unknown",
+                tone: modbusTone,
+              },
+              {
+                label: "Generator",
+                value: pose,
+                tone:
+                  flag === "fault"
+                    ? "alarm"
+                    : flag === "warning"
+                      ? "warn"
+                      : pose === "running"
+                        ? "ok"
+                        : pose === "offline"
+                          ? "offline"
+                          : "neutral",
+              },
+              {
+                label: "Telemetry",
+                value: freshness.state === "unknown"
+                  ? "Missing"
+                  : freshness.stale
+                    ? "Stale"
+                    : "Fresh",
+                tone:
+                  freshness.state === "unknown"
+                    ? "offline"
+                    : freshness.stale
+                      ? "warn"
+                      : "ok",
+              },
+            ]}
+            readings={[
+              { label: "Power", value: formatReading(power) },
+              { label: "Frequency", value: formatReading(frequency) },
+              { label: "RPM", value: formatReading(rpm) },
+              { label: "Battery", value: formatReading(battery) },
+              { label: "Last sample", value: updatedAtLabel ?? "No sample" },
+            ]}
+            illustration={
+              <GeneratorFleetViz compact status={twinStatus} label={detail.name} />
+            }
+          />
+        </div>
         <div className="stack">
           <div className="metric-grid metric-grid-primary">
-            <TechValue label="RPM" value={formatReading(rpm)} />
-            <TechValue label="Battery" value={formatReading(battery)} />
-            <TechValue label="Hz" value={formatReading(frequency)} />
-            <TechValue label="kW" value={formatReading(power)} />
             <TechValue label="L1 V" value={formatReading(voltage)} />
             <TechValue label="L2 V" value={formatReading(voltageL2)} />
             <TechValue label="L3 V" value={formatReading(voltageL3)} />

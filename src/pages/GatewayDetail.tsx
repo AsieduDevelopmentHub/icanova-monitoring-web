@@ -1,12 +1,9 @@
-import { useState } from "react";
 import { Link, useParams } from "react-router";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { FleetBoundary } from "../fleet/boundary";
 import type { Id } from "../../convex/_generated/dataModel";
-import { accessMessage } from "../fleet/access";
-import { demoFrames, demoSamples } from "../telemetry/demoLog";
-import { demoDiagnostics } from "../telemetry/diagnosticsView";
+import { demoFrames } from "../telemetry/demoLog";
 import { DEMO_GENERATOR_ID, DEMO_SOURCE } from "../telemetry/logModel";
 import {
   contactAgeLabel,
@@ -15,13 +12,9 @@ import {
   modbusView,
   overallView,
 } from "../telemetry/deviceHealthView";
-import { Button } from "../ui/Button";
 import { DataTable } from "../ui/DataTable";
 import { PageSkeleton, Skeleton } from "../ui/Skeleton";
 import { StatusMark } from "../ui/StatusMark";
-import { DiagnosticPanel } from "./DiagnosticPanel";
-
-const demoRows = demoDiagnostics(demoFrames, demoSamples);
 
 export function GatewayDetail() {
   const { id: deviceId } = useParams();
@@ -65,19 +58,16 @@ function DemoGateway() {
       <p className="meta" role="note">
         Demo · {DEMO_SOURCE}
       </p>
-      <DiagnosticPanel
-        rows={demoRows}
-        sourceNote="TXN 43 prints CRC PASS and INVALID MODBUS FRAME together. Both lines stay. Time to first RX byte is the latency figure in the log."
-      />
+      <section className="ops-section">
+        <h2>Monitoring data</h2>
+        <p className="empty">Gateway contact and firmware details are not included in this demo excerpt.</p>
+      </section>
     </section>
   );
 }
 
 function StoredGateway({ deviceId }: { deviceId: string }) {
   const detail = useQuery(api.devices.detailForKey, { key: deviceId });
-  const setLifecycle = useMutation(api.devices.setLifecycle);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   if (detail === undefined) {
     return (
       <section className="page ops-page">
@@ -95,47 +85,26 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
   const active = detail.device.lifecycle !== "inactive";
   const internalDeviceId = detail.device._id;
 
-  async function onLifecycle() {
-    if (pending) {
-      return;
-    }
-    setError(null);
-    setPending(true);
-    try {
-      await setLifecycle({
-        deviceId: internalDeviceId,
-        lifecycle: active ? "inactive" : "active",
-      });
-    } catch (caught) {
-      setError(accessMessage(caught));
-    } finally {
-      setPending(false);
-    }
-  }
-
   return (
     <section className="page ops-page">
       <header className="page-identity">
         <div className="page-identity-main">
           <h1 className="page-identity-title">{detail.device.name}</h1>
-          <p className="meta">
-            {detail.device.siteId ? (
-              <>
-                <Link to={`/sites/${detail.device.siteId}`}>Site desk</Link>
-                {" · "}
-                <Link to={`/alarms?site=${detail.device.siteId}`}>Alarms</Link>
-                {" · "}
-                <Link to={`/events?site=${detail.device.siteId}`}>Events</Link>
-              </>
-            ) : (
-              <>
-                <Link to="/alarms">Alarms</Link>
-                {" · "}
-                <Link to="/events">Events</Link>
-              </>
-            )}
-          </p>
         </div>
+        <nav className="page-identity-actions" aria-label="Gateway monitoring shortcuts">
+          {detail.device.siteId ? (
+            <>
+              <Link className="btn btn-secondary" to={`/sites/${detail.device.siteId}`}>Site</Link>
+              <Link className="btn btn-secondary" to={`/alarms?site=${detail.device.siteId}`}>Alarms</Link>
+              <Link className="btn btn-secondary" to={`/events?site=${detail.device.siteId}`}>Events</Link>
+            </>
+          ) : (
+            <>
+              <Link className="btn btn-secondary" to="/alarms">Alarms</Link>
+              <Link className="btn btn-secondary" to="/events">Events</Link>
+            </>
+          )}
+        </nav>
       </header>
 
       <div className="status-row">
@@ -146,55 +115,48 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
         <StatusMark tone={fresh.tone}>{fresh.label}</StatusMark>
       </div>
 
-      <section className="ops-section" aria-labelledby="gw-identity-title">
-        <h2 id="gw-identity-title">Identity</h2>
-        <dl className="facts">
-          <dt>Identity</dt>
-          <dd className="tech">{detail.device.identity}</dd>
-          <dt>Site</dt>
-          <dd>
-            {detail.device.siteId ? (
-              <Link to={`/sites/${detail.device.siteId}`}>{detail.siteName ?? "Site"}</Link>
-            ) : (
-              (detail.siteName ?? "—")
-            )}
-          </dd>
-          <dt>Firmware</dt>
-          <dd className="tech">
-            {health?.firmwareVersion
-              ? `${health.firmwareVersion}${health.firmwareGit ? ` · ${health.firmwareGit}` : ""}`
-              : "—"}
-          </dd>
-        </dl>
-      </section>
+      <div className="gateway-monitor-grid">
+        <section className="ops-section" aria-labelledby="gw-identity-title">
+          <h2 id="gw-identity-title">Gateway identity</h2>
+          <dl className="facts">
+            <dt>Identity</dt>
+            <dd className="tech">{detail.device.identity}</dd>
+            <dt>Site</dt>
+            <dd>
+              {detail.device.siteId ? (
+                <Link to={`/sites/${detail.device.siteId}`}>{detail.siteName ?? "Site"}</Link>
+              ) : (
+                detail.siteName ?? "—"
+              )}
+            </dd>
+            <dt>Firmware</dt>
+            <dd className="tech">
+              {health?.firmwareVersion
+                ? `${health.firmwareVersion}${health.firmwareGit ? ` · ${health.firmwareGit}` : ""}`
+                : "—"}
+            </dd>
+          </dl>
+        </section>
 
-      <section className="ops-section" aria-labelledby="gw-contact-title">
-        <h2 id="gw-contact-title">Contact</h2>
-        <dl className="facts">
-          <dt>Heartbeat</dt>
-          <dd>{contactAgeLabel(health?.lastHeartbeatAt, now)}</dd>
-          <dt>Accepted batch</dt>
-          <dd>{contactAgeLabel(health?.lastAcceptedBatchAt, now)}</dd>
-          <dt>Gateway contact</dt>
-          <dd>{contactAgeLabel(health?.lastGatewayContactAt, now)}</dd>
-          <dt>Telemetry</dt>
-          <dd>{contactAgeLabel(health?.lastTelemetryAt, now)}</dd>
-          <dt>Last poll</dt>
-          <dd>{poll ? `${poll.label}${poll.at == null ? "" : ` · ${poll.at}`}` : "—"}</dd>
-        </dl>
-        <div className="btn-row">
-          <Button variant="secondary" disabled={pending} onClick={() => void onLifecycle()}>
-            {pending ? "Updating…" : active ? "Deactivate" : "Reactivate"}
-          </Button>
-          <Link className="btn btn-secondary" to="/local/configure">
-            Configure
-          </Link>
-        </div>
-        {error ? <p className="err">{error}</p> : null}
-      </section>
+        <section className="ops-section" aria-labelledby="gw-contact-title">
+          <h2 id="gw-contact-title">Monitoring contact</h2>
+          <dl className="facts">
+            <dt>Heartbeat</dt>
+            <dd>{contactAgeLabel(health?.lastHeartbeatAt, now)}</dd>
+            <dt>Accepted batch</dt>
+            <dd>{contactAgeLabel(health?.lastAcceptedBatchAt, now)}</dd>
+            <dt>Gateway contact</dt>
+            <dd>{contactAgeLabel(health?.lastGatewayContactAt, now)}</dd>
+            <dt>Telemetry</dt>
+            <dd>{contactAgeLabel(health?.lastTelemetryAt, now)}</dd>
+            <dt>Last poll</dt>
+            <dd>{poll ? `${poll.label}${poll.at == null ? "" : ` · ${poll.at}`}` : "—"}</dd>
+          </dl>
+        </section>
+      </div>
 
       <section className="ops-section" aria-labelledby="gw-equipment-title">
-        <h2 id="gw-equipment-title">Equipment</h2>
+        <h2 id="gw-equipment-title">Monitored generators</h2>
         {detail.generators.length === 0 ? (
           <p className="empty">No generators linked.</p>
         ) : (
@@ -234,9 +196,6 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
 
       <FleetBoundary>
         <HealthEvents deviceId={internalDeviceId} />
-      </FleetBoundary>
-      <FleetBoundary>
-        <StoredFrames deviceId={internalDeviceId} />
       </FleetBoundary>
     </section>
   );
@@ -284,50 +243,6 @@ function HealthEvents({ deviceId }: { deviceId: Id<"devices"> }) {
           ]}
         />
       )}
-    </section>
-  );
-}
-
-function StoredFrames({ deviceId }: { deviceId: Id<"devices"> }) {
-  const data = useQuery(api.diagnostics.list, {
-    deviceId,
-    kind: "all",
-    search: "",
-  });
-  if (data === undefined) {
-    return <Skeleton lines={5} />;
-  }
-  const rows = [...data.rows].reverse().map((row) => ({
-    key: row._id,
-    kind: row.kind,
-    txn: row.txn,
-    functionCode: row.functionCode,
-    address: row.address,
-    quantity: row.quantity,
-    tx: row.tx,
-    rx: row.rx,
-    rxLength: row.rxLength,
-    receivedCrc: row.receivedCrc,
-    calculatedCrc: row.calculatedCrc,
-    crcResult: row.crcResult,
-    result: row.result,
-    latencyMs: row.latencyMs,
-    retries: row.retries,
-    note: row.note,
-  }));
-  return (
-    <section className="ops-section" aria-labelledby="gw-diag-title">
-      <h2 id="gw-diag-title">Diagnostics</h2>
-      <DiagnosticPanel
-        rows={rows}
-        chronological={false}
-        successNote="The last successful poll is the line above. CRC PASS with an invalid frame does not update it. Retries stay blank when the record has none."
-        sourceNote={
-          data.capped
-            ? "This table is the newest 200 stored records. Search and kind filters apply to that page."
-            : "Stored frames for this device. An empty list means nothing has been recorded. The demo log is a separate device."
-        }
-      />
     </section>
   );
 }

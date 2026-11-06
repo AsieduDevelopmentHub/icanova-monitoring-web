@@ -11,6 +11,7 @@ import { GeneratorFleetViz } from "./GeneratorFleetViz";
 import type { BoardRow } from "./types";
 import { engineView, linkView, storedFreshness, twinFromRow, twinFromRows } from "./logic";
 import { FleetHealth } from "./FleetHealth";
+import { MonitoringPath } from "../../ui/MonitoringPath";
 
 function extraNumber(row: BoardRow, key: string): number | null {
   const value = row.extra?.[key];
@@ -80,17 +81,83 @@ export function OperationalArea({
         ? primary.frequencyHz
         : null,
   });
+  const freshnessNode = primaryFresh?.state === "fresh"
+    ? { value: "Fresh", tone: "ok" as const }
+    : primaryFresh?.stale
+      ? { value: "Stale", tone: "warn" as const }
+      : { value: primary ? "Unknown" : "No generator", tone: "offline" as const };
+  const gatewayNode =
+    gatewayOnline === true
+      ? { value: "Online", tone: "ok" as const }
+      : gatewayOnline === false
+        ? { value: "Offline", tone: "warn" as const }
+        : { value: "Unknown", tone: "offline" as const };
 
   return (
     <div className="cc-viz-grid">
       <div className="cc-ops-viz">
-        <div className="cc-hero-row">
-          <GeneratorFleetViz status={twinStatus} label={primary?.name ?? siteName} />
-          <div className="cc-power-slot">
-            <PowerFlowTwinLazy flow={flow} />
+        {siteId ? (
+          <MonitoringPath
+            nodes={[
+              { label: "Gateway contact", ...gatewayNode },
+              {
+                label: "Controller link",
+                value: primaryLink?.label ?? "Unknown",
+                tone: primaryLink?.tone ?? "offline",
+              },
+              {
+                label: "Generator",
+                value: primaryEngine?.label ?? "Unknown",
+                tone: primaryEngine?.tone ?? "offline",
+              },
+              { label: "Telemetry", ...freshnessNode },
+            ]}
+            readings={
+              primary
+                ? [
+                    { label: "Power", value: powerReading ? formatReading(powerReading) : "—" },
+                    {
+                      label: "Frequency",
+                      value: formatReading(
+                        storedReading(
+                          primary.frequencyHz ?? null,
+                          primary.frequencyQuality ?? "unavailable",
+                          "Hz",
+                        ),
+                      ),
+                    },
+                    {
+                      label: "RPM",
+                      value: formatReading(storedReading(primary.rpm, primary.rpmQuality, "rpm")),
+                    },
+                    {
+                      label: "Battery",
+                      value: formatReading(
+                        storedReading(
+                          primary.batteryV ?? null,
+                          primary.batteryQuality ?? "unavailable",
+                          "V",
+                        ),
+                      ),
+                    },
+                  ]
+                : []
+            }
+            illustration={
+              primary ? (
+                <GeneratorFleetViz compact status={twinStatus} label={primary.name} />
+              ) : null
+            }
+          />
+        ) : (
+          <div className="cc-hero-row">
+            <GeneratorFleetViz status={twinStatus} label={primary?.name ?? siteName} />
+            <div className="cc-power-slot">
+              <PowerFlowTwinLazy flow={flow} />
+            </div>
           </div>
-        </div>
-        {primary ? (
+        )}
+        {primary && !siteId ? (
           <div className="metric-grid metric-grid-primary">
             <TechValue
               label="kW"
@@ -149,7 +216,41 @@ export function OperationalArea({
             />
           </div>
         ) : null}
-        {rows.length > 0 ? (
+        {primary && siteId ? (
+          <details className="cc-more-metrics">
+            <summary>More measurements</summary>
+            <div className="metric-grid">
+              <TechValue
+                label="L1 V"
+                value={formatReading(
+                  storedReading(
+                    primary.voltageL1 ?? null,
+                    primary.voltageQuality ?? "unavailable",
+                    "V",
+                  ),
+                )}
+              />
+              <TechValue label="L2 V" value={formatReading(extraReading(primary, "voltageL2", "V"))} />
+              <TechValue label="L3 V" value={formatReading(extraReading(primary, "voltageL3", "V"))} />
+              <TechValue
+                label="Fuel"
+                value={fuel == null ? "—" : `${fuel} %`}
+                tone={fuelTone(fuel)}
+                hint={fuelHint(fuel)}
+              />
+              <TechValue label="Load" value={loadPct == null ? "—" : `${loadPct} %`} />
+              <TechValue
+                label="Engine h"
+                value={formatReading(extraReading(primary, "engineHours", "h"))}
+              />
+              <TechValue
+                label="Starts"
+                value={formatReading(extraReading(primary, "engineStarts", ""))}
+              />
+            </div>
+          </details>
+        ) : null}
+        {!siteId && rows.length > 0 ? (
           <ul className="cc-equip-list">
             {rows.slice(0, 10).map((row) => {
               const engine = engineView(row.rpm, row.rpmQuality);

@@ -42,7 +42,15 @@ class ErrorCatch extends Component<
 }
 
 /** Lazy 3D genset with flat fallback for narrow / reduced-motion / errors. */
-export function GeneratorFleetViz({ status, label }: { status: TwinStatus; label: string }) {
+export function GeneratorFleetViz({
+  status,
+  label,
+  compact = false,
+}: {
+  status: TwinStatus;
+  label: string;
+  compact?: boolean;
+}) {
   const [flat, setFlat] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -60,19 +68,25 @@ export function GeneratorFleetViz({ status, label }: { status: TwinStatus; label
   }, []);
 
   if (flat || failed) {
-    return <FlatGenset status={status} label={label} />;
+    return (
+      <div className={compact ? "cc-genset-viz is-compact" : undefined}>
+        <FlatGenset status={status} label={label} />
+      </div>
+    );
   }
 
   return (
-    <div className="cc-genset-viz">
+    <div className={`cc-genset-viz${compact ? " is-compact" : ""}`}>
       <Suspense fallback={<FlatGenset status={status} label={label} />}>
         <ErrorCatch onError={() => setFailed(true)}>
           <CommandTwin status={status} label={label} />
         </ErrorCatch>
       </Suspense>
-      <button type="button" className="cc-viz-flat-btn text-btn" onClick={() => setFlat(true)}>
-        Flat view
-      </button>
+      {!compact ? (
+        <button type="button" className="cc-viz-flat-btn text-btn" onClick={() => setFlat(true)}>
+          Flat view
+        </button>
+      ) : null}
     </div>
   );
 }

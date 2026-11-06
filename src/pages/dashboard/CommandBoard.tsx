@@ -138,7 +138,7 @@ export function CommandBoard({
   return (
     <div className="cc-layout">
       <FleetStatusStrip
-        title={siteName}
+        title={siteId ? "Site status" : siteName}
         subtitle={strip.subtitle}
         sites={strip.sites}
         generators={strip.generators}

@@ -110,27 +110,14 @@ function DeskBody({
 
   return (
     <div className="stack">
-      <header className="page-identity">
+      <header className="page-identity site-detail-header">
         <div className="page-identity-main">
           <h1 className="page-identity-title">{site.name}</h1>
-          <p className="meta">
+          <div className="site-detail-meta">
             {site.code ? <span className="tech">{site.code}</span> : null}
-            {site.region ? (
-              <span>
-                {site.code ? " · " : ""}
-                {site.region}
-              </span>
-            ) : null}
-            {" · "}
-            <Link to={siteAlarmsPath(site.siteId)}>Alarms</Link>
-            {" · "}
-            <Link to={siteEventsPath(site.siteId)}>Events</Link>
-            {" · "}
-            <Link to={siteTrendsPath(site.siteId)}>Trends</Link>
-            {" · "}
-            <Link to={siteMaintenancePath(site.siteId)}>Maintenance</Link>
-          </p>
-          <p className="meta status-row">
+            {site.region ? <span>{site.region}</span> : null}
+          </div>
+          <p className="meta site-detail-freshness">
             {freshness.stale ? <StatusMark tone="warn">stale</StatusMark> : null}
             <span>
               Last updated {updatedAtLabel}
@@ -138,64 +125,13 @@ function DeskBody({
             </span>
           </p>
         </div>
+        <nav className="site-detail-actions" aria-label="Site shortcuts">
+          <Link className="btn btn-secondary" to={siteAlarmsPath(site.siteId)}>Alarms</Link>
+          <Link className="btn btn-secondary" to={siteEventsPath(site.siteId)}>Events</Link>
+          <Link className="btn btn-secondary" to={siteTrendsPath(site.siteId)}>Trends</Link>
+          <Link className="btn btn-secondary" to={siteMaintenancePath(site.siteId)}>Maintenance</Link>
+        </nav>
       </header>
-
-      <section className="ops-section" aria-labelledby="site-gateway-title">
-        <h2 id="site-gateway-title">Gateway</h2>
-        {devices === undefined ? (
-          <PageSkeleton rows={2} label="Loading gateways" />
-        ) : gateways.length === 0 ? (
-          <p className="empty">No gateway linked to this site.</p>
-        ) : (
-          <ul className="stack">
-            {gateways.map((device: { _id: string; name: string; identity: string }) => (
-              <li key={device._id}>
-                <Link to={siteGatewayPath(site.siteId, device.identity || device._id)}>
-                  {device.name}
-                </Link>
-                <span className="meta tech"> · {device.identity}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {canManageLocation ? (
-        <>
-          <SiteLocationPicker
-            latitude={site.latitude}
-            longitude={site.longitude}
-            pending={locationPending}
-            onSave={async (latitude, longitude) => {
-              setLocationPending(true);
-              try {
-                await setLocation({
-                  organizationId: orgId,
-                  siteId,
-                  latitude,
-                  longitude,
-                  source: "manual",
-                });
-              } finally {
-                setLocationPending(false);
-              }
-            }}
-          />
-          {site.latitude != null && site.longitude != null ? (
-            <p className="meta">Source: {locationSourceLabel(site.locationSource)}</p>
-          ) : null}
-        </>
-      ) : site.latitude != null && site.longitude != null ? (
-        <p className="meta">
-          Location: {site.latitude.toFixed(6)}, {site.longitude.toFixed(6)}
-          {` · ${locationSourceLabel(site.locationSource)}`}
-          {site.locationUpdatedAt != null
-            ? ` · updated ${new Date(site.locationUpdatedAt).toLocaleString()}`
-            : ""}
-        </p>
-      ) : (
-        <p className="meta">No coordinates saved for this site.</p>
-      )}
 
       <FleetBoundary>
         <QueryErrorBoundary title="Site board unavailable">
@@ -207,6 +143,83 @@ function DeskBody({
           />
         </QueryErrorBoundary>
       </FleetBoundary>
+
+      <div className="site-context-grid">
+        <section className="ops-section site-context-panel" aria-labelledby="site-gateway-title">
+          <div className="ops-section-head">
+            <h2 id="site-gateway-title">Gateways</h2>
+            {devices?.isDone === false ? <span className="meta">First 20 shown</span> : null}
+          </div>
+          {devices === undefined ? (
+            <PageSkeleton rows={2} label="Loading gateways" />
+          ) : gateways.length === 0 ? (
+            <p className="empty">No gateway linked to this site.</p>
+          ) : (
+            <>
+              <ul className="site-gateway-list">
+                {gateways.map((device: { _id: string; name: string; identity: string }) => (
+                  <li key={device._id}>
+                    <Link to={siteGatewayPath(site.siteId, device.identity || device._id)}>
+                      <span>{device.name}</span>
+                      <span className="meta tech">{device.identity}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              {devices.isDone === false ? (
+                <p className="meta">Additional gateways are not shown on this site page.</p>
+              ) : null}
+            </>
+          )}
+        </section>
+
+        {canManageLocation ? (
+          <div className="site-location-context">
+            <SiteLocationPicker
+              latitude={site.latitude}
+              longitude={site.longitude}
+              pending={locationPending}
+              onSave={async (latitude, longitude) => {
+                setLocationPending(true);
+                try {
+                  await setLocation({
+                    organizationId: orgId,
+                    siteId,
+                    latitude,
+                    longitude,
+                    source: "manual",
+                  });
+                } finally {
+                  setLocationPending(false);
+                }
+              }}
+            />
+            {site.latitude != null && site.longitude != null ? (
+              <p className="meta site-location-source">Source: {locationSourceLabel(site.locationSource)}</p>
+            ) : null}
+          </div>
+        ) : (
+          <section className="ops-section site-context-panel" aria-labelledby="site-location-title">
+            <h2 id="site-location-title">Location</h2>
+            {site.latitude != null && site.longitude != null ? (
+              <dl className="facts site-location-facts">
+                <dt>Coordinates</dt>
+                <dd className="tech">{site.latitude.toFixed(6)}, {site.longitude.toFixed(6)}</dd>
+                <dt>Source</dt>
+                <dd>{locationSourceLabel(site.locationSource)}</dd>
+                {site.locationUpdatedAt != null ? (
+                  <>
+                    <dt>Updated</dt>
+                    <dd>{new Date(site.locationUpdatedAt).toLocaleString()}</dd>
+                  </>
+                ) : null}
+              </dl>
+            ) : (
+              <p className="empty">No coordinates saved for this site.</p>
+            )}
+          </section>
+        )}
+      </div>
     </div>
   );
 }
