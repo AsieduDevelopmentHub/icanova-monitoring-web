@@ -51,9 +51,13 @@ export function SiteRosterGrid({
             </header>
             <div className="site-roster-card-status">
               <StatusMark tone={live.tone}>{live.label}</StatusMark>
-              <span className="meta" title={formatLastUpdated(activityAt)}>
-                {formatActivityAge(activityAt, now)}
-              </span>
+              <time
+                className="meta"
+                dateTime={activityAt == null ? undefined : new Date(activityAt).toISOString()}
+                title={formatActivityAge(activityAt, now)}
+              >
+                {formatLastUpdated(activityAt)}
+              </time>
             </div>
             <dl className="site-roster-card-facts">
               <div>
@@ -65,7 +69,7 @@ export function SiteRosterGrid({
                 <dd className="tech">
                   {typeof row.batteryV === "number" && Number.isFinite(row.batteryV)
                     ? `${row.batteryV.toFixed(1)} V`
-                    : "—"}
+                    : "N/A"}
                 </dd>
               </div>
               <div>
@@ -77,8 +81,20 @@ export function SiteRosterGrid({
                 <dd>{row.region ?? "—"}</dd>
               </div>
               <div>
-                <dt>Generators</dt>
-                <dd>{row.generators ?? "—"}</dd>
+                <dt>Fuel level</dt>
+                <dd className="tech">
+                  {typeof row.primaryFuelPct === "number" && Number.isFinite(row.primaryFuelPct)
+                    ? `${row.primaryFuelPct}%`
+                    : "N/A"}
+                </dd>
+              </div>
+              <div>
+                <dt>HRM</dt>
+                <dd className="tech">
+                  {typeof row.primaryEngineHours === "number" && Number.isFinite(row.primaryEngineHours)
+                    ? row.primaryEngineHours.toLocaleString(undefined, { maximumFractionDigits: 1 })
+                    : "N/A"}
+                </dd>
               </div>
             </dl>
           </article>
@@ -152,21 +168,41 @@ export function SiteRosterGrid({
         },
         {
           key: "battery",
-          header: "Battery",
+          header: "Battery (V)",
           align: "right",
           width: "5.5rem",
           render: (row) => {
             const v = row.batteryV;
             if (typeof v !== "number" || !Number.isFinite(v)) {
-              return "—";
+              return "N/A";
             }
             const tone = v < 11.5 ? "warn" : v < 12.2 ? "warn" : "ok";
             return (
               <span className={`tech tone-${tone}`} title="12 V starter battery">
-                {v.toFixed(1)} V
+                {v.toFixed(1)}
               </span>
             );
           },
+        },
+        {
+          key: "fuel",
+          header: "Fuel %",
+          align: "right",
+          width: "5rem",
+          render: (row) =>
+            typeof row.primaryFuelPct === "number" && Number.isFinite(row.primaryFuelPct)
+              ? <span className="tech">{row.primaryFuelPct.toLocaleString(undefined, { maximumFractionDigits: 1 })}</span>
+              : "N/A",
+        },
+        {
+          key: "hrm",
+          header: "HRM (h)",
+          align: "right",
+          width: "5rem",
+          render: (row) =>
+            typeof row.primaryEngineHours === "number" && Number.isFinite(row.primaryEngineHours)
+              ? <span className="tech">{row.primaryEngineHours.toLocaleString(undefined, { maximumFractionDigits: 1 })}</span>
+              : "N/A",
         },
         {
           key: "gateway",

@@ -19,7 +19,18 @@ export function Sites() {
       <LiveGate
         emptyLayout="list"
         emptyCaption="Sites"
-        emptyColumns={["Site ID", "Site Name", "Last Updated", "Power Source", "Gateway ID", "Region", "Gens"]}
+        emptyColumns={[
+          "Site ID",
+          "Site Name",
+          "Last Updated",
+          "Power Source",
+          "Battery",
+          "Fuel %",
+          "HRM (h)",
+          "Gateway ID",
+          "Region",
+          "Gens",
+        ]}
       >
         {(org) => (
           <SiteList

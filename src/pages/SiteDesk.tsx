@@ -596,14 +596,14 @@ function generatorReadings(row: SiteGeneratorRow): {
 } {
   return {
     voltage: [
-      { phase: "L1", value: formatReading(storedReading(row.voltageL1, row.voltageQuality, "V")) },
-      { phase: "L2", value: extraReading(row, "voltageL2", "V") },
-      { phase: "L3", value: extraReading(row, "voltageL3", "V") },
+      { phase: "L1", value: formatReading(storedReading(row.voltageL1, row.voltageQuality, "")) },
+      { phase: "L2", value: extraReading(row, "voltageL2", "") },
+      { phase: "L3", value: extraReading(row, "voltageL3", "") },
     ],
     current: [
-      { phase: "L1", value: extraReading(row, "currentL1", "A") },
-      { phase: "L2", value: extraReading(row, "currentL2", "A") },
-      { phase: "L3", value: extraReading(row, "currentL3", "A") },
+      { phase: "L1", value: extraReading(row, "currentL1", "") },
+      { phase: "L2", value: extraReading(row, "currentL2", "") },
+      { phase: "L3", value: extraReading(row, "currentL3", "") },
     ],
     powerFactor: [
       { phase: "L1", value: extraReading(row, "pfL1", "") },
@@ -611,9 +611,9 @@ function generatorReadings(row: SiteGeneratorRow): {
       { phase: "L3", value: extraReading(row, "pfL3", "") },
     ],
     power: [
-      { phase: "L1", value: extraReading(row, "powerL1W", "kW", 1000) },
-      { phase: "L2", value: extraReading(row, "powerL2W", "kW", 1000) },
-      { phase: "L3", value: extraReading(row, "powerL3W", "kW", 1000) },
+      { phase: "L1", value: extraReading(row, "powerL1W", "", 1000) },
+      { phase: "L2", value: extraReading(row, "powerL2W", "", 1000) },
+      { phase: "L3", value: extraReading(row, "powerL3W", "", 1000) },
     ],
   };
 }

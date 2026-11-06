@@ -42,6 +42,7 @@ Improve on their spreadsheet-heavy feel and equal-weight tile mosaics. Do not co
 - Separate Generators, Gateways, and Location into their own site sections instead of stacking every detail onto the overview.
 - Show measured phase voltage, current, power factor, and kW alongside load, engine hours (HRM), fuel, and starts in the Site overview and Generators section. The Generators section may add supporting measured electrical and engine readings. Preserve quality/missing states; never turn an absent measurement into zero.
 - Do not paginate current site readings. Keep all returned readings visible and disclose when the backend caps the result.
+- Site roster cards show exact last-activity timestamps, fuel level, and HRM instead of generator count; desktop roster rows include fuel and HRM columns too.
 - Show gateway health and only the identity/version information needed to identify a monitored asset. Keep location in its own supporting section.
 - Disclose capped site lists. Cursor-paginated history should provide truthful older/newer navigation without inventing a total or last page.
 

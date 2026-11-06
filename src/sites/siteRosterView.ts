@@ -19,6 +19,10 @@ export type SiteRosterRow = SiteHealthFields & {
   mainsL1?: number | null;
   /** Starter battery volts when measured (12 V system). */
   batteryV?: number | null;
+  /** Primary generator fuel percent when measured. */
+  primaryFuelPct?: number | null;
+  /** Primary generator engine hours when measured. */
+  primaryEngineHours?: number | null;
   alarmCount?: number | null;
   link?: string | null;
 };

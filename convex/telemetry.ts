@@ -337,6 +337,8 @@ export const siteRoster = query({
       let primaryRpm: number | null = null;
       let mainsL1: number | null = null;
       let batteryV: number | null = null;
+      let primaryFuelPct: number | null = null;
+      let primaryEngineHours: number | null = null;
       let alarmCount: number | null = null;
       let link: string | null = null;
       if (gateway) {
@@ -361,6 +363,18 @@ export const siteRoster = query({
               typeof current.batteryV === "number" &&
               Number.isFinite(current.batteryV)
                 ? current.batteryV
+                : null;
+            primaryFuelPct =
+              current.extraQuality?.fuelPct === "measured" &&
+              typeof current.extra?.fuelPct === "number" &&
+              Number.isFinite(current.extra.fuelPct)
+                ? current.extra.fuelPct
+                : null;
+            primaryEngineHours =
+              current.extraQuality?.engineHours === "measured" &&
+              typeof current.extra?.engineHours === "number" &&
+              Number.isFinite(current.extra.engineHours)
+                ? current.extra.engineHours
                 : null;
           }
         }
@@ -387,6 +401,8 @@ export const siteRoster = query({
         primaryRpm,
         mainsL1,
         batteryV,
+        primaryFuelPct,
+        primaryEngineHours,
         alarmCount,
         link,
       });
