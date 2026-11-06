@@ -204,7 +204,7 @@ function CreateOrgPanel({ secret }: { secret?: string }) {
           <input name="name" required disabled={pending} />
         </label>
         <label className="field">
-          <span>Site code format</span>
+          <span>Site ID format</span>
           <select name="siteCodeFormat" defaultValue="text" disabled={pending}>
             <option value="text">Text</option>
             <option value="numeric">Numeric only</option>

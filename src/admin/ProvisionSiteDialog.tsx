@@ -119,7 +119,7 @@ export function ProvisionSiteDialog({
               <input value={name} onChange={(e) => setName(e.target.value)} required />
             </label>
             <label className="field">
-              <span>Site code</span>
+              <span>Site ID</span>
               <input
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
@@ -241,7 +241,7 @@ export function ProvisionSiteDialog({
                 <p>
                   <strong>{name}</strong>
                   <br />
-                  Code {code}
+                  Site ID {code}
                   {latitude && longitude ? (
                     <>
                       <br />

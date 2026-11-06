@@ -257,7 +257,7 @@ export function SiteRosterExplorer({
             <input
               type="search"
               value={query}
-              placeholder="Name, code, gateway, or region"
+              placeholder="Site ID, name, gateway, or region"
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>

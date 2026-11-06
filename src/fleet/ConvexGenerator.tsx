@@ -26,6 +26,7 @@ import { GeneratorAlarms } from "./AlarmPanel";
 import { gatewayView } from "../telemetry/deviceHealthView";
 import { GeneratorFleetViz } from "../pages/dashboard/GeneratorFleetViz";
 import { MonitoringPath } from "../ui/MonitoringPath";
+import { PageExport } from "../ui/PageExport";
 
 export function ConvexGenerator() {
   const { id: key } = useParams();
@@ -64,6 +65,15 @@ function ConvexResolver({ publicKey }: { publicKey: string }) {
 
 function ConvexBody({ generatorId }: { generatorId: string }) {
   const detail = useQuery(api.generators.detail, { generatorId: id<"generators">(generatorId) });
+  const site = useQuery(
+    api.sites.get,
+    detail
+      ? {
+          organizationId: id<"organizations">(String(detail.organizationId)),
+          siteId: id<"sites">(String(detail.siteId)),
+        }
+      : "skip",
+  );
   const gatewayHealth = useQuery(api.deviceHealth.getForGenerator, {
     generatorId: id<"generators">(generatorId),
   });
@@ -123,13 +133,37 @@ function ConvexBody({ generatorId }: { generatorId: string }) {
         <div className="page-identity-main">
           <h1 className="page-identity-title">{detail.name}</h1>
           <p className="meta">
+            <Link to={`/sites/${detail.siteId}`}>Site ID · {site?.code ?? detail.siteId}</Link>
+            {site?.name ? ` · ${site.name}` : ""}
+            {" · "}
+            <Link to={`/sites/${detail.siteId}?section=generators`}>Site generators</Link>
+            {" · "}
+            <Link to={`/sites/${detail.siteId}?section=gateways`}>Site gateways</Link>
+            {" · "}
             <Link to={`/alarms?site=${detail.siteId}&generator=${generatorId}`}>Alarms</Link>
             {" · "}
-            <Link to="/trends">Trends</Link>
-            {" · "}
-            <Link to={`/sites/${detail.siteId}`}>Site desk</Link>
+            <Link to={`/trends?site=${detail.siteId}&generator=${generatorId}`}>Trends</Link>
           </p>
         </div>
+        <PageExport
+          title={`${site?.code ?? detail.siteId} ${detail.name}`}
+          headers={["Site ID", "Site", "Generator", "Last sample", "RPM", "Power", "Frequency", "L1 V", "L2 V", "L3 V", "Fuel", "HRM", "Starts"]}
+          rows={[[
+            site?.code ?? String(detail.siteId),
+            site?.name ?? "N/A",
+            detail.name,
+            updatedAtLabel ?? "N/A",
+            formatReading(rpm),
+            formatReading(power),
+            formatReading(frequency),
+            formatReading(voltage),
+            formatReading(voltageL2),
+            formatReading(voltageL3),
+            formatReading(fuel),
+            formatReading(engineHours),
+            formatReading(engineStarts),
+          ]]}
+        />
       </header>
       <div className="gen-flagship">
         <div className="gen-monitoring-overview">
@@ -402,6 +436,7 @@ function MetricStrip({
   return (
     <DataTable
       caption="Measured statistics for the selected range"
+      exportTitle="Generator measured statistics"
       rows={rows}
       getRowKey={(row) => row.label}
       empty="No measured history in this range."

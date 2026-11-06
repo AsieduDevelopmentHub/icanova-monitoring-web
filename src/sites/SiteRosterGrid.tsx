@@ -46,7 +46,9 @@ export function SiteRosterGrid({
           <article className={expanded ? "site-roster-card is-expanded" : "site-roster-card"}>
             <header className="site-roster-card-head">
               <div className="site-roster-card-identity">
-                <span className="site-roster-card-code tech">{row.code ?? "—"}</span>
+                <span className="site-roster-card-code tech" aria-label="Site ID">
+                  {row.code ?? row.siteId}
+                </span>
                 <Link to={`/sites/${row.siteId}`} title={row.name}>
                   {row.name}
                 </Link>
@@ -133,6 +135,7 @@ export function SiteRosterGrid({
   return (
     <GridTable
       caption={caption}
+      exportTitle={caption}
       rows={displayRows}
       getRowKey={(row) => row.siteId}
       empty="No sites"
@@ -143,7 +146,7 @@ export function SiteRosterGrid({
           key: "code",
           header: "Site ID",
           width: "6.5rem",
-          render: (row) => <span className="tech">{row.code ?? "—"}</span>,
+          render: (row) => <span className="tech">{row.code ?? row.siteId}</span>,
         },
         {
           key: "name",

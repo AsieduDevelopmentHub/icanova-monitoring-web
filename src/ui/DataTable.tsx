@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { exportCellText, PageExport } from "./PageExport";
 
 export type Column<T> = {
   key: string;
@@ -16,6 +17,7 @@ export function DataTable<T>({
   dense,
   rowClassName,
   renderMobileRow,
+  exportTitle,
 }: {
   columns: Column<T>[];
   rows: T[];
@@ -25,9 +27,17 @@ export function DataTable<T>({
   dense?: boolean;
   rowClassName?: (row: T) => string | undefined;
   renderMobileRow?: (row: T) => ReactNode;
+  exportTitle?: string;
 }) {
   return (
     <div className={`table-wrap${renderMobileRow ? " has-mobile-rows" : ""}`}>
+      {exportTitle ? (
+        <PageExport
+          title={exportTitle}
+          headers={columns.map((column) => column.header)}
+          rows={rows.map((row) => columns.map((column) => exportCellText(column.render(row))))}
+        />
+      ) : null}
       <table className={`data-table${dense ? " dense" : ""}`}>
         {caption ? <caption>{caption}</caption> : null}
         <thead>

@@ -123,6 +123,7 @@ function HealthTimeline({
       <DataTable
         dense
         caption={`Events · ${siteName}`}
+        exportTitle={`Events ${siteName}`}
         rows={data.page as HealthRow[]}
         getRowKey={(row) => row._id}
         empty="No health transitions for this site."
@@ -233,6 +234,7 @@ function AuditList({ organizationId }: { organizationId: string }) {
       <DataTable
         dense
         caption="Audit"
+        exportTitle="Audit events"
         rows={page}
         getRowKey={(row) => row._id}
         empty="No audit events."

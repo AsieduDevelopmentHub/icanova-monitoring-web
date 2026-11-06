@@ -115,7 +115,7 @@ function SiteCodeFormatPanel({
         format: next,
       });
       setLocal(next);
-      setMessage("Site code format updated.");
+      setMessage("Site ID format updated.");
     } catch (caught) {
       setError(accessMessage(caught));
     } finally {
@@ -133,7 +133,7 @@ function SiteCodeFormatPanel({
       const result = await backfill({
         organizationId: id<"organizations">(organizationId),
       });
-      setMessage(`Backfilled ${result.updated} site code(s).`);
+      setMessage(`Backfilled ${result.updated} site ID(s).`);
     } catch (caught) {
       setError(accessMessage(caught));
     } finally {
@@ -142,8 +142,8 @@ function SiteCodeFormatPanel({
   }
 
   return (
-    <section className="ops-section" aria-labelledby="settings-codes-title">
-      <h2 id="settings-codes-title">Site codes</h2>
+    <section className="ops-section" aria-labelledby="settings-site-ids-title">
+      <h2 id="settings-site-ids-title">Site IDs</h2>
       <div className="filter-bar">
         <label className="filter-field">
           <span>Format</span>
@@ -158,7 +158,7 @@ function SiteCodeFormatPanel({
         </label>
         {canManage ? (
           <button type="button" className="btn btn-secondary" disabled={pending} onClick={() => void runBackfill()}>
-            Backfill missing codes
+            Backfill missing IDs
           </button>
         ) : (
           <span className="meta">Read only</span>

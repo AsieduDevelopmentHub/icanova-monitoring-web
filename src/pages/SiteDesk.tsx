@@ -21,6 +21,7 @@ import { EmptyState } from "../ui/EmptyState";
 import { PageSkeleton } from "../ui/Skeleton";
 import { StatusMark } from "../ui/StatusMark";
 import { useLiveNow } from "../ui/useLiveNow";
+import { PageExport } from "../ui/PageExport";
 
 type SiteSection = "overview" | "generators" | "gateways" | "info";
 
@@ -179,6 +180,95 @@ function DeskBody({
           dateStyle: "medium",
           timeStyle: "medium",
         });
+  const publicSiteId = site.code ?? String(site.siteId);
+  const exportHeaders =
+    section === "gateways"
+        ? ["Site ID", "Site", "Gateway", "Identity", "Status"]
+        : section === "info"
+          ? ["Site ID", "Site", "Region"]
+          : [
+              "Site ID",
+              "Site",
+              "Generator",
+              "Source",
+              "Last updated",
+              "RPM",
+              "L1 V",
+              "L2 V",
+              "L3 V",
+              "L1 A",
+              "L2 A",
+              "L3 A",
+              "L1 PF",
+              "L2 PF",
+              "L3 PF",
+              "L1 kW",
+              "L2 kW",
+              "L3 kW",
+              "Fuel %",
+              "HRM (h)",
+              "Starts",
+              "Generator kWh this month",
+              "Generator run hours this month",
+              "Mains run hours this month",
+            ];
+  const exportRows =
+    section === "gateways"
+        ? gateways.map((device: { name: string; identity: string; lifecycle: string }) => [
+            publicSiteId,
+            site.name,
+            device.name,
+            device.identity,
+            device.lifecycle,
+          ])
+        : section === "info"
+          ? [[publicSiteId, site.name, site.region ?? "N/A"]]
+          : generatorRows.length > 0
+            ? generatorRows.map((row) => [
+                publicSiteId,
+                site.name,
+                row.name,
+                row.generatorRunning === true
+                  ? "Generator"
+                  : row.generatorRunning === false && row.mainsAvailable === true
+                    ? "Mains"
+                    : row.generatorRunning === false
+                      ? "Stopped"
+                      : "N/A",
+                row.updatedAt == null ? "N/A" : new Date(row.updatedAt).toISOString(),
+                measuredExtra(row, "rpm", row.rpm, row.rpmQuality),
+                row.generatorRunning === true
+                  ? measuredExtra(row, "voltageL1", row.voltageL1, row.voltageQuality)
+                  : row.mainsAvailable === true
+                      ? measuredExtra(row, "mainsL1")
+                      : "N/A",
+                row.generatorRunning === true
+                  ? measuredExtra(row, "voltageL2")
+                  : row.mainsAvailable === true
+                      ? measuredExtra(row, "mainsL2")
+                      : "N/A",
+                row.generatorRunning === true
+                  ? measuredExtra(row, "voltageL3")
+                  : row.mainsAvailable === true
+                      ? measuredExtra(row, "mainsL3")
+                      : "N/A",
+                row.generatorRunning === true ? measuredExtra(row, "currentL1") : "N/A",
+                row.generatorRunning === true ? measuredExtra(row, "currentL2") : "N/A",
+                row.generatorRunning === true ? measuredExtra(row, "currentL3") : "N/A",
+                row.generatorRunning === true ? row.powerFactorByPhase?.L1.value ?? "N/A" : "N/A",
+                row.generatorRunning === true ? row.powerFactorByPhase?.L2.value ?? "N/A" : "N/A",
+                row.generatorRunning === true ? row.powerFactorByPhase?.L3.value ?? "N/A" : "N/A",
+                row.generatorRunning === true ? measuredExtra(row, "powerL1W", undefined, undefined, 1000) : "N/A",
+                row.generatorRunning === true ? measuredExtra(row, "powerL2W", undefined, undefined, 1000) : "N/A",
+                row.generatorRunning === true ? measuredExtra(row, "powerL3W", undefined, undefined, 1000) : "N/A",
+                measuredExtra(row, "fuelPct"),
+                measuredExtra(row, "engineHours"),
+                measuredExtra(row, "engineStarts"),
+                row.monthlySourceMetrics?.generatorEnergyKwh ?? "N/A",
+                row.monthlySourceMetrics?.generatorRunHours ?? "N/A",
+                row.monthlySourceMetrics?.mainsUsageHours ?? "N/A",
+              ])
+            : [[publicSiteId, site.name, "N/A", "N/A", updatedAtLabel, ...Array(exportHeaders.length - 5).fill("N/A")]];
 
   return (
     <div className="stack">
@@ -186,7 +276,8 @@ function DeskBody({
         <div className="page-identity-main">
           <h1 className="page-identity-title">{site.name}</h1>
           <div className="site-detail-meta">
-            {site.code ? <span className="tech">{site.code}</span> : null}
+            <span className="meta">Site ID</span>
+            <span className="tech">{publicSiteId}</span>
             {site.region ? <span>{site.region}</span> : null}
           </div>
           <p className="meta site-detail-freshness">
@@ -201,6 +292,7 @@ function DeskBody({
             </span>
           </p>
         </div>
+        <PageExport title={`${site.name} ${section}`} headers={exportHeaders} rows={exportRows} />
       </header>
 
       <nav className="site-detail-tabs" aria-label="Site sections">
@@ -349,6 +441,20 @@ function DeskBody({
       ) : null}
     </div>
   );
+}
+
+function measuredExtra(
+  row: SiteGeneratorRow,
+  key: string,
+  directValue?: number | null,
+  directQuality?: string,
+  divisor = 1,
+): number | string {
+  const value = directValue === undefined ? row.extra?.[key] : directValue;
+  const quality = directQuality === undefined ? row.extraQuality?.[key] : directQuality;
+  return quality === "measured" && typeof value === "number" && Number.isFinite(value)
+    ? value / divisor
+    : "N/A";
 }
 
 function SiteGenerators({

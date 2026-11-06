@@ -273,6 +273,7 @@ export function GeneratorDetail() {
       {section && section.labels.length > 0 && mode === "history" ? (
         <DataTable
           caption="History from the log excerpt. A quality word is not a zero."
+          exportTitle="Generator history"
           columns={[
             { key: "label", header: "Metric", render: (label: string) => label },
             ...demoSamples.map((sample) => ({
@@ -346,6 +347,7 @@ export function GeneratorDetail() {
           <DataTable
             dense
             caption="Batch failures"
+            exportTitle="Generator batch failures"
             columns={[
               { key: "sample", header: "Sample", render: (row: { sample: string }) => row.sample },
               { key: "address", header: "Address", align: "right", render: (row: { address: number }) => row.address },
@@ -370,6 +372,7 @@ export function GeneratorDetail() {
           <DataTable
             dense
             caption="Frames"
+            exportTitle="Generator frames"
             columns={[
               { key: "txn", header: "Txn", render: (frame) => frame.txn },
               { key: "request", header: "Request", render: (frame) => frame.request ?? "—" },

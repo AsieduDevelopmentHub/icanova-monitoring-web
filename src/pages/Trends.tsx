@@ -99,6 +99,7 @@ function TrendsBody({
           <DataTable
             dense
             caption="Sites updating by region (gateway online)"
+            exportTitle="Sites updating by region"
             rows={overview.regions.filter((row) => row.updating + row.nonUpdating > 0)}
             getRowKey={(row) => row.region}
             empty="No regional activity yet."
@@ -138,6 +139,7 @@ function TrendsBody({
           <DataTable
             dense
             caption="Org site health"
+            exportTitle="Organization site health"
             rows={rows}
             getRowKey={(row) => row.siteId}
             empty="No sites."

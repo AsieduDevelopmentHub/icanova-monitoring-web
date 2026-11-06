@@ -106,6 +106,7 @@ function DemoAlarmList() {
       </FilterBar>
       <DataTable
         caption="Demo alarms from the log excerpt"
+        exportTitle="Demo alarms"
         rows={rows}
         getRowKey={(row) => row.id}
         empty={
@@ -418,6 +419,7 @@ function AlarmTable({
       <DataTable
         dense
         caption="Alarms"
+        exportTitle="Alarms"
         rows={records}
         getRowKey={(row) => row.id}
         empty={copy.empty}

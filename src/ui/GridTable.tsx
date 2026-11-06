@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Icon } from "./icons";
+import { exportCellText, PageExport } from "./PageExport";
 
 export type GridColumn<T> = {
   key: string;
@@ -20,6 +21,7 @@ export function GridTable<T>({
   initialPageSize = 25,
   rowClassName,
   renderMobileRow,
+  exportTitle,
 }: {
   columns: GridColumn<T>[];
   rows: T[];
@@ -29,6 +31,7 @@ export function GridTable<T>({
   initialPageSize?: (typeof PAGE_SIZES)[number];
   rowClassName?: (row: T) => string | undefined;
   renderMobileRow?: (row: T) => ReactNode;
+  exportTitle?: string;
 }) {
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(initialPageSize);
   const [page, setPage] = useState(0);
@@ -52,6 +55,13 @@ export function GridTable<T>({
 
   return (
     <div className={`grid-table${renderMobileRow ? " has-mobile-rows" : ""}`}>
+      {exportTitle ? (
+        <PageExport
+          title={exportTitle}
+          headers={columns.map((column) => column.header)}
+          rows={rows.map((row) => columns.map((column) => exportCellText(column.render(row))))}
+        />
+      ) : null}
       <div className="grid-table-scroll">
         <table className="data-table dense grid-table-table">
           {caption ? <caption>{caption}</caption> : null}

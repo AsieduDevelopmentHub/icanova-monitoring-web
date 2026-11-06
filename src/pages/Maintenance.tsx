@@ -118,6 +118,7 @@ function Records({ organizationId }: { organizationId: Id<"organizations"> }) {
       <DataTable
         dense
         caption="Maintenance"
+        exportTitle="Maintenance"
         rows={records}
         getRowKey={(row) => row._id}
         empty="No maintenance records."

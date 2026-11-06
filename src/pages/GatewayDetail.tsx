@@ -15,6 +15,7 @@ import {
 import { DataTable } from "../ui/DataTable";
 import { PageSkeleton, Skeleton } from "../ui/Skeleton";
 import { StatusMark } from "../ui/StatusMark";
+import { PageExport } from "../ui/PageExport";
 
 export function GatewayDetail() {
   const { id: deviceId } = useParams();
@@ -51,7 +52,7 @@ function DemoGateway() {
         <div className="page-identity-main">
           <h1 className="page-identity-title">{name}</h1>
           <p className="meta">
-            <Link to="/sites">Sites</Link>
+            <Link to="/sites/demo">Site ID · demo</Link>
           </p>
         </div>
       </header>
@@ -94,7 +95,15 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
         <nav className="page-identity-actions" aria-label="Gateway monitoring shortcuts">
           {detail.device.siteId ? (
             <>
-              <Link className="btn btn-secondary" to={`/sites/${detail.device.siteId}`}>Site</Link>
+              <Link className="btn btn-secondary" to={`/sites/${detail.device.siteId}`}>
+                Site ID · {detail.siteCode ?? detail.device.siteId}
+              </Link>
+              <Link className="btn btn-secondary" to={`/sites/${detail.device.siteId}?section=generators`}>
+                Generators
+              </Link>
+              <Link className="btn btn-secondary" to={`/sites/${detail.device.siteId}?section=gateways`}>
+                Gateways
+              </Link>
               <Link className="btn btn-secondary" to={`/alarms?site=${detail.device.siteId}`}>Alarms</Link>
               <Link className="btn btn-secondary" to={`/events?site=${detail.device.siteId}`}>Events</Link>
             </>
@@ -105,6 +114,22 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
             </>
           )}
         </nav>
+        <PageExport
+          title={`${detail.siteCode ?? detail.device.siteId ?? "gateway"} ${detail.device.name}`}
+          headers={["Site ID", "Site", "Gateway", "Identity", "Status", "Cloud", "Modbus", "Telemetry", "Firmware", "Last contact"]}
+          rows={[[
+            detail.siteCode ?? String(detail.device.siteId ?? "N/A"),
+            detail.siteName ?? "N/A",
+            detail.device.name,
+            detail.device.identity,
+            active ? "Active" : "Inactive",
+            gateway.label,
+            modbus.label,
+            fresh.label,
+            health?.firmwareVersion ?? "N/A",
+            contactAgeLabel(health?.lastGatewayContactAt, now),
+          ]]}
+        />
       </header>
 
       <div className="status-row">
@@ -163,6 +188,7 @@ function StoredGateway({ deviceId }: { deviceId: string }) {
           <DataTable
             dense
             caption="Linked generators"
+            exportTitle="Linked generators"
             rows={detail.generators}
             getRowKey={(row) => row._id}
             empty="No generators linked."
@@ -217,6 +243,7 @@ function HealthEvents({ deviceId }: { deviceId: Id<"devices"> }) {
       ) : (
         <DataTable
           caption="Health transitions"
+          exportTitle="Gateway health transitions"
           rows={page.page}
           getRowKey={(row) => row._id}
           empty="No health transitions are stored yet."
