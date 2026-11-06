@@ -94,6 +94,161 @@ export function FilterSelect({
   );
 }
 
+export function FilterMultiSelect({
+  label,
+  values,
+  onChange,
+  options,
+  allLabel,
+  disabled = false,
+}: {
+  label: string;
+  values: string[];
+  onChange: (values: string[]) => void;
+  options: SelectOption[];
+  allLabel: string;
+  disabled?: boolean;
+}) {
+  const listId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const selected = useMemo(
+    () => new Set(values.filter((value) => options.some((option) => option.value === value))),
+    [options, values],
+  );
+  const filtered = useMemo(() => {
+    const search = query.trim().toLowerCase();
+    return search
+      ? options.filter(
+          (option) =>
+            option.label.toLowerCase().includes(search) ||
+            option.value.toLowerCase().includes(search),
+        )
+      : options;
+  }, [options, query]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const onDocumentMouseDown = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    const onDocumentKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    document.addEventListener("mousedown", onDocumentMouseDown);
+    document.addEventListener("keydown", onDocumentKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onDocumentMouseDown);
+      document.removeEventListener("keydown", onDocumentKeyDown);
+    };
+  }, [open]);
+
+  function toggle(value: string) {
+    const next = new Set(selected);
+    if (next.has(value)) {
+      next.delete(value);
+    } else {
+      next.add(value);
+    }
+    onChange([...next]);
+  }
+
+  const triggerLabel =
+    selected.size === 0
+      ? allLabel
+      : selected.size === 1
+        ? options.find((option) => selected.has(option.value))?.label ?? allLabel
+        : `${selected.size} selected`;
+
+  return (
+    <div
+      className={disabled ? "filter-field filter-combobox is-disabled" : "filter-field filter-combobox"}
+      ref={rootRef}
+    >
+      <span id={`${listId}-label`}>{label}</span>
+      <button
+        type="button"
+        className="filter-combobox-trigger"
+        disabled={disabled}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={`${label}: ${triggerLabel}`}
+        onClick={() => {
+          if (disabled) {
+            return;
+          }
+          setOpen((was) => !was);
+          window.setTimeout(() => inputRef.current?.focus(), 0);
+        }}
+      >
+        <span className="filter-combobox-value">
+          {triggerLabel}
+          {selected.size > 0 ? <span className="filter-multiselect-count">{selected.size}</span> : null}
+        </span>
+        <span className="filter-combobox-caret" aria-hidden="true" />
+      </button>
+      {open ? (
+        <div className="filter-combobox-panel filter-multiselect-panel" role="group" aria-label={`${label} options`}>
+          <input
+            ref={inputRef}
+            type="search"
+            className="filter-combobox-search"
+            value={query}
+            placeholder={`Search ${label.toLowerCase()}…`}
+            aria-controls={listId}
+            autoComplete="off"
+            onChange={(event) => setQuery(event.target.value)}
+          />
+          <label className="filter-multiselect-option filter-multiselect-all">
+            <input
+              type="checkbox"
+              checked={selected.size === 0}
+              disabled={selected.size === 0}
+              onChange={() => onChange([])}
+            />
+            <span>{allLabel}</span>
+          </label>
+          <div className="filter-multiselect-actions">
+            <span>{selected.size === 0 ? "All values included" : `${selected.size} selected`}</span>
+            <button type="button" className="text-btn" onClick={() => onChange([])}>
+              Clear
+            </button>
+          </div>
+          <ul id={listId} className="filter-combobox-list filter-multiselect-list" aria-label={label}>
+            {filtered.length === 0 ? (
+              <li className="filter-combobox-empty">No matches</li>
+            ) : (
+              filtered.map((option) => (
+                <li key={option.value}>
+                  <label className="filter-multiselect-option">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(option.value)}
+                      onChange={() => toggle(option.value)}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function SearchableSelect({
   label,
   value,

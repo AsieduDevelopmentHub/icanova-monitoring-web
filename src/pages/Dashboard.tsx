@@ -3,7 +3,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { id } from "../fleet/access";
 import { LiveGate } from "../fleet/scope";
-import { SiteRosterGrid } from "../sites/SiteRosterGrid";
+import { SiteRosterExplorer } from "../sites/SiteRosterExplorer";
 import { EmptyState } from "../ui/EmptyState";
 import { QueryErrorBoundary } from "../ui/QueryErrorBoundary";
 import { Skeleton } from "../ui/Skeleton";
@@ -44,7 +44,7 @@ function CommandCenter({ organizationId }: { organizationId: string }) {
               Manage
             </Link>
           </header>
-          <SiteRosterGrid rows={roster as SiteRosterRow[]} caption="Fleet sites" />
+          <SiteRosterExplorer rows={roster as SiteRosterRow[]} caption="Fleet sites" />
         </section>
       )}
     </div>

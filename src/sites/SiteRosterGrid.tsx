@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import { GridTable } from "../ui/GridTable";
+import { Icon } from "../ui/icons";
 import { useLiveNow } from "../ui/useLiveNow";
 import { SiteAlarmBell } from "./SiteAlarmBell";
 import { siteLiveState } from "./siteStatus";
@@ -21,21 +23,27 @@ export function SiteRosterGrid({
   rows,
   caption = "Sites",
   mobileCards = false,
+  preserveOrder = false,
 }: {
   rows: readonly SiteRosterRow[];
   caption?: string;
   mobileCards?: boolean;
+  preserveOrder?: boolean;
 }) {
   const now = useLiveNow(ROSTER_LIVE_TICK_MS);
-  // Stable order + batched Last Updated / health so rows do not jump every ingest.
-  const displayRows = useThrottledRoster(rows);
+  const [expandedSites, setExpandedSites] = useState<Set<string>>(() => new Set());
+  // Keep the legacy roster order stable; filterable explorer order is explicit.
+  const stableRows = useThrottledRoster(rows);
+  const displayRows = preserveOrder ? [...rows] : stableRows;
   const renderMobileRow = mobileCards
     ? (row: SiteRosterRow) => {
         const issues = siteAttentionIssues(row);
         const activityAt = siteLastActivityAt(row);
         const live = siteLiveState(row, now);
+        const expanded = expandedSites.has(row.siteId);
+        const detailsId = `site-card-details-${row.siteId}`;
         return (
-          <article className="site-roster-card">
+          <article className={expanded ? "site-roster-card is-expanded" : "site-roster-card"}>
             <header className="site-roster-card-head">
               <div className="site-roster-card-identity">
                 <span className="site-roster-card-code tech">{row.code ?? "—"}</span>
@@ -48,6 +56,26 @@ export function SiteRosterGrid({
                 siteLabel={`${row.code ?? "—"} | ${row.name}`}
                 issues={issues}
               />
+              <button
+                type="button"
+                className="site-roster-card-toggle"
+                aria-label={`${expanded ? "Collapse" : "Expand"} ${row.name} details`}
+                aria-expanded={expanded}
+                aria-controls={detailsId}
+                onClick={() =>
+                  setExpandedSites((current) => {
+                    const next = new Set(current);
+                    if (next.has(row.siteId)) {
+                      next.delete(row.siteId);
+                    } else {
+                      next.add(row.siteId);
+                    }
+                    return next;
+                  })
+                }
+              >
+                <Icon name={expanded ? "chevronUp" : "chevronDown"} />
+              </button>
             </header>
             <div className="site-roster-card-status">
               <StatusMark tone={live.tone}>{live.label}</StatusMark>
@@ -59,7 +87,7 @@ export function SiteRosterGrid({
                 {formatLastUpdated(activityAt)}
               </time>
             </div>
-            <dl className="site-roster-card-facts">
+            <dl id={detailsId} className="site-roster-card-facts" hidden={!expanded}>
               <div>
                 <dt>Power source</dt>
                 <dd>{powerSourceLabel(row)}</dd>

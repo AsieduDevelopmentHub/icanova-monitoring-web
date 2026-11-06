@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { id, storedReading } from "../fleet/access";
@@ -14,40 +13,67 @@ import {
   siteTrendsPath,
 } from "../fleet/paths";
 import { LiveGate } from "../fleet/scope";
-import { SiteLocationPicker } from "../sites/SiteLocationPicker";
+import { SiteInfoSection } from "../sites/SiteInfoSection";
 import { storedFreshness } from "../telemetry/freshness";
 import { formatReading } from "../telemetry/readings";
 import { engineView } from "../telemetry/fleetView";
 import { EmptyState } from "../ui/EmptyState";
 import { PageSkeleton } from "../ui/Skeleton";
 import { StatusMark } from "../ui/StatusMark";
+import { useLiveNow } from "../ui/useLiveNow";
 
-type SiteSection = "overview" | "generators" | "gateways" | "location";
+type SiteSection = "overview" | "generators" | "gateways" | "info";
 
 type SiteGeneratorRow = {
   generatorId: Id<"generators">;
   name: string;
   updatedAt: number | null;
+  generatorRunning: boolean | null;
+  generatorRunningSince: number | null;
+  mainsAvailable: boolean | null;
+  mainsAvailableSince: number | null;
   rpm: number | null;
   rpmQuality: string;
   voltageL1: number | null;
   voltageQuality: string;
   powerKw: number | null;
   powerQuality: string;
+  powerFactorByPhase?: {
+    L1: { value: number | null; source: "controller" | "calculated" | null };
+    L2: { value: number | null; source: "controller" | "calculated" | null };
+    L3: { value: number | null; source: "controller" | "calculated" | null };
+  };
   frequencyHz: number | null;
   frequencyQuality: string;
   batteryV: number | null;
   batteryQuality: string;
   extra?: Record<string, number | null>;
   extraQuality?: Record<string, string>;
+  monthlySourceMetrics?: {
+    monthStart: number;
+    coverageStartedAt: number;
+    generatorEnergyKwh: number | null;
+    generatorEnergySince: number | null;
+    generatorRunHours: number | null;
+    generatorRunHoursSince: number | null;
+    mainsAvailableHours: number | null;
+    mainsAvailableSince: number | null;
+    mainsUsageHours: number | null;
+    mainsUsageSince: number | null;
+  } | null;
 };
 
-type PhaseReading = { phase: string; value: string };
+type PhaseReading = {
+  phase: string;
+  value: string;
+  source?: "controller" | "calculated" | null;
+};
 type PhaseRow = {
   phase: string;
   voltage: string;
   current: string;
   powerFactor: string;
+  powerFactorSource?: "controller" | "calculated" | null;
   power: string;
 };
 
@@ -55,29 +81,18 @@ const SITE_SECTIONS: { id: SiteSection; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "generators", label: "Generators" },
   { id: "gateways", label: "Gateways" },
-  { id: "location", label: "Location" },
+  { id: "info", label: "Site Info" },
 ];
-
-function locationSourceLabel(source: string | null | undefined): string {
-  if (source === "ip") {
-    return "IP";
-  }
-  if (source === "browser") {
-    return "Browser";
-  }
-  if (source === "manual") {
-    return "Manual";
-  }
-  return "Manual";
-}
 
 /** Focused monitoring sections for one physical installation. */
 export function SiteDesk() {
   const { siteId } = useParams();
   const [params] = useSearchParams();
-  const section = SITE_SECTIONS.some((item) => item.id === params.get("section"))
-    ? (params.get("section") as SiteSection)
-    : "overview";
+  const requestedSection = params.get("section");
+  const section: SiteSection =
+    requestedSection === "location"
+      ? "info"
+      : SITE_SECTIONS.find((item) => item.id === requestedSection)?.id ?? "overview";
 
   return (
     <section className="page ops-page site-desk">
@@ -111,6 +126,7 @@ function DeskBody({
   section: SiteSection;
 }) {
   const orgId = id<"organizations">(organizationId);
+  const now = useLiveNow();
   const site = useQuery(api.sites.get, {
     organizationId: orgId,
     siteId,
@@ -128,9 +144,7 @@ function DeskBody({
     api.deviceHealth.siteHealthSummary,
     permissions.includes("view.dashboard") ? { organizationId: orgId, siteId } : "skip",
   );
-  const setLocation = useMutation(api.sites.setLocation);
-  const [locationPending, setLocationPending] = useState(false);
-  const canManageLocation = permissions.includes("manage.sites");
+  const canManageSite = permissions.includes("manage.sites");
 
   if (site === undefined) {
     return <PageSkeleton rows={6} label="Loading site" />;
@@ -243,6 +257,7 @@ function DeskBody({
             loading={telemetry === undefined}
             capped={Boolean(telemetry?.capped)}
             variant="overview"
+            now={now}
           />
           <section className="site-overview-links" aria-label="Site monitoring sections">
             <Link to={siteAlarmsPath(site.siteId)}>Alarms</Link>
@@ -260,6 +275,7 @@ function DeskBody({
           loading={telemetry === undefined}
           capped={Boolean(telemetry?.capped)}
           variant="list"
+          now={now}
         />
       ) : null}
 
@@ -324,62 +340,12 @@ function DeskBody({
         </section>
       ) : null}
 
-      {section === "location" ? (
-        canManageLocation ? (
-          <div className="site-location-section">
-            <SiteLocationPicker
-              latitude={site.latitude}
-              longitude={site.longitude}
-              pending={locationPending}
-              onSave={async (latitude, longitude) => {
-                setLocationPending(true);
-                try {
-                  await setLocation({
-                    organizationId: orgId,
-                    siteId,
-                    latitude,
-                    longitude,
-                    source: "manual",
-                  });
-                } finally {
-                  setLocationPending(false);
-                }
-              }}
-            />
-            <p className="meta site-location-source">
-              {site.latitude != null && site.longitude != null
-                ? `Saved from ${locationSourceLabel(site.locationSource)}${site.locationUpdatedAt != null ? ` · updated ${new Date(site.locationUpdatedAt).toLocaleString()}` : ""}`
-                : "Set coordinates to help operators locate this site."}
-            </p>
-          </div>
-        ) : (
-          <section className="ops-section site-context-panel" aria-labelledby="site-location-title">
-            <h2 id="site-location-title">Location</h2>
-            {site.latitude != null && site.longitude != null ? (
-              <>
-                <p className="site-location-coordinates tech">
-                  {site.latitude.toFixed(6)}, {site.longitude.toFixed(6)}
-                </p>
-                <div className="site-location-facts">
-                  <span><span className="meta">Source</span>{locationSourceLabel(site.locationSource)}</span>
-                  {site.locationUpdatedAt != null ? (
-                    <span><span className="meta">Updated</span>{new Date(site.locationUpdatedAt).toLocaleString()}</span>
-                  ) : null}
-                </div>
-                <a
-                  className="btn btn-secondary site-map-link"
-                  href={`https://www.openstreetmap.org/?mlat=${site.latitude}&mlon=${site.longitude}#map=15/${site.latitude}/${site.longitude}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open site location map
-                </a>
-              </>
-            ) : (
-              <p className="empty">No coordinates saved for this site.</p>
-            )}
-          </section>
-        )
+      {section === "info" ? (
+        <SiteInfoSection
+          organizationId={orgId}
+          site={site}
+          canManage={canManageSite}
+        />
       ) : null}
     </div>
   );
@@ -391,12 +357,14 @@ function SiteGenerators({
   loading,
   capped,
   variant,
+  now,
 }: {
   siteId: Id<"sites">;
   rows: SiteGeneratorRow[];
   loading: boolean;
   capped: boolean;
   variant: "overview" | "list";
+  now: number;
 }) {
   const title = variant === "overview" ? "Generator readings" : "Generators";
   return (
@@ -418,13 +386,13 @@ function SiteGenerators({
           {variant === "overview" ? (
             <div className="site-overview-generator-list">
               {rows.map((row) => (
-                <SiteOverviewGenerator key={row.generatorId} siteId={siteId} row={row} />
+                <SiteOverviewGenerator key={row.generatorId} siteId={siteId} row={row} now={now} />
               ))}
             </div>
           ) : (
             <div className="site-overview-generator-list">
               {rows.map((row) => (
-                <SiteOverviewGenerator key={row.generatorId} siteId={siteId} row={row} detailed />
+                <SiteOverviewGenerator key={row.generatorId} siteId={siteId} row={row} detailed now={now} />
               ))}
             </div>
           )}
@@ -438,13 +406,25 @@ function SiteOverviewGenerator({
   siteId,
   row,
   detailed = false,
+  now,
 }: {
   siteId: Id<"sites">;
   row: SiteGeneratorRow;
   detailed?: boolean;
+  now: number;
 }) {
   const readings = generatorReadings(row);
   const engine = engineView(row.rpm, row.rpmQuality);
+  const telemetryFresh = row.updatedAt != null && !storedFreshness(row.updatedAt, now).stale;
+  const activeSource = telemetryFresh
+    ? row.generatorRunning === true
+      ? "generator"
+      : row.mainsAvailable === true
+        ? "mains"
+        : null
+    : null;
+  const generatorRunningSince = telemetryFresh ? row.generatorRunningSince : null;
+  const mainsAvailableSince = telemetryFresh ? row.mainsAvailableSince : null;
   const updatedAt = row.updatedAt == null
     ? "No sample recorded"
     : new Date(row.updatedAt).toLocaleString(undefined, {
@@ -453,13 +433,23 @@ function SiteOverviewGenerator({
         hour: "2-digit",
         minute: "2-digit",
       });
+  const mainsVoltageKeys = ["mainsL1", "mainsL2", "mainsL3"] as const;
   const phaseRows: PhaseRow[] = readings.voltage.map((voltage, index) => ({
     phase: voltage.phase,
-    voltage: voltage.value,
-    current: readings.current[index].value,
-    powerFactor: readings.powerFactor[index].value,
-    power: readings.power[index].value,
+    voltage:
+      activeSource === "generator"
+        ? voltage.value
+        : activeSource === "mains"
+          ? extraReading(row, mainsVoltageKeys[index] ?? "mainsL1", "")
+          : "N/A",
+    current: activeSource === "generator" ? readings.current[index].value : "N/A",
+    powerFactor: activeSource === "generator" ? readings.powerFactor[index].value : "N/A",
+    powerFactorSource: readings.powerFactor[index].source,
+    power: activeSource === "generator" ? readings.power[index].value : "N/A",
   }));
+  const hasContinuousRun =
+    (row.generatorRunning === true && generatorRunningSince != null) ||
+    (row.mainsAvailable === true && mainsAvailableSince != null);
 
   return (
     <article className="site-overview-generator">
@@ -467,6 +457,15 @@ function SiteOverviewGenerator({
         <div>
           <Link to={siteGeneratorPath(siteId, row.generatorId)}>{row.name}</Link>
           <span className="meta">Sample {updatedAt}</span>
+          <div className="site-continuous-runs" aria-label="Continuous source runtime">
+            {row.generatorRunning === true && generatorRunningSince != null ? (
+              <span>Generator running · {continuousDuration(generatorRunningSince, now)}</span>
+            ) : null}
+            {row.mainsAvailable === true && mainsAvailableSince != null ? (
+              <span>Mains available · {continuousDuration(mainsAvailableSince, now)}</span>
+            ) : null}
+            {!hasContinuousRun ? <span>N/A</span> : null}
+          </div>
         </div>
         <StatusMark tone={engine.tone}>{engine.label}</StatusMark>
       </header>
@@ -516,7 +515,12 @@ function SiteOverviewGenerator({
                     <th scope="row">{phase.phase}</th>
                     <td className="num">{phase.voltage}</td>
                     <td className="num">{phase.current}</td>
-                    <td className="num">{phase.powerFactor}</td>
+                    <td
+                      className="num"
+                      title={phase.powerFactorSource === "calculated" ? "Calculated from active and apparent power" : undefined}
+                    >
+                      {phase.powerFactor}
+                    </td>
                     <td className="num">{phase.power}</td>
                   </tr>
                 ))}
@@ -528,9 +532,72 @@ function SiteOverviewGenerator({
           </Link>
         </div>
       </div>
+      <MonthlyPowerSourceTable metrics={row.monthlySourceMetrics} />
       {detailed ? <SupportingReadings row={row} /> : null}
     </article>
   );
+}
+
+function MonthlyPowerSourceTable({
+  metrics,
+}: {
+  metrics: SiteGeneratorRow["monthlySourceMetrics"];
+}) {
+  const monthLabel = metrics
+    ? new Date(metrics.monthStart).toLocaleDateString(undefined, {
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      })
+    : new Date().toLocaleDateString(undefined, {
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+
+  return (
+    <section className="site-monthly-power" aria-label="Monthly power-source metrics">
+      <div className="site-monthly-power-heading">
+        <h3>{monthLabel}</h3>
+      </div>
+      <div className="site-monthly-power-table-wrap">
+        <table className="data-table dense site-monthly-power-table">
+          <thead>
+            <tr>
+              <th>Power source</th>
+              <th className="num">kWh</th>
+              <th className="num">Run hours (h)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Generator</th>
+              <td className="num">{monthlyValue(metrics?.generatorEnergyKwh)}</td>
+              <td className="num">{monthlyValue(metrics?.generatorRunHours)}</td>
+            </tr>
+            <tr>
+              <th scope="row">Mains</th>
+              <td className="num">N/A</td>
+              <td className="num">{monthlyValue(metrics?.mainsUsageHours)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function monthlyValue(value: number | null | undefined): string {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value.toFixed(2)
+    : "N/A";
+}
+
+function continuousDuration(since: number, now: number): string {
+  const elapsedMinutes = Math.max(0, Math.floor((now - since) / 60_000));
+  const hours = Math.floor(elapsedMinutes / 60);
+  const minutes = elapsedMinutes % 60;
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
 function ReadingPanel({
@@ -558,7 +625,7 @@ function SupportingReadings({ row }: { row: SiteGeneratorRow }) {
     { key: "voltageL12", label: "L1–L2 voltage", unit: "V" },
     { key: "voltageL23", label: "L2–L3 voltage", unit: "V" },
     { key: "voltageL31", label: "L3–L1 voltage", unit: "V" },
-    { key: "mainsHz", label: "Mains frequency", unit: "Hz" },
+    { key: "mainsHz", label: "General frequency", unit: "Hz" },
     { key: "coolantC", label: "Coolant", unit: "°C" },
     { key: "oilTempC", label: "Oil temperature", unit: "°C" },
     { key: "oilPressureKpa", label: "Oil pressure", unit: "kPa" },
@@ -605,11 +672,16 @@ function generatorReadings(row: SiteGeneratorRow): {
       { phase: "L2", value: extraReading(row, "currentL2", "") },
       { phase: "L3", value: extraReading(row, "currentL3", "") },
     ],
-    powerFactor: [
-      { phase: "L1", value: extraReading(row, "pfL1", "") },
-      { phase: "L2", value: extraReading(row, "pfL2", "") },
-      { phase: "L3", value: extraReading(row, "pfL3", "") },
-    ],
+    powerFactor: (["L1", "L2", "L3"] as const).map((phase) => {
+      const factor = row.powerFactorByPhase?.[phase];
+      return {
+        phase,
+        value: formatReading(
+          storedReading(factor?.value ?? null, factor?.value == null ? "unavailable" : "measured", ""),
+        ),
+        source: factor?.source,
+      };
+    }),
     power: [
       { phase: "L1", value: extraReading(row, "powerL1W", "", 1000) },
       { phase: "L2", value: extraReading(row, "powerL2W", "", 1000) },

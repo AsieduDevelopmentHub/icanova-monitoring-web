@@ -61,6 +61,24 @@ function requireCoordinate(value: number, kind: "latitude" | "longitude"): numbe
   return value;
 }
 
+function requireSiteInfoText(value: string, label: string, maxLength: number): string {
+  const normalized = value.trim();
+  if (normalized.length > maxLength) {
+    throw new ConvexError(`${label} must be ${maxLength} characters or fewer`);
+  }
+  return normalized;
+}
+
+function requireSiteDate(value: number | null, label: string, now: number): number | null {
+  if (value === null) {
+    return null;
+  }
+  if (!Number.isFinite(value) || value <= 0 || value > now) {
+    throw new ConvexError(`${label} must be a valid date and time in the past`);
+  }
+  return value;
+}
+
 export const list = query({
   args: {
     organizationId: v.id("organizations"),
@@ -86,16 +104,78 @@ export const get = query({
     if (!site || site.organizationId !== args.organizationId) {
       return null;
     }
+    let assignedOperatorName: string | null = null;
+    const assignedOperatorUserId = site.assignedOperatorUserId;
+    if (assignedOperatorUserId) {
+      const membership = await ctx.db
+        .query("memberships")
+        .withIndex("by_org_user", (q) =>
+          q.eq("organizationId", args.organizationId).eq("userId", assignedOperatorUserId),
+        )
+        .unique();
+      if (membership) {
+        const user = await ctx.db.get(assignedOperatorUserId);
+        assignedOperatorName = user?.name ?? user?.username ?? null;
+      }
+    }
     return {
       siteId: site._id,
       name: site.name,
       code: site.code ?? null,
       region: site.region ?? null,
+      siteInfo: site.siteInfo ?? {
+        zone: "",
+        cluster: "",
+        address: "",
+        siteType: "",
+        category: "",
+        energyClassification: "",
+        coolingClassification: "",
+        geoClassification: "",
+        siteClassification: "",
+        simDetails: "",
+        customerSiteId: "",
+        fieldEngineer: "",
+        engineerContact: "",
+        communicationMode: "",
+        installationAt: null,
+      },
+      assignedOperatorUserId: site.assignedOperatorUserId ?? null,
+      assignedOperatorName,
+      assignedOperatorNote: site.assignedOperatorNote ?? null,
+      onAirSince: site.onAirSince ?? null,
       latitude: site.latitude ?? null,
       longitude: site.longitude ?? null,
       locationUpdatedAt: site.locationUpdatedAt ?? null,
       locationSource: site.locationSource ?? null,
     };
+  },
+});
+
+export const operatorOptions = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "manage.sites");
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_org_user", (q) => q.eq("organizationId", args.organizationId))
+      .take(MAX_PAGE);
+    const rows = [];
+    for (const membership of memberships) {
+      const role = await ctx.db.get(membership.roleId);
+      if (!role || role.organizationId !== args.organizationId || role.name !== "Operator") {
+        continue;
+      }
+      const user = await ctx.db.get(membership.userId);
+      if (!user) {
+        continue;
+      }
+      rows.push({
+        userId: user._id,
+        name: user.name ?? user.username ?? user.email ?? "Operator",
+      });
+    }
+    return rows.sort((a, b) => a.name.localeCompare(b.name));
   },
 });
 
@@ -358,6 +438,125 @@ export const rename = mutation({
     }
     await ctx.db.patch(site._id, { name });
     await writeAudit(ctx, args.organizationId, "site.rename", site._id);
+    return { siteId: site._id, changed: true as const };
+  },
+});
+
+export const updateInfo = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    siteId: v.id("sites"),
+    name: v.string(),
+    code: v.string(),
+    region: v.string(),
+    latitude: v.union(v.number(), v.null()),
+    longitude: v.union(v.number(), v.null()),
+    details: v.object({
+      zone: v.string(),
+      cluster: v.string(),
+      address: v.string(),
+      siteType: v.string(),
+      category: v.string(),
+      energyClassification: v.string(),
+      coolingClassification: v.string(),
+      geoClassification: v.string(),
+      siteClassification: v.string(),
+      simDetails: v.string(),
+      customerSiteId: v.string(),
+      fieldEngineer: v.string(),
+      engineerContact: v.string(),
+      communicationMode: v.string(),
+      installationAt: v.union(v.number(), v.null()),
+    }),
+    assignedOperatorUserId: v.union(v.id("users"), v.null()),
+    assignedOperatorNote: v.string(),
+    onAirSince: v.union(v.number(), v.null()),
+  },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "manage.sites");
+    const site = await requireSite(ctx, args.organizationId, args.siteId);
+    const organization = await ctx.db.get(args.organizationId);
+    if (!organization) {
+      throw new ConvexError("Forbidden");
+    }
+    const name = requireName(args.name, "Site name");
+    const code = requireSiteCode(args.code, normalizeSiteCodeFormat(organization.siteCodeFormat));
+    const clash = await ctx.db
+      .query("sites")
+      .withIndex("by_org_code", (q) =>
+        q.eq("organizationId", args.organizationId).eq("code", code),
+      )
+      .unique();
+    if (clash && clash._id !== site._id) {
+      throw new ConvexError("Site code already in use");
+    }
+    if ((args.latitude === null) !== (args.longitude === null)) {
+      throw new ConvexError("Enter both latitude and longitude, or clear both");
+    }
+    const latitude = args.latitude === null ? null : requireCoordinate(args.latitude, "latitude");
+    const longitude = args.longitude === null ? null : requireCoordinate(args.longitude, "longitude");
+    const now = Date.now();
+    const installationAt = requireSiteDate(args.details.installationAt, "Installation date", now);
+    const onAirSince = requireSiteDate(args.onAirSince, "Time on air", now);
+
+    if (args.assignedOperatorUserId !== null) {
+      const membership = await ctx.db
+        .query("memberships")
+        .withIndex("by_org_user", (q) =>
+          q.eq("organizationId", args.organizationId).eq("userId", args.assignedOperatorUserId!),
+        )
+        .unique();
+      const role = membership ? await ctx.db.get(membership.roleId) : null;
+      if (!membership || !role || role.organizationId !== args.organizationId || role.name !== "Operator") {
+        throw new ConvexError("Choose an Operator who belongs to this organization");
+      }
+    }
+
+    const details = {
+      zone: requireSiteInfoText(args.details.zone, "Zone", 100),
+      cluster: requireSiteInfoText(args.details.cluster, "Cluster", 100),
+      address: requireSiteInfoText(args.details.address, "Site address", 500),
+      siteType: requireSiteInfoText(args.details.siteType, "Site type", 100),
+      category: requireSiteInfoText(args.details.category, "Category", 100),
+      energyClassification: requireSiteInfoText(args.details.energyClassification, "Energy classification", 160),
+      coolingClassification: requireSiteInfoText(args.details.coolingClassification, "Cooling classification", 160),
+      geoClassification: requireSiteInfoText(args.details.geoClassification, "Geo classification", 160),
+      siteClassification: requireSiteInfoText(args.details.siteClassification, "Site classification", 160),
+      simDetails: requireSiteInfoText(args.details.simDetails, "SIM details", 500),
+      customerSiteId: requireSiteInfoText(args.details.customerSiteId, "Customer site ID", 120),
+      fieldEngineer: requireSiteInfoText(args.details.fieldEngineer, "Field engineer", 160),
+      engineerContact: requireSiteInfoText(args.details.engineerContact, "Engineer contact", 120),
+      communicationMode: requireSiteInfoText(args.details.communicationMode, "Communication mode", 100),
+      installationAt,
+    };
+    const region = requireSiteInfoText(args.region, "Region", 120);
+    const assignedOperatorNote = requireSiteInfoText(args.assignedOperatorNote, "Operator note", 500);
+    const locationChanged = site.latitude !== latitude || site.longitude !== longitude;
+    await ctx.db.patch(site._id, {
+      name,
+      code,
+      region: region || undefined,
+      siteInfo: details,
+      assignedOperatorUserId: args.assignedOperatorUserId ?? undefined,
+      assignedOperatorNote: assignedOperatorNote || undefined,
+      onAirSince: onAirSince ?? undefined,
+      latitude: latitude ?? undefined,
+      longitude: longitude ?? undefined,
+      ...(locationChanged
+        ? latitude !== null && longitude !== null
+          ? {
+              locationUpdatedAt: now,
+              locationSource: "manual" as const,
+              ...clearPendingFields(),
+            }
+          : {
+              locationUpdatedAt: undefined,
+              locationSource: undefined,
+              ...clearPendingFields(),
+            }
+        : {}),
+    });
+    await writeAudit(ctx, args.organizationId, "site.info.update", site._id);
     return { siteId: site._id, changed: true as const };
   },
 });

@@ -39,11 +39,15 @@ Improve on their spreadsheet-heavy feel and equal-weight tile mosaics. Do not co
 ### Site detail hierarchy
 
 - Keep the default Site view focused: identity, telemetry freshness, a compact operating snapshot, and a clear per-generator readings table.
-- Separate Generators, Gateways, and Location into their own site sections instead of stacking every detail onto the overview.
+- Separate Generators, Gateways, and Site Info into their own site sections instead of stacking every detail onto the overview. Site Info is the concise administrative record for identity, zone/region/cluster, address and classifications, SIM/customer references, field engineer/contact, installation date, coordinates, communication mode, assigned operator and note, and the site's on-air-since time. Users with site-management permission can edit it; coordinate data remains available to maps and gateway location updates.
 - Show measured phase voltage, current, power factor, and kW alongside load, engine hours (HRM), fuel, and starts in the Site overview and Generators section. The Generators section may add supporting measured electrical and engine readings. Preserve quality/missing states; never turn an absent measurement into zero.
 - Do not paginate current site readings. Keep all returned readings visible and disclose when the backend caps the result.
 - Site roster cards show exact last-activity timestamps, fuel level, and HRM instead of generator count; desktop roster rows include fuel and HRM columns too.
-- Show gateway health and only the identity/version information needed to identify a monitored asset. Keep location in its own supporting section.
+- Site roster values repaint from the live Convex subscription every 30 seconds while preserving the roster order.
+- On mobile, site cards start collapsed and expand from a labeled disclosure control. Sites and the Command Center share a hidden-by-default Filter & Search sheet with search, searchable checkbox multi-selects for region, power source, update state, and site status, fuel threshold, and searchable sort; it opens as a side sheet on desktop and a bottom sheet on mobile.
+- Site power parameters use one row per phase and a single voltage cell showing active-source voltage; generator power factor uses the controller value or is calculated server-side from measured active/apparent phase power. Generator and mains current/PF/kW are shown only when supported for the active source. Site detail cards show measured continuous generator-run and mains-availability duration, resetting the displayed interval after telemetry goes stale.
+- Site monthly source metrics are calculated server-side for the current calendar month. Generator energy and run hours use the DSE controller's cumulative energy-export and engine-hour counters. Mains energy remains N/A without a mains kWh meter; mains run hours count intervals between consecutive fresh samples only while mains voltage is present and the generator is stopped. This is observed source time, not a controller-provided cumulative mains-hour counter; gaps beyond the telemetry freshness window are excluded.
+- Show gateway health and only the identity/version information needed to identify a monitored asset. Keep map coordinates in Site Info rather than giving location a separate site-detail tab.
 - Disclose capped site lists. Cursor-paginated history should provide truthful older/newer navigation without inventing a total or last page.
 
 ## Responsive review

@@ -4,7 +4,7 @@ import type { Id } from "./_generated/dataModel";
 import { internalMutation, query } from "./_generated/server";
 import { requirePermission } from "./identity";
 import { internal } from "./_generated/api";
-import { BUCKET_MS, BUCKET_RETENTION_MS, CHART_POINTS, MAX_PAGE, PRUNE_BATCH, PRUNE_ROUNDS, SERIES_READ, boundedPage } from "./limits";
+import { BUCKET_MS, BUCKET_RETENTION_MS, CHART_POINTS, HEALTH_STALE_MS, MAX_PAGE, PRUNE_BATCH, PRUNE_ROUNDS, SERIES_READ, boundedPage } from "./limits";
 import { METRIC_KEYS } from "./metrics";
 import { downsample, foldMetric, type MetricFold, type SeriesPoint } from "./rollup";
 import { recordJobRun } from "./jobStatus";
@@ -154,14 +154,93 @@ function cleanUnmapped(value: Record<string, number | null> | undefined) {
   return unmapped;
 }
 
+function measuredStatusSince(
+  status: boolean | null,
+  previousStatus: boolean | null | undefined,
+  previousSince: number | undefined,
+  previousUpdatedAt: number | undefined,
+  now: number,
+): number | undefined {
+  if (status !== true) {
+    return undefined;
+  }
+  const recent = previousUpdatedAt != null && now >= previousUpdatedAt &&
+    now - previousUpdatedAt <= HEALTH_STALE_MS;
+  if (previousStatus === true && previousSince != null && recent) {
+    return previousSince;
+  }
+  return now;
+}
+
+function measuredMainsStatus(sample: ReturnType<typeof cleanSample>): boolean | null {
+  const values = ["mainsL1", "mainsL2", "mainsL3"]
+    .filter((key) => sample.extraQuality[key] === "measured")
+    .map((key) => sample.extra[key])
+    .filter((value): value is number => value !== null && Number.isFinite(value));
+  return values.length === 0 ? null : values.some((value) => value > 0);
+}
+
+function measuredExtraValue(sample: ReturnType<typeof cleanSample>, key: string): number | null {
+  const value = sample.extra[key];
+  return sample.extraQuality[key] === "measured" &&
+    typeof value === "number" &&
+    Number.isFinite(value)
+    ? value
+    : null;
+}
+
+function utcMonthStart(at: number): number {
+  const date = new Date(at);
+  date.setUTCDate(1);
+  date.setUTCHours(0, 0, 0, 0);
+  return date.getTime();
+}
+
 function emptyReading(qualityName: Quality) {
   return { value: null, quality: qualityName };
+}
+
+function currentExtraValue(
+  current: { extra?: Record<string, number | null>; extraQuality?: Record<string, Quality> } | null,
+  key: string,
+): number | null {
+  const value = current?.extra?.[key];
+  return current?.extraQuality?.[key] === "measured" &&
+    typeof value === "number" &&
+    Number.isFinite(value)
+    ? value
+    : null;
+}
+
+function phasePowerFactor(
+  current: { extra?: Record<string, number | null>; extraQuality?: Record<string, Quality> } | null,
+  phase: "L1" | "L2" | "L3",
+) {
+  const measured = currentExtraValue(current, `pf${phase}`);
+  if (measured !== null && Math.abs(measured) <= 1) {
+    return { value: measured, source: "controller" as const };
+  }
+
+  const activePower = currentExtraValue(current, `power${phase}W`);
+  const apparentPower = currentExtraValue(current, `apparent${phase}Va`);
+  if (activePower === null || apparentPower === null || apparentPower <= 0) {
+    return { value: null, source: null };
+  }
+
+  const value = activePower / apparentPower;
+  return Number.isFinite(value) && Math.abs(value) <= 1
+    ? { value, source: "calculated" as const }
+    : { value: null, source: null };
 }
 
 function rowFromCurrent(
   generator: { _id: Id<"generators">; name: string },
   current: (SampleInput & {
     updatedAt: number;
+    generatorRunning?: boolean | null;
+    generatorRunningSince?: number;
+    mainsAvailable?: boolean | null;
+    mainsAvailableSince?: number;
     boot?: number;
     seq?: number;
     extra?: Record<string, number | null>;
@@ -172,6 +251,10 @@ function rowFromCurrent(
     generatorId: generator._id,
     name: generator.name,
     updatedAt: current?.updatedAt ?? null,
+    generatorRunning: current?.generatorRunning ?? null,
+    generatorRunningSince: current?.generatorRunningSince ?? null,
+    mainsAvailable: current?.mainsAvailable ?? null,
+    mainsAvailableSince: current?.mainsAvailableSince ?? null,
     sourceTime: current?.sourceTime ?? null,
     boot: current?.boot ?? null,
     seq: current?.seq ?? null,
@@ -188,6 +271,11 @@ function rowFromCurrent(
     powerQuality: current?.powerQuality ?? "unavailable",
     voltageL1: current?.voltageL1 ?? null,
     voltageQuality: current?.voltageQuality ?? "unavailable",
+    powerFactorByPhase: {
+      L1: phasePowerFactor(current, "L1"),
+      L2: phasePowerFactor(current, "L2"),
+      L3: phasePowerFactor(current, "L3"),
+    },
     extra: current?.extra ?? undefined,
     extraQuality: current?.extraQuality ?? undefined,
   };
@@ -213,6 +301,7 @@ export const currentForSite = query({
       .take(MAX_PAGE + 1);
     const capped = generators.length > MAX_PAGE;
     const page = generators.slice(0, MAX_PAGE);
+    const monthStart = utcMonthStart(Date.now());
     const rows = [];
     for (const generator of page) {
       const current = await ctx.db
@@ -222,7 +311,37 @@ export const currentForSite = query({
       if (current && current.organizationId !== args.organizationId) {
         throw new Error("Forbidden");
       }
-      rows.push({ ...rowFromCurrent(generator, current), siteId: args.siteId, siteName: site.name });
+      const monthly = await ctx.db
+        .query("telemetryMonthlySources")
+        .withIndex("by_generator_month", (q) =>
+          q.eq("generatorId", generator._id).eq("monthStart", monthStart),
+        )
+        .unique();
+      if (
+        monthly &&
+        (monthly.organizationId !== args.organizationId || monthly.siteId !== args.siteId)
+      ) {
+        throw new Error("Forbidden");
+      }
+      rows.push({
+        ...rowFromCurrent(generator, current),
+        siteId: args.siteId,
+        siteName: site.name,
+        monthlySourceMetrics: monthly
+          ? {
+              monthStart: monthly.monthStart,
+              coverageStartedAt: monthly.coverageStartedAt,
+              generatorEnergyKwh: monthly.generatorEnergyKwh ?? null,
+              generatorEnergySince: monthly.generatorEnergySince ?? null,
+              generatorRunHours: monthly.generatorRunHours ?? null,
+              generatorRunHoursSince: monthly.generatorRunHoursSince ?? null,
+              mainsAvailableHours: monthly.mainsAvailableHours ?? null,
+              mainsAvailableSince: monthly.mainsAvailableSince ?? null,
+              mainsUsageHours: monthly.mainsUsageHours ?? null,
+              mainsUsageSince: monthly.mainsUsageSince ?? null,
+            }
+          : null,
+      });
     }
     return { rows, capped };
   },
@@ -510,8 +629,18 @@ export const applySample = internalMutation({
     if (!generator || generator.organizationId !== args.organizationId) {
       throw new Error("Forbidden");
     }
+    const current = await ctx.db
+      .query("telemetryCurrent")
+      .withIndex("by_generator", (q) => q.eq("generatorId", generator._id))
+      .unique();
+    if (current && current.organizationId !== generator.organizationId) {
+      throw new Error("Forbidden");
+    }
     const sample = cleanSample(args);
     const updatedAt = Date.now();
+    const generatorRunning =
+      sample.rpmQuality === "measured" && sample.rpm !== null ? sample.rpm > 0 : null;
+    const mainsAvailable = measuredMainsStatus(sample);
     const stored = {
       organizationId: generator.organizationId,
       siteId: generator.siteId,
@@ -520,12 +649,24 @@ export const applySample = internalMutation({
       updatedAt,
       ...sample,
     };
-    const current = await ctx.db
-      .query("telemetryCurrent")
-      .withIndex("by_generator", (q) => q.eq("generatorId", generator._id))
-      .unique();
     const currentDoc = {
       ...stored,
+      generatorRunning: generatorRunning ?? undefined,
+      generatorRunningSince: measuredStatusSince(
+        generatorRunning,
+        current?.generatorRunning,
+        current?.generatorRunningSince,
+        current?.updatedAt,
+        updatedAt,
+      ),
+      mainsAvailable: mainsAvailable ?? undefined,
+      mainsAvailableSince: measuredStatusSince(
+        mainsAvailable,
+        current?.mainsAvailable,
+        current?.mainsAvailableSince,
+        current?.updatedAt,
+        updatedAt,
+      ),
       ...(args.boot !== undefined ? { boot: args.boot } : {}),
       ...(args.seq !== undefined ? { seq: args.seq } : {}),
       ...(args.epoch !== undefined ? { epoch: args.epoch } : {}),
@@ -588,6 +729,130 @@ export const applySample = internalMutation({
     } else {
       await ctx.db.insert("telemetryBuckets", bucketDoc);
     }
+
+    const monthStart = utcMonthStart(updatedAt);
+    const monthly = await ctx.db
+      .query("telemetryMonthlySources")
+      .withIndex("by_generator_month", (q) =>
+        q.eq("generatorId", generator._id).eq("monthStart", monthStart),
+      )
+      .unique();
+    if (
+      monthly &&
+      (monthly.organizationId !== generator.organizationId ||
+        monthly.siteId !== generator.siteId ||
+        monthly.deviceId !== generator.deviceId)
+    ) {
+      throw new Error("Forbidden");
+    }
+
+    const previousInMonth = current !== null && current.updatedAt >= monthStart;
+    const previousSampleFresh =
+      current !== null &&
+      updatedAt >= current.updatedAt &&
+      updatedAt - current.updatedAt <= HEALTH_STALE_MS;
+    let generatorEnergyKwh = monthly?.generatorEnergyKwh;
+    let generatorEnergySince = monthly?.generatorEnergySince;
+    const energyKwh = measuredExtraValue(sample, "genEnergyKwh");
+    const previousEnergyKwh =
+      current?.extraQuality?.genEnergyKwh === "measured" &&
+      typeof current.extra?.genEnergyKwh === "number" &&
+      Number.isFinite(current.extra.genEnergyKwh)
+        ? current.extra.genEnergyKwh
+        : null;
+    if (energyKwh !== null) {
+      if (generatorEnergyKwh === undefined) {
+        generatorEnergyKwh = 0;
+        generatorEnergySince = updatedAt;
+      } else if (
+        previousInMonth &&
+        previousEnergyKwh !== null &&
+        energyKwh >= previousEnergyKwh
+      ) {
+        generatorEnergyKwh += energyKwh - previousEnergyKwh;
+      }
+    }
+
+    let generatorRunHours = monthly?.generatorRunHours;
+    let generatorRunHoursSince = monthly?.generatorRunHoursSince;
+    const engineHours = measuredExtraValue(sample, "engineHours");
+    const previousEngineHours =
+      current?.extraQuality?.engineHours === "measured" &&
+      typeof current.extra?.engineHours === "number" &&
+      Number.isFinite(current.extra.engineHours)
+        ? current.extra.engineHours
+        : null;
+    if (engineHours !== null) {
+      if (generatorRunHours === undefined) {
+        generatorRunHours = 0;
+        generatorRunHoursSince = updatedAt;
+      } else if (
+        previousInMonth &&
+        previousEngineHours !== null &&
+        engineHours >= previousEngineHours
+      ) {
+        generatorRunHours += engineHours - previousEngineHours;
+      }
+    }
+
+    let mainsAvailableHours = monthly?.mainsAvailableHours;
+    let mainsAvailableSince = monthly?.mainsAvailableSince;
+    if (mainsAvailable !== null) {
+      if (mainsAvailableHours === undefined) {
+        mainsAvailableHours = 0;
+        mainsAvailableSince = updatedAt;
+      } else if (
+        mainsAvailable &&
+        current?.mainsAvailable === true &&
+        previousInMonth &&
+        previousSampleFresh
+      ) {
+        mainsAvailableHours += (updatedAt - current.updatedAt) / 3_600_000;
+      }
+    }
+
+    let mainsUsageHours = monthly?.mainsUsageHours;
+    let mainsUsageSince = monthly?.mainsUsageSince;
+    if (mainsAvailable !== null && generatorRunning !== null) {
+      if (mainsUsageHours === undefined) {
+        mainsUsageHours = 0;
+        mainsUsageSince = updatedAt;
+      } else if (
+        mainsAvailable &&
+        !generatorRunning &&
+        current?.mainsAvailable === true &&
+        current.generatorRunning === false &&
+        previousInMonth &&
+        previousSampleFresh
+      ) {
+        mainsUsageHours += (updatedAt - current.updatedAt) / 3_600_000;
+      }
+    }
+
+    const monthlyDoc = {
+      organizationId: generator.organizationId,
+      siteId: generator.siteId,
+      deviceId: generator.deviceId,
+      generatorId: generator._id,
+      monthStart,
+      coverageStartedAt: monthly?.coverageStartedAt ?? updatedAt,
+      ...(generatorEnergyKwh !== undefined
+        ? { generatorEnergyKwh, generatorEnergySince }
+        : {}),
+      ...(generatorRunHours !== undefined
+        ? { generatorRunHours, generatorRunHoursSince }
+        : {}),
+      ...(mainsAvailableHours !== undefined
+        ? { mainsAvailableHours, mainsAvailableSince }
+        : {}),
+      ...(mainsUsageHours !== undefined ? { mainsUsageHours, mainsUsageSince } : {}),
+    };
+    if (monthly) {
+      await ctx.db.patch(monthly._id, monthlyDoc);
+    } else {
+      await ctx.db.insert("telemetryMonthlySources", monthlyDoc);
+    }
+
     return { generatorId: generator._id, bucketStart };
   },
 });

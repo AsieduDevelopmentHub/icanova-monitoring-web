@@ -130,6 +130,26 @@ export default defineSchema({
     locationPendingAt: v.optional(v.number()),
     /** Optional administrative region label (e.g. Ghana region). */
     region: v.optional(v.string()),
+    siteInfo: v.optional(v.object({
+      zone: v.string(),
+      cluster: v.string(),
+      address: v.string(),
+      siteType: v.string(),
+      category: v.string(),
+      energyClassification: v.string(),
+      coolingClassification: v.string(),
+      geoClassification: v.string(),
+      siteClassification: v.string(),
+      simDetails: v.string(),
+      customerSiteId: v.string(),
+      fieldEngineer: v.string(),
+      engineerContact: v.string(),
+      communicationMode: v.string(),
+      installationAt: v.union(v.number(), v.null()),
+    })),
+    assignedOperatorUserId: v.optional(v.id("users")),
+    assignedOperatorNote: v.optional(v.string()),
+    onAirSince: v.optional(v.number()),
   })
     .index("by_org", ["organizationId"])
     .index("by_org_code", ["organizationId", "code"])
@@ -234,6 +254,10 @@ export default defineSchema({
     deviceId: v.id("devices"),
     generatorId: v.id("generators"),
     updatedAt: v.number(),
+    generatorRunning: v.optional(v.union(v.boolean(), v.null())),
+    generatorRunningSince: v.optional(v.number()),
+    mainsAvailable: v.optional(v.union(v.boolean(), v.null())),
+    mainsAvailableSince: v.optional(v.number()),
     ...sampleFields,
     boot: v.optional(v.number()),
     seq: v.optional(v.number()),
@@ -279,6 +303,24 @@ export default defineSchema({
   })
     .index("by_generator_time", ["generatorId", "bucketStart"])
     .index("by_bucket", ["bucketStart"]),
+
+  telemetryMonthlySources: defineTable({
+    organizationId: v.id("organizations"),
+    siteId: v.id("sites"),
+    deviceId: v.id("devices"),
+    generatorId: v.id("generators"),
+    monthStart: v.number(),
+    coverageStartedAt: v.number(),
+    generatorEnergyKwh: v.optional(v.number()),
+    generatorEnergySince: v.optional(v.number()),
+    generatorRunHours: v.optional(v.number()),
+    generatorRunHoursSince: v.optional(v.number()),
+    mainsAvailableHours: v.optional(v.number()),
+    mainsAvailableSince: v.optional(v.number()),
+    mainsUsageHours: v.optional(v.number()),
+    mainsUsageSince: v.optional(v.number()),
+  })
+    .index("by_generator_month", ["generatorId", "monthStart"]),
 
   /**
    * One row per site. Link counts change when a sample is stored.

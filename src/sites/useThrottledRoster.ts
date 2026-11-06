@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { applyRosterOrder, sortSitesByCode, type SiteRosterRow } from "./siteRosterView";
 
-/** How long the roster waits before painting the next batch of site updates. */
-export const ROSTER_REFRESH_MS = 15_000;
+/** Paint live Convex roster updates every 30 seconds without changing the order. */
+export const ROSTER_REFRESH_MS = 30_000;
 
 function freezeOrder(rows: readonly SiteRosterRow[]): string[] {
   return sortSitesByCode(rows).map((row) => row.siteId);

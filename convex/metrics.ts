@@ -17,6 +17,8 @@ export const WIRE_METRICS = {
   fuel: { key: "fuelPct", divisor: 1 },
   /** Engine run hours ×100 (firmware int32). */
   eh100: { key: "engineHours", divisor: 100 },
+  /** Generator AC energy export ×10 kWh (DSE cumulative counter). */
+  ekwh10: { key: "genEnergyKwh", divisor: 10 },
   /** Lifetime start count. */
   starts: { key: "engineStarts", divisor: 1 },
   mhz10: { key: "mainsHz", divisor: 10 },

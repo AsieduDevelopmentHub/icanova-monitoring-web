@@ -36,6 +36,8 @@ describe("cloud payload decode", () => {
     expect(old.samples[0]?.kw100).toBe(-1250);
     expect(old.samples[0]?.extra.voltageL2).toBeNull();
     expect(old.samples[0]?.extraQuality.voltageL2).toBe("unavailable");
+    expect(old.samples[0]?.extra.genEnergyKwh).toBeNull();
+    expect(old.samples[0]?.extraQuality.genEnergyKwh).toBe("unavailable");
     const next = decodeBatch({
       v: 2,
       identity: "aabbccddeeff",
@@ -55,6 +57,10 @@ describe("cloud payload decode", () => {
           kw100: null,
           van10: null,
           vbn10: 4000,
+          ia10: 83,
+          ib10: 81,
+          ic10: 85,
+          ekwh10: 12345,
           oil: 0,
           cool: -5,
           pa: -45000,
@@ -67,6 +73,10 @@ describe("cloud payload decode", () => {
     expect(next.epoch).toBe(4);
     expect(next.samples[0]?.extra).toMatchObject({
       voltageL2: 400,
+      currentL1: 8.3,
+      currentL2: 8.1,
+      currentL3: 8.5,
+      genEnergyKwh: 1234.5,
       oilPressureKpa: 0,
       coolantC: -5,
       powerL1W: -45000,
@@ -74,6 +84,8 @@ describe("cloud payload decode", () => {
       pfL1: -0.12,
     });
     expect(next.samples[0]?.extraQuality.oilPressureKpa).toBe("measured");
+    expect(next.samples[0]?.extraQuality.currentL1).toBe("measured");
+    expect(next.samples[0]?.extraQuality.genEnergyKwh).toBe("measured");
     expect(next.samples[0]?.unmapped).toEqual({ spare1: 12 });
     expect(next.samples[0]?.rpm).toBe(0);
   });

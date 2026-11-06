@@ -53,7 +53,7 @@ export const GENERATOR_SECTIONS = [
     id: "mains",
     label: "Mains",
     labels: [
-      "Mains frequency",
+      "General frequency",
       "Mains L1 voltage",
       "Mains L2 voltage",
       "Mains L3 voltage",
