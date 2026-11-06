@@ -24,7 +24,7 @@ describe("parseMeasurement", () => {
 
   it("does not turn quality words into zero", () => {
     const cases = [
-      ["unavailable", "unavailable"],
+      ["unavailable", "N/A"],
       ["unimplemented", "unimplemented"],
       ["under range", "under range"],
       ["over range", "over range"],

@@ -103,9 +103,11 @@ function HealthTimeline({
   siteId: Id<"sites">;
   siteName: string;
 }) {
-  const data = useQuery(api.deviceHealth.recentForSite, {
+  const pagination = useCursorPages();
+  const data = useQuery(api.deviceHealth.recentPageForSite, {
     organizationId: id<"organizations">(organizationId),
     siteId,
+    paginationOpts: { numItems: 25, cursor: pagination.cursor },
   });
   const [peek, setPeek] = useState<HealthRow | null>(null);
   if (data === undefined) {
@@ -117,12 +119,11 @@ function HealthTimeline({
         <Link to={sitePath(siteId)}>{siteName}</Link>
         {" · "}
         <Link to={`/alarms?site=${siteId}`}>Alarms</Link>
-        {data.capped ? " · newest page" : ""}
       </p>
       <DataTable
         dense
         caption={`Events · ${siteName}`}
-        rows={data.rows as HealthRow[]}
+        rows={data.page as HealthRow[]}
         getRowKey={(row) => row._id}
         empty="No health transitions for this site."
         columns={[
@@ -205,15 +206,23 @@ function HealthTimeline({
           </div>
         ) : null}
       </Drawer>
+      <CursorPager
+        pageNumber={pagination.pageNumber}
+        canGoNewer={pagination.canGoNewer}
+        canGoOlder={!data.isDone && Boolean(data.continueCursor)}
+        onNewest={pagination.goNewest}
+        onNewer={pagination.goNewer}
+        onOlder={() => pagination.goOlder(data.continueCursor)}
+      />
     </div>
   );
 }
 
 function AuditList({ organizationId }: { organizationId: string }) {
-  const [cursor, setCursor] = useState<string | null>(null);
+  const pagination = useCursorPages();
   const data = useQuery(api.audits.list, {
     organizationId: id<"organizations">(organizationId),
-    paginationOpts: { numItems: 50, cursor },
+    paginationOpts: { numItems: 50, cursor: pagination.cursor },
   });
   if (data === undefined) {
     return <PageSkeleton rows={5} label="Loading audit events" />;
@@ -234,11 +243,71 @@ function AuditList({ organizationId }: { organizationId: string }) {
           { key: "target", header: "Resource", render: (row) => <span className="tech">{row.target}</span> },
         ]}
       />
-      {data.isDone === false && data.continueCursor ? (
-        <button type="button" className="btn btn-secondary" onClick={() => setCursor(data.continueCursor)}>
-          Older
-        </button>
-      ) : null}
+      <CursorPager
+        pageNumber={pagination.pageNumber}
+        canGoNewer={pagination.canGoNewer}
+        canGoOlder={!data.isDone && Boolean(data.continueCursor)}
+        onNewest={pagination.goNewest}
+        onNewer={pagination.goNewer}
+        onOlder={() => pagination.goOlder(data.continueCursor)}
+      />
     </div>
+  );
+}
+
+function useCursorPages() {
+  const [state, setState] = useState({
+    cursors: [null] as (string | null)[],
+    index: 0,
+  });
+
+  return {
+    cursor: state.cursors[state.index] ?? null,
+    pageNumber: state.index + 1,
+    canGoNewer: state.index > 0,
+    goNewest: () => setState((current) => ({ ...current, index: 0 })),
+    goNewer: () =>
+      setState((current) => ({ ...current, index: Math.max(0, current.index - 1) })),
+    goOlder: (cursor: string) =>
+      setState((current) => {
+        const nextIndex = current.index + 1;
+        if (nextIndex < current.cursors.length) {
+          return { ...current, index: nextIndex };
+        }
+        return { cursors: [...current.cursors, cursor], index: nextIndex };
+      }),
+  };
+}
+
+function CursorPager({
+  pageNumber,
+  canGoNewer,
+  canGoOlder,
+  onNewest,
+  onNewer,
+  onOlder,
+}: {
+  pageNumber: number;
+  canGoNewer: boolean;
+  canGoOlder: boolean;
+  onNewest: () => void;
+  onNewer: () => void;
+  onOlder: () => void;
+}) {
+  return (
+    <nav className="cursor-pager" aria-label="Pagination">
+      <button type="button" className="btn btn-secondary" disabled={!canGoNewer} onClick={onNewest}>
+        Newest
+      </button>
+      <button type="button" className="btn btn-secondary" disabled={!canGoNewer} onClick={onNewer}>
+        Newer
+      </button>
+      <span className="meta" aria-live="polite">
+        Page {pageNumber}
+      </span>
+      <button type="button" className="btn btn-secondary" disabled={!canGoOlder} onClick={onOlder}>
+        Older
+      </button>
+    </nav>
   );
 }

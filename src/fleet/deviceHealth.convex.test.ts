@@ -81,6 +81,39 @@ describe("device health", () => {
     expect(events.page.length).toBe(1);
   });
 
+  test("site health history returns cursor-paginated event pages", async () => {
+    const { t, asOwner, organizationId, siteId, deviceId } = await registered();
+    await t.run(async (ctx) => {
+      for (const at of [1, 2, 3]) {
+        await ctx.db.insert("deviceHealthEvents", {
+          organizationId,
+          siteId,
+          deviceId,
+          generatorId: null,
+          at,
+          reason: "sweep",
+          gatewayTo: "offline",
+        });
+      }
+    });
+
+    const first = await asOwner.query(api.deviceHealth.recentPageForSite, {
+      organizationId,
+      siteId,
+      paginationOpts: { numItems: 2, cursor: null },
+    });
+    expect(first.page.map((row) => row.at)).toEqual([3, 2]);
+    expect(first.isDone).toBe(false);
+
+    const older = await asOwner.query(api.deviceHealth.recentPageForSite, {
+      organizationId,
+      siteId,
+      paginationOpts: { numItems: 2, cursor: first.continueCursor },
+    });
+    expect(older.page.map((row) => row.at)).toEqual([1]);
+    expect(older.isDone).toBe(true);
+  });
+
   test("unknown and ambiguous identities do not write health", async () => {
     const { t } = await registered();
     expect(await t.mutation(internal.deviceHealth.recordHeartbeat, { identity: "001122334455" })).toEqual({

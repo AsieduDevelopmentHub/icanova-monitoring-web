@@ -51,7 +51,7 @@ describe("fleet snapshot", () => {
   });
 
   test("unavailable power is not zero and a negative measurement is kept", () => {
-    expect(formatReading(storedReading(null, "unavailable", "kW"))).toBe("unavailable");
+    expect(formatReading(storedReading(null, "unavailable", "kW"))).toBe("N/A");
     expect(formatReading(storedReading(-0.45, "measured", "kW"))).toBe("-0.45 kW");
     expect(formatReading(storedReading(-0.98, "measured", "PF"))).toBe("-0.98 PF");
     expect(formatReading(storedReading(null, "unavailable", "rpm"))).not.toBe("0 rpm");

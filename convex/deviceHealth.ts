@@ -822,6 +822,56 @@ export const recentForSite = query({
   },
 });
 
+export const recentPageForSite = query({
+  args: {
+    organizationId: v.id("organizations"),
+    siteId: v.id("sites"),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    await requireAnyPermission(ctx, args.organizationId, [
+      "view.diagnostics",
+      "view.dashboard",
+    ]);
+    const site = await ctx.db.get(args.siteId);
+    if (!site || site.organizationId !== args.organizationId) {
+      throw new Error("Forbidden");
+    }
+    const batch = await ctx.db
+      .query("deviceHealthEvents")
+      .withIndex("by_site_at", (q) => q.eq("siteId", args.siteId))
+      .order("desc")
+      .paginate(boundedPage(args.paginationOpts));
+    if (batch.page.some((row) => row.organizationId !== args.organizationId)) {
+      throw new Error("Forbidden");
+    }
+    const rows = [];
+    for (const row of batch.page) {
+      const device = await ctx.db.get(row.deviceId);
+      if (device && device.organizationId !== args.organizationId) {
+        throw new Error("Forbidden");
+      }
+      rows.push({
+        _id: row._id,
+        at: row.at,
+        reason: row.reason,
+        deviceId: row.deviceId,
+        deviceName: device?.name ?? "Unknown device",
+        deviceIdentity: device?.identity ?? null,
+        gatewayFrom: row.gatewayFrom ?? null,
+        gatewayTo: row.gatewayTo ?? null,
+        modbusFrom: row.modbusFrom ?? null,
+        modbusTo: row.modbusTo ?? null,
+        freshnessFrom: row.freshnessFrom ?? null,
+        freshnessTo: row.freshnessTo ?? null,
+        overallFrom: row.overallFrom ?? null,
+        overallTo: row.overallTo ?? null,
+      });
+    }
+    return { ...batch, page: rows };
+  },
+});
+
 export const orgSummary = query({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {

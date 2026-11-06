@@ -38,7 +38,7 @@ const QUALITY_PHRASES: { phrase: string; quality: Quality }[] = [
 
 const QUALITY_LABEL: Record<Quality, string> = {
   measured: "measured",
-  unavailable: "unavailable",
+  unavailable: "N/A",
   unsupported: "unimplemented",
   "under-range": "under range",
   "over-range": "over range",
